@@ -24,7 +24,7 @@ from http import HTTPStatus
 from flask import Response
 from time import sleep
 
-from skale.wallets import Web3Wallet
+from skale.wallets import Web3Wallet, SgxWallet
 from configs import LOCAL_WALLET_FILEPATH, DEFAULT_SLEEP_TIMEOUT
 
 
@@ -53,6 +53,8 @@ def get_software_wallet():
 
 
 def init_wallet(web3):
+    if os.environ['SGX_SERVER_URL']:
+        return SgxWallet(os.environ['SGX_SERVER_URL'], web3)
     while not os.path.isfile(LOCAL_WALLET_FILEPATH):
         logger.info(f'Waiting for the {LOCAL_WALLET_FILEPATH} to be created...')
         sleep(DEFAULT_SLEEP_TIMEOUT)
