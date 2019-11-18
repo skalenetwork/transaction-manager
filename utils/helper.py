@@ -17,12 +17,15 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
 import logging
 import json
 from http import HTTPStatus
 from flask import Response
+from time import sleep
 
-from configs import LOCAL_WALLET_FILEPATH
+from skale.wallets import Web3Wallet
+from configs import LOCAL_WALLET_FILEPATH, DEFAULT_SLEEP_TIMEOUT
 
 
 logger = logging.getLogger(__name__)
@@ -36,21 +39,23 @@ def construct_response(status, data):
     )
 
 
-def construct_err_response(status, errors=[]):
-    logger.warning(f'error response: {errors}, status: {status}')
-    return construct_response(status, {'errors': errors})
-
-
-def construct_key_error_response(keys):
-    keys_str = ', '.join(keys)
-    err = f'Required arguments: {keys_str}'
-    return construct_err_response(400, [err])
+def construct_err_response(status, err):
+    return construct_response(status, {'data': None, 'error': str(err)})
 
 
 def construct_ok_response(data=None):
-    return construct_response(HTTPStatus.OK, {'res': 1, 'data': data})
+    return construct_response(HTTPStatus.OK, {'data': data, 'error': None})
 
 
 def get_software_wallet():
     with open(LOCAL_WALLET_FILEPATH, encoding='utf-8') as data_file:
         return json.loads(data_file.read())
+
+
+def init_wallet(web3):
+    while not os.path.isfile(LOCAL_WALLET_FILEPATH):
+        logger.info(f'Waiting for the {LOCAL_WALLET_FILEPATH} to be created...')
+        sleep(DEFAULT_SLEEP_TIMEOUT)
+    with open(LOCAL_WALLET_FILEPATH, encoding='utf-8') as data_file:
+        wallet_data = json.loads(data_file.read())
+    return Web3Wallet(wallet_data['private_key'], web3)
