@@ -172,7 +172,7 @@ VERSION=0.0.1-develop.0 && docker run -p 3008:3008 --env-file .env-docker -v ~/.
 
 ## License
 
-[![License](https://img.shields.io/github/license/skalenetwork/transactions-manager.svg)](LICENSE)
+[![License](https://img.shields.io/github/license/skalenetwork/transactions-manager)](LICENSE)
 
 All contributions are made under the [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE).
 
