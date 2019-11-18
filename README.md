@@ -1,5 +1,7 @@
 # SKALE Transactions Manager
 
+[![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
+
 Microservice used to manage transactions sending from the SKALE Node to the Ethereum network.
 
 ## API
@@ -8,8 +10,8 @@ Microservice used to manage transactions sending from the SKALE Node to the Ethe
 
 Takes transacation hash, sings and sends it, returns transaction hash.
 
-- URL: `/sign-and-send`
-- Method: `POST`
+-   URL: `/sign-and-send`
+-   Method: `POST`
 
 **Request body**:
 
@@ -43,8 +45,8 @@ Takes transacation hash, sings and sends it, returns transaction hash.
 
 Takes transacation hash, sings it, returns signed transaction.
 
-- URL: `/sign`
-- Method: `POST`
+-   URL: `/sign`
+-   Method: `POST`
 
 **Data Params**:
 
@@ -80,8 +82,8 @@ Takes transacation hash, sings it, returns signed transaction.
 
 Returns wallet address.
 
-- URL: `/address`
-- Method: `GET`
+-   URL: `/address`
+-   Method: `GET`
 
 **URL Params**:
 
@@ -111,8 +113,8 @@ None.
 
 Returns wallet public key.
 
-- URL: `/public-key`
-- Method: `GET`
+-   URL: `/public-key`
+-   Method: `GET`
 
 **URL Params**:
 
@@ -138,9 +140,7 @@ None.
 }
 ```
 
-
-
-## Delevopment
+## Development
 
 ### Run development server
 
@@ -169,3 +169,11 @@ Run `transactions-manager` container locally
 ```bash
 VERSION=0.0.1-develop.0 && docker run -p 3008:3008 --env-file .env-docker -v ~/.skale:/skale_vol -v ~/.skale/node_data:/skale_node_data skalelabshub/transactions-manager:$VERSION
 ```
+
+## License
+
+[![License](https://img.shields.io/github/license/skalenetwork/transactions-manager.svg)](LICENSE)
+
+All contributions are made under the [GNU Affero General Public License v3](https://www.gnu.org/licenses/agpl-3.0.en.html). See [LICENSE](LICENSE).
+
+All skaled code Copyright (C) SKALE Labs and contributors.
