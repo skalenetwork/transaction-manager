@@ -2,13 +2,13 @@
 
 [![Discord](https://img.shields.io/discord/534485763354787851.svg)](https://discord.gg/vvUtWJB)
 
-Microservice used to manage sending transactions from the SKALE Node to the Ethereum network.
+Microservice used to manage sending concurrent transactions to the Ethereum network
 
 ## API
 
 ### sign_and_send
 
-Takes transacation hash, signs and sends it, returns transaction hash.
+Takes transaction hash, signs and sends it, returns transaction hash.
 
 -   URL: `/sign-and-send`
 -   Method: `POST`
@@ -43,7 +43,7 @@ Takes transacation hash, signs and sends it, returns transaction hash.
 
 ### sign
 
-Takes transacation hash, signs it, returns signed transaction.
+Takes transaction hash, signs it, returns signed transaction.
 
 -   URL: `/sign`
 -   Method: `POST`
