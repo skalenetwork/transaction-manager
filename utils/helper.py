@@ -25,7 +25,7 @@ from flask import Response
 from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
-from configs import LOCAL_WALLET_FILEPATH, DEFAULT_SLEEP_TIMEOUT
+from configs import LOCAL_WALLET_FILEPATH, DEFAULT_SLEEP_TIMEOUT, NODE_CONFIG_FILEPATH
 
 
 logger = logging.getLogger(__name__)
@@ -54,10 +54,20 @@ def get_software_wallet():
 
 def init_wallet(web3):
     if os.environ.get('SGX_SERVER_URL'):
-        return SgxWallet(os.environ['SGX_SERVER_URL'], web3)
+        sgx_wallet = init_sgx_wallet(web3)
+        return sgx_wallet
     while not os.path.isfile(LOCAL_WALLET_FILEPATH):
         logger.info(f'Waiting for the {LOCAL_WALLET_FILEPATH} to be created...')
         sleep(DEFAULT_SLEEP_TIMEOUT)
     with open(LOCAL_WALLET_FILEPATH, encoding='utf-8') as data_file:
         wallet_data = json.loads(data_file.read())
     return Web3Wallet(wallet_data['private_key'], web3)
+
+
+def init_sgx_wallet(web3):
+    while not os.path.isfile(NODE_CONFIG_FILEPATH):
+        logger.info(f'Waiting for the {NODE_CONFIG_FILEPATH} to be created...')
+        sleep(DEFAULT_SLEEP_TIMEOUT)
+    with open(NODE_CONFIG_FILEPATH, encoding='utf-8') as data_file:
+        config = json.loads(data_file.read())
+    return SgxWallet(os.environ['SGX_SERVER_URL'], web3, config['sgx_key_name'])
