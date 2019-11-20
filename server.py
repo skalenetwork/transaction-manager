@@ -29,6 +29,7 @@ from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
 
+from core import wait_for_the_next_block
 from utils.str_formatters import arguments_list_string
 from utils.helper import construct_ok_response, construct_err_response, init_wallet
 
@@ -96,6 +97,6 @@ if __name__ == '__main__':
     skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
     nonce_manager = NonceManager(skale, wallet)
 
-    # wait_for_the_next_block(skale)
+    wait_for_the_next_block(skale)
     nonce_manager.request_network_nonce()
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
