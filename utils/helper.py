@@ -54,8 +54,12 @@ def get_software_wallet():
 
 def init_wallet(web3):
     if os.environ.get('SGX_SERVER_URL'):
-        sgx_wallet = init_sgx_wallet(web3)
-        return sgx_wallet
+        return init_sgx_wallet(web3)
+    logger.warning('SGX_SERVER_URL is not provided, going to use software wallet')
+    return init_local_wallet(web3)
+
+
+def init_local_wallet(web3):
     while not os.path.isfile(LOCAL_WALLET_FILEPATH):
         logger.info(f'Waiting for the {LOCAL_WALLET_FILEPATH} to be created...')
         sleep(DEFAULT_SLEEP_TIMEOUT)
@@ -65,9 +69,27 @@ def init_wallet(web3):
 
 
 def init_sgx_wallet(web3):
-    while not os.path.isfile(NODE_CONFIG_FILEPATH):
-        logger.info(f'Waiting for the {NODE_CONFIG_FILEPATH} to be created...')
-        sleep(DEFAULT_SLEEP_TIMEOUT)
+    wait_for_node_config_file()
+    wait_for_sgx_key_name()
     with open(NODE_CONFIG_FILEPATH, encoding='utf-8') as data_file:
         config = json.loads(data_file.read())
     return SgxWallet(os.environ['SGX_SERVER_URL'], web3, config['sgx_key_name'])
+
+
+def wait_for_node_config_file():
+    while not os.path.isfile(NODE_CONFIG_FILEPATH):
+        logger.info(f'Waiting for the {NODE_CONFIG_FILEPATH} to be created...')
+        sleep(DEFAULT_SLEEP_TIMEOUT)
+
+
+def wait_for_sgx_key_name():
+    while not get_sgx_key_name_field():
+        logger.info(f'Waiting for the sgx_key_name to be added...')
+        sleep(DEFAULT_SLEEP_TIMEOUT)
+    return get_sgx_key_name_field()
+
+
+def get_sgx_key_name_field():
+    with open(NODE_CONFIG_FILEPATH, encoding='utf-8') as data_file:
+        config = json.loads(data_file.read())
+    return config.get('sgx_key_name')
