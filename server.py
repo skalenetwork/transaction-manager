@@ -90,7 +90,7 @@ def _public_key():
 
 if __name__ == '__main__':
     logger.info(arguments_list_string({
-        'Ehereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
+        'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
     app.secret_key = FLASK_SECRET_KEY
 
     web3 = init_web3(ENDPOINT)
