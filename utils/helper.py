@@ -26,7 +26,8 @@ from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
 from configs import (LOCAL_WALLET_FILEPATH, NODE_CONFIG_FILEPATH, LOCAL_WALLET_RETRIES,
-                     LOCAL_WALLET_TIMEOUT, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT)
+                     LOCAL_WALLET_TIMEOUT, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT,
+                     SGX_CERTIFICATES_FOLDER)
 
 
 logger = logging.getLogger(__name__)
@@ -128,7 +129,10 @@ def init_sgx_wallet(web3):
     :returns SgxWallet: Inited SGXWallet object
     """
     sgx_key_name = get_sgx_key_name()
-    return SgxWallet(os.environ['SGX_SERVER_URL'], web3, sgx_key_name)
+    return SgxWallet(os.environ['SGX_SERVER_URL'],
+                     web3,
+                     key_name=sgx_key_name,
+                     path_to_cert=SGX_CERTIFICATES_FOLDER)
 
 
 @retry((KeyError, FileNotFoundError), SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT)
