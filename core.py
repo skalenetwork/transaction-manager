@@ -38,7 +38,7 @@ def get_block_number(web3):
 
 
 def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
-    # todo: handle errors and requrn them as a dict
+    # todo: handle errors and return errors as a dict
     with threadLock:
         nonce = nonce_manager.transaction_nonce()
         transaction_hash['nonce'] = nonce
@@ -48,6 +48,6 @@ def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
         )
         logger.info(f'Sending transaction with nonce {nonce}...')
         tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    # todo: decrease nonce if couldn't send transaction
+    # todo: decrease nonce if cannot send transaction
     logger.info(f'Sent: {transaction_hash} - tx: {web3.toHex(tx)}')
     return tx
