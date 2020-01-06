@@ -3,7 +3,7 @@
 set -e
 
 NAME=transaction-manager
-REPO_NAME=skalelabshub/$NAME
+REPO_NAME=skalenetwork/$NAME
 IMAGE_NAME=$REPO_NAME:$VERSION
 LATEST_IMAGE_NAME=$REPO_NAME:latest
 
