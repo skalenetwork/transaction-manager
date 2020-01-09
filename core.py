@@ -49,5 +49,5 @@ def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
         logger.info(f'Sending transaction with nonce {nonce}...')
         tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
     # todo: decrease nonce if cannot send transaction
-    logger.info(f'Sent: {transaction_hash} - tx: {web3.toHex(tx)}')
+    logger.info(f'Sent: {transaction_hash} - tx: {tx}')
     return tx

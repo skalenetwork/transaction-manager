@@ -56,9 +56,8 @@ def _sign_and_send():
             logger.error(e)
             return construct_err_response(HTTPStatus.BAD_REQUEST, e)
         nonce_manager.increment()
-        tx_hex = skale.web3.toHex(tx)
-        logger.info(f'Transaction sent - tx: {tx_hex}, nonce: {transaction_dict["nonce"]}')
-        return construct_ok_response({'transaction_hash': tx_hex})
+        logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
+        return construct_ok_response({'transaction_hash': tx})
 
 
 @app.route('/sign', methods=['GET'])
@@ -71,9 +70,8 @@ def _sign():
     except Exception as e:  # todo: catch specific error
         logger.error(e)
         return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-    tx_hex = skale.web3.toHex(tx)
-    logger.info(f'Transaction signed - tx: {tx_hex}')
-    return construct_ok_response({'transaction_hash': tx_hex})
+    logger.info(f'Transaction signed - tx: {tx}')
+    return construct_ok_response({'transaction_hash': tx})
 
 
 @app.route('/address', methods=['GET'])
