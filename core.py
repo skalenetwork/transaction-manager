@@ -25,16 +25,11 @@ threadLock = threading.Lock()
 
 
 def wait_for_the_next_block(skale):
-    block_number = next_block = get_block_number(skale.web3)
+    block_number = next_block = skale.web3.eth.blockNumber
     logger.info(f'Current block number is {block_number}, waiting for the next block')
-    while (next_block <= block_number):
-        next_block = get_block_number(skale.web3)
+    while next_block <= block_number:
+        next_block = skale.web3.eth.blockNumber
     logger.info(f'Next block is mined: {next_block}.')
-
-
-def get_block_number(web3):
-    block = web3.eth.getBlock('latest')
-    return block.number
 
 
 def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
