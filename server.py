@@ -29,7 +29,6 @@ from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
 
-from core import wait_for_the_next_block
 from utils.str_formatters import arguments_list_string
 from utils.helper import construct_ok_response, construct_err_response, init_wallet
 
@@ -38,9 +37,19 @@ from configs.web3 import ENDPOINT, ABI_FILEPATH
 
 init_default_logger()
 
-threadLock = threading.Lock()
+thread_lock = threading.Lock()
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
+
+web3 = init_web3(ENDPOINT)
+wallet = init_wallet(web3)
+skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
+nonce_manager = NonceManager(skale, wallet)
+
+app.secret_key = FLASK_SECRET_KEY
+app.port = FLASK_APP_PORT
+app.host = FLASK_APP_HOST
+app.use_reloader = False
 
 
 @app.route('/sign-and-send', methods=['POST'])
@@ -48,7 +57,7 @@ def _sign_and_send():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
-    with threadLock:
+    with thread_lock:
         transaction_dict['nonce'] = nonce_manager.nonce
         try:
             tx = wallet.sign_and_send(transaction_dict)
@@ -60,18 +69,19 @@ def _sign_and_send():
         return construct_ok_response({'transaction_hash': tx})
 
 
-@app.route('/sign', methods=['GET'])
+@app.route('/sign', methods=['POST'])
 def _sign():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
-    try:
-        tx = wallet.sign(transaction_dict)
-    except Exception as e:  # todo: catch specific error
-        logger.error(e)
-        return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-    logger.info(f'Transaction signed - tx: {tx}')
-    return construct_ok_response({'transaction_hash': tx})
+    with thread_lock:
+        try:
+            tx = wallet.sign(transaction_dict)
+        except Exception as e:  # todo: catch specific error
+            logger.error(e)
+            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+        logger.info(f'Transaction signed - tx: {tx}')
+        return construct_ok_response({'transaction_hash': tx})
 
 
 @app.route('/address', methods=['GET'])
@@ -89,13 +99,5 @@ def _public_key():
 if __name__ == '__main__':
     logger.info(arguments_list_string({
         'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
-    app.secret_key = FLASK_SECRET_KEY
-
-    web3 = init_web3(ENDPOINT)
-    wallet = init_wallet(web3)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
-    nonce_manager = NonceManager(skale, wallet)
-
-    wait_for_the_next_block(skale)
-    nonce_manager.request_network_nonce()
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT,
+            host=FLASK_APP_HOST, use_reloader=False)
