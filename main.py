@@ -32,7 +32,7 @@ from nonce_manager import NonceManager
 from utils.str_formatters import arguments_list_string
 from utils.helper import construct_ok_response, construct_err_response, init_wallet
 
-from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE, FLASK_SECRET_KEY
+from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from configs.web3 import ENDPOINT, ABI_FILEPATH
 
 init_default_logger()
@@ -46,7 +46,6 @@ wallet = init_wallet(web3)
 skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
 nonce_manager = NonceManager(skale, wallet)
 
-app.secret_key = FLASK_SECRET_KEY
 app.port = FLASK_APP_PORT
 app.host = FLASK_APP_HOST
 app.use_reloader = False
