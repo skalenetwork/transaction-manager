@@ -31,19 +31,19 @@ class NonceManager():
         self.wallet = wallet
         self.request_network_nonce()
 
-    def get_nonce(self):
+    @property
+    def nonce(self):
         return self.__nonce
 
-    def increment_nonce(self):
-        with threadLock:
-            self.__nonce += 1
-            logger.info(f'Incremented nonce: {self.__nonce}')
+    def increment(self):
+        self.__nonce += 1
+        logger.info(f'Incremented nonce: {self.__nonce}')
 
     def transaction_nonce(self):
-        nonce = self.get_nonce()
-        self.increment_nonce()
+        nonce = self.nonce
+        self.increment()
         return nonce
 
     def request_network_nonce(self):
-        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet['address'])
+        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet.address)
         logger.info(f'Requested nonce from the network: {self.__nonce}')
