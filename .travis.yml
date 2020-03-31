@@ -16,6 +16,7 @@ jobs:
       if: branch IN (develop, beta, stable, master)
       script:
         - VERSION=$(BRANCH=$TRAVIS_BRANCH bash ./scripts/calculate_version.sh)
+        - BRANCH=$TRAVIS_BRANCH
         - echo "Version $VERSION"
         - export VERSION=$VERSION
         - export RELEASE=true
@@ -50,14 +51,14 @@ jobs:
               - beta
         - provider: script
           skip_cleanup: true
-          script: RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
+          script: BRANCH=$TRAVIS_BRANCH RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
           on:
             repo: $TRAVIS_REPO_SLUG
             branch:
               - master
         - provider: script
           skip_cleanup: true
-          script: RELEASE=false bash $TRAVIS_BUILD_DIR/scripts/publish.sh
+          script: BRANCH=$TRAVIS_BRANCH RELEASE=false bash $TRAVIS_BUILD_DIR/scripts/publish.sh
           on:
             repo: $TRAVIS_REPO_SLUG
             branch:
