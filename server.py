@@ -74,6 +74,19 @@ def _sign():
     return construct_ok_response({'transaction_hash': tx})
 
 
+@app.route('/sign-hash', methods=['GET'])
+def _sign_hash():
+    logger.debug(request)
+    unsigned_hash = request.json.get('unsigned_hash')
+    try:
+        signed_data = wallet.sign_hash(unsigned_hash)
+    except Exception as e:  # todo: catch specific error
+        logger.error(e)
+        return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+    logger.info(f'Hash signed - signed data: {signed_data}')
+    return construct_ok_response(signed_data)
+
+
 @app.route('/address', methods=['GET'])
 def _address():
     logger.debug(request)
