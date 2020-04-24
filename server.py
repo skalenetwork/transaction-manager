@@ -74,7 +74,7 @@ def _sign():
     return construct_ok_response({'transaction_hash': tx})
 
 
-@app.route('/sign-hash', methods=['GET'])
+@app.route('/sign-hash', methods=['POST'])
 def _sign_hash():
     logger.debug(request)
     unsigned_hash = request.json.get('unsigned_hash')
@@ -83,8 +83,20 @@ def _sign_hash():
     except Exception as e:  # todo: catch specific error
         logger.error(e)
         return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-    logger.info(f'Hash signed - signed data: {signed_data}')
-    return construct_ok_response(signed_data)
+    logger.info(f'Hash signed - signed hash: {signed_data}')
+
+    # from eth_account._utils import signing
+    # v, r, s = signed_data.v, signed_data.r, signed_data.s
+    # signature_bytes = signing.to_bytes(v) + signing.to_bytes32(r) + signing.to_bytes32(s)
+
+    data = {
+        'messageHash': signed_data.messageHash.hex(),
+        'r': signed_data.r,
+        's': signed_data.s,
+        'v': signed_data.v,
+        'signature': signed_data.hex()
+    }
+    return construct_ok_response(data)
 
 
 @app.route('/address', methods=['GET'])
