@@ -128,3 +128,9 @@ dmypy.json
 # Editors
 .vscode/
 .idea/
+
+# pk_file
+pk_file
+test_abi.json
+unique.json
+manager.json
