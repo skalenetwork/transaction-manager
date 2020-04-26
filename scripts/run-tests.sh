@@ -7,6 +7,7 @@ PROJECT_DIR=$(dirname $DIR)
 export SKALE_DIR_HOST=$PWD/tests/skale-data
 export ENDPOINT=http://localhost:8545
 
+export PYTHONPATH=$PROJECT_DIR
 export FLASK_APP_HOST=0.0.0.0
 export FLASK_APP_PORT=3008
 export FLASK_DEBUG_MODE=True

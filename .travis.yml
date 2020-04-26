@@ -15,6 +15,7 @@ jobs:
       before_script:
         - flake8 .
       script:
+        - bash scripts/deploy-manager.sh
         - bash scripts/run-tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
