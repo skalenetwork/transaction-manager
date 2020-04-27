@@ -1,6 +1,6 @@
 import json
 import pytest
-from server import app
+from server import app, skale
 
 EMPTY_HEX_STR = '0x0'
 
@@ -30,16 +30,16 @@ def post_bp_data(bp, request, params=None, full_response=False, **kwargs):
 
 
 @pytest.fixture
-def skale_bp(skale):
+def skale_bp():
     yield app.test_client()
 
 
-def test_address(skale_bp, skale):
+def test_address(skale_bp):
     data = get_bp_data(skale_bp, '/address')
     assert data['address'] == skale.wallet.address
 
 
-def test_public_key(skale_bp, skale):
+def test_public_key(skale_bp):
     data = get_bp_data(skale_bp, '/public-key')
     assert data['public_key'] == skale.wallet.public_key
 
