@@ -30,8 +30,8 @@ from skale.utils.web3_utils import init_web3
 from nonce_manager import NonceManager
 
 from core import wait_for_the_next_block
-from utils.str_formatters import arguments_list_string
-from utils.helper import construct_ok_response, construct_err_response, init_wallet
+from tools.str_formatters import arguments_list_string
+from tools.helper import construct_ok_response, construct_err_response, init_wallet
 
 from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE, FLASK_SECRET_KEY
 from configs.web3 import ENDPOINT, ABI_FILEPATH
@@ -41,6 +41,11 @@ init_default_logger()
 threadLock = threading.Lock()
 logger = logging.getLogger(__name__)
 app = Flask(__name__)
+
+web3 = init_web3(ENDPOINT)
+wallet = init_wallet(web3)
+skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
+nonce_manager = NonceManager(skale, wallet)
 
 
 @app.route('/sign-and-send', methods=['POST'])
@@ -60,18 +65,24 @@ def _sign_and_send():
         return construct_ok_response({'transaction_hash': tx})
 
 
-@app.route('/sign', methods=['GET'])
+@app.route('/sign', methods=['POST'])
 def _sign():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
     try:
-        tx = wallet.sign(transaction_dict)
+        signed_transaction = wallet.sign(transaction_dict)
     except Exception as e:  # todo: catch specific error
         logger.error(e)
         return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-    logger.info(f'Transaction signed - tx: {tx}')
-    return construct_ok_response({'transaction_hash': tx})
+    logger.info(f'Transaction signed - {signed_transaction}')
+    return construct_ok_response({
+        'rawTransaction': signed_transaction.rawTransaction.hex(),
+        'hash': signed_transaction.hash.hex(),
+        'r': signed_transaction.r,
+        's': signed_transaction.s,
+        'v': signed_transaction.v
+    })
 
 
 @app.route('/sign-hash', methods=['POST'])
@@ -115,11 +126,6 @@ if __name__ == '__main__':
     logger.info(arguments_list_string({
         'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
     app.secret_key = FLASK_SECRET_KEY
-
-    web3 = init_web3(ENDPOINT)
-    wallet = init_wallet(web3)
-    skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
-    nonce_manager = NonceManager(skale, wallet)
 
     wait_for_the_next_block(skale)
     nonce_manager.request_network_nonce()
