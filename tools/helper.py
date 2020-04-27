@@ -20,17 +20,20 @@
 import os
 import logging
 import json
+from time import sleep
 from http import HTTPStatus
 from flask import Response
-from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
-from configs import (LOCAL_WALLET_FILEPATH, NODE_CONFIG_FILEPATH, LOCAL_WALLET_RETRIES,
-                     LOCAL_WALLET_TIMEOUT, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT,
+from configs import (NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT,
                      SGX_CERTIFICATES_FOLDER)
 
 
 logger = logging.getLogger(__name__)
+
+
+class WalletInitError(Exception):
+    """Raised when wallet initialization fails"""
 
 
 def construct_response(status, data):
@@ -90,49 +93,48 @@ def init_wallet(web3):
 
     :returns Web3Wallet/SGXWallet: Inited Web3Wallet or SGXWallet object
     """
-    if os.environ.get('SGX_SERVER_URL'):
-        return init_sgx_wallet(web3)
-    logger.warning('SGX_SERVER_URL is not provided, going to use software wallet')
-    return init_local_wallet(web3)
+    PK_FILE = os.environ.get('PK_FILE')
+    SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
+    if SGX_SERVER_URL:
+        return init_sgx_wallet(web3, SGX_SERVER_URL)
+    if PK_FILE:
+        return init_web3_wallet(web3, PK_FILE)
+
+    raise WalletInitError(
+        'Unable to initialize wallet - provide PK_FILE or SGX_SERVER_URL env variable')
 
 
-def init_local_wallet(web3):
+def init_web3_wallet(web3, pk_file):
     """
-    Inits Web3Wallet object with private key name from local wallet.
+    Inits Web3Wallet object with private key from provided file.
 
     :param Web3 web3: web3 object connected to some network
+    :param str pk_flie: path to the file with private key
 
     :returns Web3Wallet: Inited Web3Wallet object
     """
-    private_key = get_local_wallet_private_key()
-    return Web3Wallet(private_key, web3)
+    with open(pk_file, 'r') as f:
+        pk = str(f.read()).strip()
+    return Web3Wallet(pk, web3)
 
 
-@retry((KeyError, FileNotFoundError), LOCAL_WALLET_RETRIES, LOCAL_WALLET_TIMEOUT)
-def get_local_wallet_private_key():
-    """
-    Reads ETH private key from the local wallet file.
-    Retries multiple times if local wallet file or private_key field is not found.
-    """
-    with open(LOCAL_WALLET_FILEPATH, encoding='utf-8') as data_file:
-        wallet_data = json.loads(data_file.read())
-    return wallet_data['private_key']
-
-
-def init_sgx_wallet(web3):
+def init_sgx_wallet(sgx_server_url, web3):
     """
     Inits SgxWallet object with SGX key name from node config
     and SGX server URL from environment.
 
+    :param str sgx_server_url: URL of the SGX server
     :param Web3 web3: web3 object connected to some network
 
     :returns SgxWallet: Inited SGXWallet object
     """
     sgx_key_name = get_sgx_key_name()
-    return SgxWallet(os.environ['SGX_SERVER_URL'],
-                     web3,
-                     key_name=sgx_key_name,
-                     path_to_cert=SGX_CERTIFICATES_FOLDER)
+    return SgxWallet(
+        sgx_server_url,
+        web3,
+        key_name=sgx_key_name,
+        path_to_cert=SGX_CERTIFICATES_FOLDER
+    )
 
 
 @retry((KeyError, FileNotFoundError), SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT)
