@@ -105,7 +105,7 @@ def _sign_hash():
         'r': signed_data.r,
         's': signed_data.s,
         'v': signed_data.v,
-        'signature': signed_data.hex()
+        'signature': signed_data.signature.hex()
     }
     return construct_ok_response(data)
 

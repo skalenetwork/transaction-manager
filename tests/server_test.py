@@ -1,6 +1,8 @@
 import json
 import pytest
 from server import app, skale
+from hexbytes import HexBytes
+from eth_account._utils import transactions
 
 EMPTY_HEX_STR = '0x0'
 
@@ -65,5 +67,22 @@ def test_sign_and_send(skale_bp):
         'transaction_dict': tx_dict_str
     })
     assert isinstance(data['transaction_hash'], str)
+
+
+def test_sign_hash(skale_bp):
+    unsigned_transaction = transactions.serializable_unsigned_transaction_from_dict(TX_DICT)
+    raw_hash = unsigned_transaction.hash()
+    unsigned_hash = HexBytes(raw_hash).hex()
+    data = post_bp_data(skale_bp, '/sign-hash', params={
+        'unsigned_hash': unsigned_hash
+    })
+    print(data)
+    signed_hash = skale.wallet.sign_hash(unsigned_hash)
+
+    assert data['signature'] == signed_hash.signature.hex()
+    assert data['messageHash'] == signed_hash.messageHash.hex()
+    assert data['r'] == signed_hash.r
+    assert data['s'] == signed_hash.s
+    assert data['v'] == signed_hash.v
 
 # todo: add tests for multiple concurrent transactions
