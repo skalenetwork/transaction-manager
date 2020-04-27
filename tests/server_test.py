@@ -49,13 +49,14 @@ def test_sign(skale_bp):
     data = post_bp_data(skale_bp, '/sign', params={
         'transaction_dict': tx_dict_str
     })
-    assert data == {
-        'rawTransaction': '0xf860070183030d40941057dc7277a319927d3eb43e05680b75a00eb5f409001ca0276879f94c629092cec95ed21d0a5bd82c96bc35c34e2ede4136a36feb068117a07cda82e439d2067fb494fad5c310ae4c01b2ba9039990864cba917e0934f6422', # noqa
-        'hash': '0xd18ef6658f239dd9418bc715b3cc0485f82dec61606984c720d3fd8789306798',
-        'r': 17824795021863304244634228817752924303987434134354814486894395563431992656151,
-        's': 56472869264428842883394759918096303684550174095081340508173620982012638618658,
-        'v': 28
-    }
+
+    signed_transaction = skale.wallet.sign(TX_DICT)
+
+    assert data['rawTransaction'] == signed_transaction.rawTransaction.hex()
+    assert data['hash'] == signed_transaction.hash.hex()
+    assert data['r'] == signed_transaction.r
+    assert data['s'] == signed_transaction.s
+    assert data['v'] == signed_transaction.v
 
 
 def test_sign_and_send(skale_bp):
