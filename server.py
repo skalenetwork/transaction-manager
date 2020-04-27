@@ -83,18 +83,29 @@ def _sign_hash():
     except Exception as e:  # todo: catch specific error
         logger.error(e)
         return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-    logger.info(f'Hash signed - signed hash: {signed_data}')
+    logger.info(f'Hash signed - signed data: {signed_data}')
+
+    logger.info(f'Hash signed - signature: {signed_data.signature}')
 
     # from eth_account._utils import signing
-    # v, r, s = signed_data.v, signed_data.r, signed_data.s
-    # signature_bytes = signing.to_bytes(v) + signing.to_bytes32(r) + signing.to_bytes32(s)
+    # logger.info(f'Signature old v {signed_data.v}')
+    # nv = signed_data.v - 43 + 27  # + 2
+    # # nv = signed_data.v
+    # logger.info(f'Signature new v {nv}')
+    # r, s = signed_data.r, signed_data.s
+    # # r + s + v
+    # signature_bytes = signing.to_bytes32(r) + signing.to_bytes32(s) + signing.to_bytes(nv)
+
+    # logger.info(f'Signature new signature bytes {signature_bytes}')
+    # logger.info(f'Signature new signature hex {signature_bytes.hex()}')
+    # logger.info(f'Signature nv in bytes {signing.to_bytes(nv)}')
 
     data = {
         'messageHash': signed_data.messageHash.hex(),
         'r': signed_data.r,
         's': signed_data.s,
         'v': signed_data.v,
-        'signature': signed_data.hex()
+        'signature': signed_data.signature.hex()
     }
     return construct_ok_response(data)
 
