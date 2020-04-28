@@ -96,7 +96,7 @@ def init_wallet(web3):
     PK_FILE = os.environ.get('PK_FILE')
     SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
     if SGX_SERVER_URL:
-        return init_sgx_wallet(web3, SGX_SERVER_URL)
+        return init_sgx_wallet(SGX_SERVER_URL, web3)
     if PK_FILE:
         return init_web3_wallet(web3, PK_FILE)
 
