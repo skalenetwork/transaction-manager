@@ -1,3 +1,3 @@
-skale.py==3.5dev2
+skale.py==3.6.dev3
 Flask==1.0.2
 colorful==0.5.4
