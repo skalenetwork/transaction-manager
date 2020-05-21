@@ -29,13 +29,12 @@ from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
 
-from utils.str_formatters import arguments_list_string
-from utils.helper import construct_ok_response, construct_err_response, init_wallet
+from tools.str_formatters import arguments_list_string
+from tools.helper import construct_ok_response, construct_err_response, init_wallet
 
 from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from configs.web3 import ENDPOINT, ABI_FILEPATH
 
-init_default_logger()
 
 thread_lock = threading.Lock()
 logger = logging.getLogger(__name__)
@@ -45,10 +44,6 @@ web3 = init_web3(ENDPOINT)
 wallet = init_wallet(web3)
 skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
 nonce_manager = NonceManager(skale, wallet)
-
-app.port = FLASK_APP_PORT
-app.host = FLASK_APP_HOST
-app.use_reloader = False
 
 
 @app.route('/sign-and-send', methods=['POST'])
@@ -73,14 +68,46 @@ def _sign():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
+    signed_transaction = None
     with thread_lock:
         try:
-            tx = wallet.sign(transaction_dict)
+            signed_transaction = wallet.sign(transaction_dict)
         except Exception as e:  # todo: catch specific error
             logger.error(e)
             return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-        logger.info(f'Transaction signed - tx: {tx}')
-        return construct_ok_response({'transaction_hash': tx})
+
+    logger.info(f'Transaction signed - {signed_transaction}')
+    return construct_ok_response({
+        'rawTransaction': signed_transaction.rawTransaction.hex(),
+        'hash': signed_transaction.hash.hex(),
+        'r': signed_transaction.r,
+        's': signed_transaction.s,
+        'v': signed_transaction.v
+    })
+
+
+@app.route('/sign-hash', methods=['POST'])
+def _sign_hash():
+    logger.debug(request)
+    unsigned_hash = request.json.get('unsigned_hash')
+    signed_data = None
+    with thread_lock:
+        try:
+            signed_data = wallet.sign_hash(unsigned_hash)
+        except Exception as e:  # todo: catch specific error
+            logger.error(e)
+            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+
+    logger.info(f'Hash signed - signed data: {signed_data}')
+
+    data = {
+        'messageHash': signed_data.messageHash.hex(),
+        'r': signed_data.r,
+        's': signed_data.s,
+        'v': signed_data.v,
+        'signature': signed_data.signature.hex()
+    }
+    return construct_ok_response(data)
 
 
 @app.route('/address', methods=['GET'])
@@ -95,8 +122,13 @@ def _public_key():
     return construct_ok_response({'public_key': wallet.public_key})
 
 
-if __name__ == '__main__':
+def main():
+    init_default_logger()
     logger.info(arguments_list_string({
         'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT,
             host=FLASK_APP_HOST, use_reloader=False)
+
+
+if __name__ == '__main__':
+    main()

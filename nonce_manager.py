@@ -23,7 +23,7 @@ from skale.utils.web3_utils import get_eth_nonce
 logger = logging.getLogger(__name__)
 
 
-class NonceManager():
+class NonceManager:
     def __init__(self, skale, wallet):
         self.skale = skale
         self.wallet = wallet
