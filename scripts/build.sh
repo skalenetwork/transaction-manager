@@ -2,20 +2,17 @@
 
 set -e
 
-NAME=transaction-manager
-REPO_NAME=skalelabshub/$NAME
-IMAGE_NAME=$REPO_NAME:$VERSION
-LATEST_IMAGE_NAME=$REPO_NAME:latest
-
 : "${VERSION?Need to set VERSION}"
+: "${BRANCH?Need to set BRANCH}"
+
+NAME=transaction-manager
+REPO_NAME=skalenetwork/$NAME
+IMAGE_NAME=$REPO_NAME:$VERSION
+LATEST_IMAGE_NAME=$REPO_NAME:$BRANCH-latest
 
 echo "Building $IMAGE_NAME..."
 docker build -t $IMAGE_NAME . || exit $?
-
-if [ "$RELEASE" = true ]
-then
-    docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
-fi
+docker tag $IMAGE_NAME $LATEST_IMAGE_NAME
 
 echo "========================================================================================="
 echo "Built $IMAGE_NAME"
