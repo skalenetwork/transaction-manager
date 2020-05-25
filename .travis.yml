@@ -55,6 +55,7 @@ jobs:
             branch:
               - develop
               - beta
+              - stable
         - provider: script
           skip_cleanup: true
           script: BRANCH=$TRAVIS_BRANCH RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
@@ -70,3 +71,4 @@ jobs:
             branch:
               - develop
               - beta
+              - stable
