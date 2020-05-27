@@ -58,13 +58,6 @@ jobs:
               - stable
         - provider: script
           skip_cleanup: true
-          script: BRANCH=$TRAVIS_BRANCH RELEASE=true bash $TRAVIS_BUILD_DIR/scripts/publish.sh
-          on:
-            repo: $TRAVIS_REPO_SLUG
-            branch:
-              - master
-        - provider: script
-          skip_cleanup: true
           script: BRANCH=$TRAVIS_BRANCH RELEASE=false bash $TRAVIS_BUILD_DIR/scripts/publish.sh
           on:
             repo: $TRAVIS_REPO_SLUG
