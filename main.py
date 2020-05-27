@@ -59,12 +59,11 @@ def _sign_and_send():
     transaction_dict = json.loads(transaction_dict_str)
     with thread_lock:
         transaction_dict['nonce'] = nonce_manager.nonce
-        logger.info('IVD Signing and sending')
+        logger.info(f'Signing stansaction with {nonce_manager.nonce}')
         try:
             tx = wallet.sign_and_send(transaction_dict)
         except Exception as e:  # todo: catch specific error
-            logger.error('IVD Error occured', exc_info=e)
-            # logger.error(e)
+            logger.error('Error occured', exc_info=e)
             return construct_err_response(HTTPStatus.BAD_REQUEST, e)
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
