@@ -38,7 +38,13 @@ from configs.web3 import ENDPOINT, ABI_FILEPATH
 
 thread_lock = threading.Lock()
 logger = logging.getLogger(__name__)
+
+init_default_logger()
+
 app = Flask(__name__)
+app.port = FLASK_APP_PORT
+app.host = FLASK_APP_HOST
+app.use_reloader = False
 
 web3 = init_web3(ENDPOINT)
 wallet = init_wallet(web3)
@@ -53,10 +59,12 @@ def _sign_and_send():
     transaction_dict = json.loads(transaction_dict_str)
     with thread_lock:
         transaction_dict['nonce'] = nonce_manager.nonce
+        logger.info('IVD Signing and sending')
         try:
             tx = wallet.sign_and_send(transaction_dict)
         except Exception as e:  # todo: catch specific error
-            logger.error(e)
+            logger.error('IVD Error occured', exc_info=e)
+            # logger.error(e)
             return construct_err_response(HTTPStatus.BAD_REQUEST, e)
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
@@ -123,7 +131,6 @@ def _public_key():
 
 
 def main():
-    init_default_logger()
     logger.info(arguments_list_string({
         'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
     app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT,

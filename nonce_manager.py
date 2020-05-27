@@ -28,7 +28,8 @@ class NonceManager:
         self.skale = skale
         self.wallet = wallet
         self.wait_for_the_next_block()
-        self.request_network_nonce()
+        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet.address)
+        logger.info(f'Requested nonce from the network: {self.__nonce}')
 
     @property
     def nonce(self):
@@ -42,10 +43,6 @@ class NonceManager:
         nonce = self.nonce
         self.increment()
         return nonce
-
-    def request_network_nonce(self):
-        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet.address)
-        logger.info(f'Requested nonce from the network: {self.__nonce}')
 
     def wait_for_the_next_block(self):
         block_number = next_block = self.skale.web3.eth.blockNumber
