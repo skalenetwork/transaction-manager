@@ -18,31 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import threading
 
 logger = logging.getLogger(__name__)
-threadLock = threading.Lock()
-
-
-def wait_for_the_next_block(skale):
-    block_number = next_block = skale.web3.eth.blockNumber
-    logger.info(f'Current block number is {block_number}, waiting for the next block')
-    while next_block <= block_number:
-        next_block = skale.web3.eth.blockNumber
-    logger.info(f'Next block is mined: {next_block}.')
 
 
 def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
     # todo: handle errors and return errors as a dict
-    with threadLock:
-        nonce = nonce_manager.transaction_nonce()
-        transaction_hash['nonce'] = nonce
-        signed_txn = web3.eth.account.sign_transaction(
-            transaction_hash,
-            private_key=wallet['private_key']
-        )
-        logger.info(f'Sending transaction with nonce {nonce}...')
-        tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
+    nonce = nonce_manager.transaction_nonce()
+    transaction_hash['nonce'] = nonce
+    signed_txn = web3.eth.account.sign_transaction(
+        transaction_hash,
+        private_key=wallet['private_key']
+    )
+    logger.info(f'Sending transaction with nonce {nonce}...')
+    tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
     # todo: decrease nonce if cannot send transaction
     logger.info(f'Sent: {transaction_hash} - tx: {tx}')
     return tx

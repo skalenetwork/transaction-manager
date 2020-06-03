@@ -18,18 +18,18 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import threading
 from skale.utils.web3_utils import get_eth_nonce
 
 logger = logging.getLogger(__name__)
-threadLock = threading.Lock()
 
 
-class NonceManager():
+class NonceManager:
     def __init__(self, skale, wallet):
         self.skale = skale
         self.wallet = wallet
-        self.request_network_nonce()
+        self.wait_for_the_next_block()
+        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet.address)
+        logger.info(f'Requested nonce from the network: {self.__nonce}')
 
     @property
     def nonce(self):
@@ -44,6 +44,9 @@ class NonceManager():
         self.increment()
         return nonce
 
-    def request_network_nonce(self):
-        self.__nonce = get_eth_nonce(self.skale.web3, self.wallet.address)
-        logger.info(f'Requested nonce from the network: {self.__nonce}')
+    def wait_for_the_next_block(self):
+        block_number = next_block = self.skale.web3.eth.blockNumber
+        logger.info(f'Current block number is {block_number}, waiting for the next block')
+        while next_block <= block_number:
+            next_block = self.skale.web3.eth.blockNumber
+        logger.info(f'Next block is mined: {next_block}.')

@@ -24,4 +24,3 @@ HERE = os.path.dirname(os.path.realpath(__file__))
 FLASK_APP_HOST = os.environ['FLASK_APP_HOST']
 FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
 FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
-FLASK_SECRET_KEY = os.environ['FLASK_SECRET_KEY']

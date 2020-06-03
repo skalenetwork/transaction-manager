@@ -1,6 +1,6 @@
 import json
 import pytest
-from server import app, skale
+from main import app, skale
 from hexbytes import HexBytes
 from eth_account._utils import transactions
 

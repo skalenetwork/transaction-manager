@@ -29,18 +29,22 @@ from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
 
-from core import wait_for_the_next_block
 from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
 
-from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE, FLASK_SECRET_KEY
+from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from configs.web3 import ENDPOINT, ABI_FILEPATH
+
+
+thread_lock = threading.Lock()
+logger = logging.getLogger(__name__)
 
 init_default_logger()
 
-threadLock = threading.Lock()
-logger = logging.getLogger(__name__)
 app = Flask(__name__)
+app.port = FLASK_APP_PORT
+app.host = FLASK_APP_HOST
+app.use_reloader = False
 
 web3 = init_web3(ENDPOINT)
 wallet = init_wallet(web3)
@@ -53,12 +57,13 @@ def _sign_and_send():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
-    with threadLock:
+    with thread_lock:
         transaction_dict['nonce'] = nonce_manager.nonce
+        logger.info(f'Signing stansaction with {nonce_manager.nonce}')
         try:
             tx = wallet.sign_and_send(transaction_dict)
         except Exception as e:  # todo: catch specific error
-            logger.error(e)
+            logger.error('Error occured', exc_info=e)
             return construct_err_response(HTTPStatus.BAD_REQUEST, e)
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
@@ -70,11 +75,14 @@ def _sign():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
-    try:
-        signed_transaction = wallet.sign(transaction_dict)
-    except Exception as e:  # todo: catch specific error
-        logger.error(e)
-        return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+    signed_transaction = None
+    with thread_lock:
+        try:
+            signed_transaction = wallet.sign(transaction_dict)
+        except Exception as e:  # todo: catch specific error
+            logger.error(e)
+            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+
     logger.info(f'Transaction signed - {signed_transaction}')
     return construct_ok_response({
         'rawTransaction': signed_transaction.rawTransaction.hex(),
@@ -89,11 +97,14 @@ def _sign():
 def _sign_hash():
     logger.debug(request)
     unsigned_hash = request.json.get('unsigned_hash')
-    try:
-        signed_data = wallet.sign_hash(unsigned_hash)
-    except Exception as e:  # todo: catch specific error
-        logger.error(e)
-        return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+    signed_data = None
+    with thread_lock:
+        try:
+            signed_data = wallet.sign_hash(unsigned_hash)
+        except Exception as e:  # todo: catch specific error
+            logger.error(e)
+            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+
     logger.info(f'Hash signed - signed data: {signed_data}')
 
     data = {
@@ -118,11 +129,12 @@ def _public_key():
     return construct_ok_response({'public_key': wallet.public_key})
 
 
-if __name__ == '__main__':
+def main():
     logger.info(arguments_list_string({
         'Ethereum RPC endpoint': ENDPOINT}, 'Starting Transaction Manager'))
-    app.secret_key = FLASK_SECRET_KEY
+    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT,
+            host=FLASK_APP_HOST, use_reloader=False)
 
-    wait_for_the_next_block(skale)
-    nonce_manager.request_network_nonce()
-    app.run(debug=FLASK_DEBUG_MODE, port=FLASK_APP_PORT, host=FLASK_APP_HOST, use_reloader=False)
+
+if __name__ == '__main__':
+    main()
