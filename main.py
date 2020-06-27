@@ -19,6 +19,7 @@
 
 import json
 import logging
+import time
 import threading
 from http import HTTPStatus
 
@@ -51,6 +52,9 @@ wallet = init_wallet(web3)
 skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
 nonce_manager = NonceManager(skale, wallet)
 
+ATTEMPTS = 3
+TIMEOUT = 1
+
 
 @app.route('/sign-and-send', methods=['POST'])
 def _sign_and_send():
@@ -60,11 +64,21 @@ def _sign_and_send():
     with thread_lock:
         transaction_dict['nonce'] = nonce_manager.nonce
         logger.info(f'Signing stansaction with {nonce_manager.nonce}')
-        try:
-            tx = wallet.sign_and_send(transaction_dict)
-        except Exception as e:  # todo: catch specific error
-            logger.error('Error occured', exc_info=e)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
+        error = None
+        for attempt in range(ATTEMPTS):
+            try:
+                tx = wallet.sign_and_send(transaction_dict)
+            except Exception as e:  # todo: catch specific error
+                logger.error('Error occured', exc_info=e)
+                time.sleep(TIMEOUT)
+                error = e
+                nonce_manager.update()
+            else:
+                error = None
+        if error:
+            return construct_err_response(HTTPStatus.BAD_REQUEST, error)
+
+        logger.info('Incrementing nonce...')
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
         return construct_ok_response({'transaction_hash': tx})

@@ -69,6 +69,10 @@ def test_sign_and_send(skale_bp):
     assert isinstance(data['transaction_hash'], str)
 
 
+def test_sign_and_send_with_error_returned(skale_bp):
+    pass
+
+
 def test_sign_hash(skale_bp):
     unsigned_transaction = transactions.serializable_unsigned_transaction_from_dict(TX_DICT)
     raw_hash = unsigned_transaction.hash()
