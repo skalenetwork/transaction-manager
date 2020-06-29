@@ -18,20 +18,34 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 logger = logging.getLogger(__name__)
 
 
-def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
-    # todo: handle errors and return errors as a dict
-    nonce = nonce_manager.transaction_nonce()
-    transaction_hash['nonce'] = nonce
-    signed_txn = web3.eth.account.sign_transaction(
-        transaction_hash,
-        private_key=wallet['private_key']
-    )
-    logger.info(f'Sending transaction with nonce {nonce}...')
-    tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    # todo: decrease nonce if cannot send transaction
-    logger.info(f'Sent: {transaction_hash} - tx: {tx}')
+ATTEMPTS = 3
+TIMEOUT = 1
+
+
+def sign_and_send(transaction_dict, wallet, nonce_manager):
+    transaction_dict['nonce'] = nonce_manager.nonce
+    logger.info(f'Signing transaction with {nonce_manager.nonce}')
+    error = None
+    for attempt in range(ATTEMPTS):
+        try:
+            tx = wallet.sign_and_send(transaction_dict)
+        except Exception as e:  # todo: catch specific error
+            logger.error('Error occured', exc_info=e)
+            time.sleep(TIMEOUT)
+            error = e
+            nonce_manager.update()
+        else:
+            error = None
+            break
+    if error is not None:
+        raise error
+    logger.info('Incrementing nonce...')
+    nonce_manager.increment()
+    logger.info(f'Transaction sent - tx: {tx}, '
+                f'nonce: {transaction_dict["nonce"]}')
     return tx

@@ -45,11 +45,6 @@ class NonceManager:
         self.nonce += 1
         logger.info(f'Incremented nonce: {self.nonce}')
 
-    def transaction_nonce(self):
-        nonce = self.nonce
-        self.increment()
-        return nonce
-
     def wait_for_the_next_block(self):
         block_number = next_block = self.skale.web3.eth.blockNumber
         logger.info(f'Current block number is {block_number}, waiting for the next block')
