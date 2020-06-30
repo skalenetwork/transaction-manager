@@ -10,7 +10,7 @@ TX_DICT = {
     'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
     'value': 9,
     'gas': 200000,
-    'gasPrice': 1,
+    'gasPrice': 1000000,
     'nonce': 7,
     'chainId': None,
     'data': '0x0'
@@ -87,3 +87,15 @@ def test_sign_hash(skale_bp):
     assert data['v'] == signed_hash.v
 
 # todo: add tests for multiple concurrent transactions
+
+def test_multithreading():
+    # 
+
+    data = post_bp_data(skale_bp, '/sign-and-send', params={
+        'transaction_dict': tx_dict_str
+    })
+    assert data
+    assert isinstance(data['transaction_hash'], str)
+
+
+    pass
