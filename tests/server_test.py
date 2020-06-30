@@ -66,6 +66,7 @@ def test_sign_and_send(skale_bp):
     data = post_bp_data(skale_bp, '/sign-and-send', params={
         'transaction_dict': tx_dict_str
     })
+    assert data
     assert isinstance(data['transaction_hash'], str)
 
 
