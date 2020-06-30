@@ -87,15 +87,3 @@ def test_sign_hash(skale_bp):
     assert data['v'] == signed_hash.v
 
 # todo: add tests for multiple concurrent transactions
-
-def test_multithreading():
-    # 
-
-    data = post_bp_data(skale_bp, '/sign-and-send', params={
-        'transaction_dict': tx_dict_str
-    })
-    assert data
-    assert isinstance(data['transaction_hash'], str)
-
-
-    pass
