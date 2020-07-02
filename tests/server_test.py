@@ -4,6 +4,9 @@ from main import app, skale
 from hexbytes import HexBytes
 from eth_account._utils import transactions
 
+from custom_thread import CustomThread
+
+
 EMPTY_HEX_STR = '0x0'
 
 TX_DICT = {
@@ -86,4 +89,27 @@ def test_sign_hash(skale_bp):
     assert data['s'] == signed_hash.s
     assert data['v'] == signed_hash.v
 
-# todo: add tests for multiple concurrent transactions
+
+def send_transactions(opts):
+    for i in range(0, 10):
+        data = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
+            'transaction_dict': opts['tx_dict_str']
+        })
+        assert isinstance(data['transaction_hash'], str)
+
+
+def test_multhreading(skale_bp):
+    tx_dict_str = json.dumps(TX_DICT)
+    threads = []
+    N_THREADS = 2
+    for i in range(0, N_THREADS):
+        thread = CustomThread(
+            f'Thread i={i}', send_transactions,
+            opts={'skale_bp': skale_bp, 'tx_dict_str': tx_dict_str},
+            once=True
+        )
+        thread.start()
+        threads.append(thread)
+    for thread in threads:
+        thread.join()
+        assert not thread.err

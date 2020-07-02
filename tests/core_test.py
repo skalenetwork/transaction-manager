@@ -1,7 +1,7 @@
 import pytest
 
 from skale import Skale
-from skale.utils.web3_utils import init_web3
+from skale.utils.web3_utils import init_web3, wait_for_receipt_by_blocks
 
 from configs.web3 import ENDPOINT, ABI_FILEPATH
 from core import sign_and_send
@@ -39,6 +39,10 @@ def nonce_manager(skale, wallet):
 
 def test_sign_and_send(wallet, skale, nonce_manager):
     tx = sign_and_send(TX_DICT, wallet, nonce_manager)
+    wait_for_receipt_by_blocks(
+        skale.web3,
+        tx
+    )
     assert isinstance(tx, str)
 
 

@@ -40,7 +40,7 @@ class NonceManager:
         logger.info(f'Nonce is updated. Current nonce: {self.nonce}')
 
     def increment(self):
-        logger.info('Incrementing nonce from: {self.nonce} ...')
+        logger.info(f'Incrementing nonce from: {self.nonce}...')
         self.update()
         self.nonce += 1
         logger.info(f'Incremented nonce: {self.nonce}')
