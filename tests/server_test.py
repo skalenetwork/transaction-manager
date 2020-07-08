@@ -1,5 +1,7 @@
 import json
 import pytest
+from random import randint
+
 from main import app, skale
 from hexbytes import HexBytes
 from eth_account._utils import transactions
@@ -12,10 +14,8 @@ EMPTY_HEX_STR = '0x0'
 TX_DICT = {
     'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
     'value': 9,
-    'gas': 200000,
+    'gas': 210000,
     'gasPrice': 1000000,
-    'nonce': 7,
-    'chainId': None,
     'data': '0x0'
 }
 
@@ -91,21 +91,31 @@ def test_sign_hash(skale_bp):
 
 
 def send_transactions(opts):
-    for i in range(0, 10):
+    for _ in range(0, 10):
+        amount = randint(0, 100000)
+        txn = {
+            'to': opts['skale'].wallet.address,
+            'value': amount,
+            'gasPrice': opts['skale'].web3.eth.gasPrice,
+            'gas': 22000
+        }
+        tx_dict_str = json.dumps(txn)
         data = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
-            'transaction_dict': opts['tx_dict_str']
+            'transaction_dict': tx_dict_str
         })
         assert isinstance(data['transaction_hash'], str)
 
 
 def test_multhreading(skale_bp):
-    tx_dict_str = json.dumps(TX_DICT)
     threads = []
-    N_THREADS = 2
+    N_THREADS = 5
     for i in range(0, N_THREADS):
         thread = CustomThread(
             f'Thread i={i}', send_transactions,
-            opts={'skale_bp': skale_bp, 'tx_dict_str': tx_dict_str},
+            opts={
+                'skale_bp': skale_bp,
+                'skale': skale
+            },
             once=True
         )
         thread.start()

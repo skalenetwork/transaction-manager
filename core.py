@@ -28,17 +28,17 @@ TIMEOUT = 1
 
 
 def sign_and_send(transaction_dict, wallet, nonce_manager):
-    transaction_dict['nonce'] = nonce_manager.nonce
-    logger.info(f'Signing transaction with {nonce_manager.nonce}')
     error = None
     for attempt in range(ATTEMPTS):
         try:
+            transaction_dict['nonce'] = nonce_manager.nonce
+            logger.info(f'Signing transaction with {nonce_manager.nonce}')
             tx = wallet.sign_and_send(transaction_dict)
         except Exception as e:  # todo: catch specific error
             logger.error('Error occured', exc_info=e)
+            nonce_manager.fix_nonce()
             time.sleep(TIMEOUT)
             error = e
-            nonce_manager.update()
         else:
             error = None
             break
