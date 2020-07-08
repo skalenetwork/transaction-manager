@@ -58,9 +58,6 @@ class NonceManager:
             amount=0
         )
         res = receipt['status'] == 1
-
-        logger.info('receipt')
-        logger.info(receipt)
         if res:
             logger.info('Healthcheck transaction passed')
         else:
