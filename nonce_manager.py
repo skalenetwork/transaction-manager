@@ -30,7 +30,6 @@ class NonceManager:
         self.skale = skale
         self.wallet = wallet
         self.wait_for_blocks()
-        self.healthcheck() # todo: remove!
         self.__nonce = self.request_nonce()
 
     @property
