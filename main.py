@@ -28,6 +28,7 @@ from skale.utils.helper import init_default_logger
 from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
+from core import sign_and_send
 
 from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
@@ -57,16 +58,16 @@ def _sign_and_send():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
+    thread_id = threading.get_ident()
+    logger.info(f'thread_id {thread_id} waiting for the lock')
     with thread_lock:
-        transaction_dict['nonce'] = nonce_manager.nonce
-        logger.info(f'Signing stansaction with {nonce_manager.nonce}')
+        logger.info(f'thread_id {thread_id} got the lock')
         try:
-            tx = wallet.sign_and_send(transaction_dict)
-        except Exception as e:  # todo: catch specific error
-            logger.error('Error occured', exc_info=e)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-        nonce_manager.increment()
-        logger.info(f'Transaction sent - tx: {tx}, nonce: {transaction_dict["nonce"]}')
+            tx = sign_and_send(transaction_dict, wallet, nonce_manager)
+        except Exception as err:
+            logger.warning(f'thread_id {thread_id} going to release the lock due to an error')
+            return construct_err_response(HTTPStatus.BAD_REQUEST, err)
+        logger.warning(f'thread_id {thread_id} going to release the lock')
         return construct_ok_response({'transaction_hash': tx})
 
 
