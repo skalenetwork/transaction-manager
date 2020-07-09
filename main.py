@@ -58,18 +58,17 @@ def _sign_and_send():
     logger.debug(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
-    logger.info(f'thread_id: {threading.get_ident()}, waiting for the lock')
-    thread_lock.acquire()
-    logger.info(f'thread_id: {threading.get_ident()}, got the lock')
-    try:
-        tx = sign_and_send(transaction_dict, wallet, nonce_manager)
-    except Exception as err:
-        thread_lock.release()
-        logger.warning(f'thread_id: {threading.get_ident()}, released the lock due to an error!')
-        return construct_err_response(HTTPStatus.BAD_REQUEST, err)
-    thread_lock.release()
-    logger.warning(f'thread_id: {threading.get_ident()}, released the lock')
-    return construct_ok_response({'transaction_hash': tx})
+    thread_id = threading.get_ident()
+    logger.info(f'thread_id {thread_id} waiting for the lock')
+    with thread_lock:
+        logger.info(f'thread_id {thread_id} got the lock')
+        try:
+            tx = sign_and_send(transaction_dict, wallet, nonce_manager)
+        except Exception as err:
+            logger.warning(f'thread_id {thread_id} going to release the lock due to an error')
+            return construct_err_response(HTTPStatus.BAD_REQUEST, err)
+        logger.warning(f'thread_id {thread_id} going to release the lock')
+        return construct_ok_response({'transaction_hash': tx})
 
 
 @app.route('/sign', methods=['POST'])
