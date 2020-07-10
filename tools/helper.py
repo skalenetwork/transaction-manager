@@ -129,6 +129,12 @@ def init_sgx_wallet(sgx_server_url, web3):
     :returns SgxWallet: Inited SGXWallet object
     """
     sgx_key_name = get_sgx_key_name()
+    logger.info(
+        'Initializing SgxWallet'
+        f'Server URL: {sgx_server_url} '
+        f'Key name: {sgx_key_name} '
+        f'Path to cert: {SGX_CERTIFICATES_FOLDER}'
+    )
     return SgxWallet(
         sgx_server_url,
         web3,
