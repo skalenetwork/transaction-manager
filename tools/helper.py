@@ -25,8 +25,8 @@ from http import HTTPStatus
 from flask import Response
 
 from skale.wallets import Web3Wallet, SgxWallet
-from configs import (NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT,
-                     SGX_CERTIFICATES_FOLDER)
+from configs import NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT
+from configs.sgx import SGX_CERTIFICATES_FOLDER
 
 
 logger = logging.getLogger(__name__)
