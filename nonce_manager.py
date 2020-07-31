@@ -37,20 +37,23 @@ class NonceManager:
         return self.ensure_nonce()
 
     def ensure_nonce(self):
+        logger.info('Running ensure_nonce...')
         local_nonce = self.__nonce
         network_nonce = self.request_nonce()
-        logger.debug(f'Local nonce: {local_nonce}, network nonce: {network_nonce}')
+        logger.info(f'Local nonce: {local_nonce}, network nonce: {network_nonce}')
         self.__nonce = max(local_nonce, network_nonce)
         return self.__nonce
 
     def request_nonce(self):
+        logger.info('Running request_nonce...')
         address = self.wallet.address
+        logger.info(f'Got wallet address: {address}, going to request eth nonce')
         eth_nonce = get_eth_nonce(self.skale.web3, address)
-        logger.debug(f'Got network nonce for {address}: {eth_nonce}')
+        logger.info(f'Got network nonce for {address}: {eth_nonce}')
         return eth_nonce
 
     def healthcheck(self):
-        logger.debug('Running healthcheck...')
+        logger.info('Running healthcheck...')
         receipt = send_ether(
             web3=self.skale.web3,
             sender_wallet=self.wallet,

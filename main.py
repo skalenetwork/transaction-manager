@@ -24,12 +24,12 @@ from http import HTTPStatus
 
 from flask import Flask, request
 from skale import Skale
-from skale.utils.helper import init_default_logger
 from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
 from core import sign_and_send
 
+from tools.logger import init_tm_logger
 from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
 
@@ -40,7 +40,7 @@ from configs.web3 import ENDPOINT, ABI_FILEPATH
 thread_lock = threading.Lock()
 logger = logging.getLogger(__name__)
 
-init_default_logger()
+init_tm_logger()
 
 app = Flask(__name__)
 app.port = FLASK_APP_PORT
@@ -55,7 +55,7 @@ nonce_manager = NonceManager(skale, wallet)
 
 @app.route('/sign-and-send', methods=['POST'])
 def _sign_and_send():
-    logger.debug(request)
+    logger.info(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
     thread_id = threading.get_ident()
@@ -73,7 +73,7 @@ def _sign_and_send():
 
 @app.route('/sign', methods=['POST'])
 def _sign():
-    logger.debug(request)
+    logger.info(request)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
     signed_transaction = None
@@ -96,7 +96,7 @@ def _sign():
 
 @app.route('/sign-hash', methods=['POST'])
 def _sign_hash():
-    logger.debug(request)
+    logger.info(request)
     unsigned_hash = request.json.get('unsigned_hash')
     signed_data = None
     with thread_lock:
@@ -120,13 +120,13 @@ def _sign_hash():
 
 @app.route('/address', methods=['GET'])
 def _address():
-    logger.debug(request)
+    logger.info(request)
     return construct_ok_response({'address': wallet.address})
 
 
 @app.route('/public-key', methods=['GET'])
 def _public_key():
-    logger.debug(request)
+    logger.info(request)
     return construct_ok_response({'public_key': wallet.public_key})
 
 

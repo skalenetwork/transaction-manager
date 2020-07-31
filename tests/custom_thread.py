@@ -38,7 +38,7 @@ class CustomThread(threading.Thread):
 
     def run(self):
         """ Main control loop """
-        logger.debug(f'{self.getName()} thread starts')
+        logger.info(f'{self.getName()} thread starts')
 
         if self.once:
             self.safe_run_func()
@@ -51,7 +51,7 @@ class CustomThread(threading.Thread):
                 self._stopevent.wait(self._sleepperiod)
                 running_counter += 1
 
-        logger.debug(f'{self.getName()} thread ends')
+        logger.info(f'{self.getName()} thread ends')
 
     def safe_run_func(self):
         try:
