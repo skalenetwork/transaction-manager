@@ -45,7 +45,8 @@ def construct_response(status, data):
 
 
 def construct_err_response(status, err):
-    return construct_response(status, {'data': None, 'error': str(err)})
+    err = err if err is None else str(err)
+    return construct_response(status, {'data': None, 'error': err})
 
 
 def construct_ok_response(data=None):

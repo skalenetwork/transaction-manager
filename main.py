@@ -62,13 +62,13 @@ def _sign_and_send():
     logger.info(f'thread_id {thread_id} waiting for the lock')
     with thread_lock:
         logger.info(f'thread_id {thread_id} got the lock')
-        try:
-            tx = sign_and_send(transaction_dict, wallet, nonce_manager)
-        except Exception as err:
+        tx_hash, error = sign_and_send(transaction_dict, wallet, nonce_manager)
+        if error is None:
+            logger.warning(f'thread_id {thread_id} going to release the lock')
+            return construct_ok_response({'transaction_hash': tx_hash})
+        else:
             logger.warning(f'thread_id {thread_id} going to release the lock due to an error')
-            return construct_err_response(HTTPStatus.BAD_REQUEST, err)
-        logger.warning(f'thread_id {thread_id} going to release the lock')
-        return construct_ok_response({'transaction_hash': tx})
+            return construct_err_response(HTTPStatus.BAD_REQUEST, error)
 
 
 @app.route('/sign', methods=['POST'])
