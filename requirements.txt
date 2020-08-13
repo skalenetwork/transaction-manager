@@ -1,5 +1,4 @@
 Flask==1.0.2
 colorful==0.5.4
 uwsgi==2.0.18
-git+git://github.com/skalenetwork/sgx.py.git@bug/SKALE-2985-exception-instead-of-retry#egg=sgx.py
-git+git://github.com/skalenetwork/skale.py.git@bug/SKALE-2985-exception-instead-of-retry#egg=skale.py
+skale.py==3.10dev21
