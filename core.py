@@ -28,7 +28,7 @@ logger = logging.getLogger(__name__)
 ATTEMPTS = 3
 TIMEOUT = 1
 
-UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
+SGX_UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
 
 
 def sign_and_send(transaction_dict, wallet, nonce_manager):
@@ -40,7 +40,7 @@ def sign_and_send(transaction_dict, wallet, nonce_manager):
             logger.info(f'Signing transaction with {nonce_manager.nonce}')
             tx = wallet.sign_and_send(transaction_dict)
         except SgxUnreachableError:
-            error = UNREACHABLE_MESSAGE
+            error = SGX_UNREACHABLE_MESSAGE
             break
         except Exception as e:  # todo: catch specific error
             logger.error('Error occured', exc_info=e)
