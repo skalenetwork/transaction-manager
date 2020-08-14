@@ -72,7 +72,10 @@ def test_send_transaction_errored(skale_bp):
         'transaction_dict': tx_dict_str
     })
     assert response['data'] is None
-    assert response['error'] == "Transaction must include these fields: {'gas', 'gasPrice'}"  # noqa
+    assert response['error'] in (
+        "Transaction must include these fields: {'gas', 'gasPrice'}",
+        "Transaction must include these fields: {'gasPrice', 'gas'}"
+    )
 
 
 def test_sign_hash(skale_bp):
