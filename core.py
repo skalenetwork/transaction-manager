@@ -20,33 +20,39 @@
 import logging
 import time
 
-logger = logging.getLogger(__name__)
 
+from sgx.http import SgxUnreachableError
+
+logger = logging.getLogger(__name__)
 
 ATTEMPTS = 3
 TIMEOUT = 1
 
+SGX_UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
+
 
 def sign_and_send(transaction_dict, wallet, nonce_manager):
-    error = None
+    error, tx = None, None
     for attempt in range(ATTEMPTS):
         try:
             transaction_dict['nonce'] = nonce_manager.nonce
             logger.info(f'Transaction dict: {transaction_dict}')
             logger.info(f'Signing transaction with {nonce_manager.nonce}')
             tx = wallet.sign_and_send(transaction_dict)
+        except SgxUnreachableError:
+            error = SGX_UNREACHABLE_MESSAGE
+            break
         except Exception as e:  # todo: catch specific error
             logger.error('Error occured', exc_info=e)
             nonce_manager.fix_nonce()
             time.sleep(TIMEOUT)
-            error = e
+            error = str(e)
         else:
             error = None
             break
-    if error is not None:
-        raise error
-    logger.info('Incrementing nonce...')
-    nonce_manager.increment()
-    logger.info(f'Transaction sent - tx: {tx}, '
-                f'nonce: {transaction_dict["nonce"]}')
-    return tx
+    if error is None:
+        logger.info('Incrementing nonce...')
+        nonce_manager.increment()
+        logger.info(f'Transaction sent - tx: {tx}, '
+                    f'nonce: {transaction_dict["nonce"]}')
+    return tx, error
