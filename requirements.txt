@@ -1,5 +1,5 @@
 Flask==1.0.2
 colorful==0.5.4
 uwsgi==2.0.18
-skale.py==3.10dev22
+skale.py==4.0.dev3
 sgx.py==0.6dev7
