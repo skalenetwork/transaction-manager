@@ -38,9 +38,10 @@ from configs.web3 import ENDPOINT, ABI_FILEPATH
 
 
 thread_lock = threading.Lock()
-logger = logging.getLogger(__name__)
 
 init_tm_logger()
+
+logger = logging.getLogger(__name__)
 
 app = Flask(__name__)
 app.port = FLASK_APP_PORT
