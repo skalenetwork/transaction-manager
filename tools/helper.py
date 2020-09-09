@@ -25,6 +25,7 @@ from http import HTTPStatus
 from flask import Response
 
 from skale.wallets import Web3Wallet, SgxWallet
+
 from configs import NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT
 from configs.sgx import SGX_CERTIFICATES_FOLDER
 
@@ -45,7 +46,8 @@ def construct_response(status, data):
 
 
 def construct_err_response(status, err):
-    return construct_response(status, {'data': None, 'error': str(err)})
+    err = err if err is None else str(err)
+    return construct_response(status, {'data': None, 'error': err})
 
 
 def construct_ok_response(data=None):
