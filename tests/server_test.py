@@ -107,9 +107,10 @@ def send_transactions(opts):
             'gas': 22000
         }
         tx_dict_str = json.dumps(txn)
-        data = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
+        result = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
             'transaction_dict': tx_dict_str
         })
+        data = result['data']
         assert isinstance(data['transaction_hash'], str)
 
 
