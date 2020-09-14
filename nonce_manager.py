@@ -30,7 +30,7 @@ class NonceManager:
         self.skale = skale
         self.wallet = wallet
         self.wait_for_blocks()
-        self.__nonce = self.request_nonce()
+        self._nonce = self.request_nonce()
 
     @property
     def nonce(self):
@@ -38,11 +38,11 @@ class NonceManager:
 
     def ensure_nonce(self):
         logger.info('Running ensure_nonce...')
-        local_nonce = self.__nonce
+        local_nonce = self._nonce
         network_nonce = self.request_nonce()
         logger.info(f'Local nonce: {local_nonce}, network nonce: {network_nonce}')
-        self.__nonce = max(local_nonce, network_nonce)
-        return self.__nonce
+        self._nonce = max(local_nonce, network_nonce)
+        return self._nonce
 
     def request_nonce(self):
         logger.info('Running request_nonce...')
@@ -71,13 +71,14 @@ class NonceManager:
         self.wait_for_blocks()
         network_nonce = self.request_nonce()
         logger.info(f'Resetting nonce to the network value: {network_nonce}')
-        self.__nonce = network_nonce
+        self._nonce = network_nonce
         self.healthcheck()
 
-    def increment(self):
+    def increment(self, request_from_network=False):
         logger.info(f'Incrementing nonce from: {self.nonce}...')
-        self.ensure_nonce()
-        self.__nonce += 1
+        if request_from_network:
+            self.ensure_nonce()
+        self._nonce += 1
         logger.info(f'Incremented nonce: {self.nonce}')
 
     def wait_for_blocks(self, timeout=5, blocks_to_wait=5):

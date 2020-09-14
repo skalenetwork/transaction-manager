@@ -36,7 +36,6 @@ def sign_and_send(transaction_dict, wallet, nonce_manager):
     for attempt in range(ATTEMPTS):
         try:
             transaction_dict['nonce'] = nonce_manager.nonce
-            logger.info(f'Transaction dict: {transaction_dict}')
             logger.info(f'Signing transaction with {nonce_manager.nonce}')
             tx = wallet.sign_and_send(transaction_dict)
         except SgxUnreachableError:
@@ -50,7 +49,7 @@ def sign_and_send(transaction_dict, wallet, nonce_manager):
         else:
             error = None
             break
-    if error is None:
+    if tx is not None and error is None:
         logger.info('Incrementing nonce...')
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, '
