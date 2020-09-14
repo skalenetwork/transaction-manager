@@ -5,6 +5,8 @@ from skale.utils.web3_utils import init_web3
 from configs.web3 import ENDPOINT, ABI_FILEPATH
 from nonce_manager import NonceManager
 from tools.helper import init_wallet
+
+
 @pytest.fixture
 def wallet():
     web3 = init_web3(ENDPOINT)
@@ -19,4 +21,5 @@ def skale(wallet):
 @pytest.fixture
 def nonce_manager(skale, wallet):
     nm = NonceManager(skale, wallet)
-    return nm
+    yield nm
+    nm.ensure_nonce()

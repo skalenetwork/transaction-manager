@@ -49,7 +49,7 @@ def sign_and_send(transaction_dict, wallet, nonce_manager):
         else:
             error = None
             break
-    if error is None:
+    if tx is not None and error is None:
         logger.info('Incrementing nonce...')
         nonce_manager.increment()
         logger.info(f'Transaction sent - tx: {tx}, '
