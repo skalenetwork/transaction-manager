@@ -1,6 +1,8 @@
 import json
-import pytest
+import copy
 from random import randint
+
+import pytest
 
 from main import app, skale
 from hexbytes import HexBytes
@@ -8,9 +10,8 @@ from eth_account._utils import transactions
 
 from custom_thread import CustomThread
 from tests.utils import get_bp_data, post_bp_data
+from tools.helper import crop_tx_dict
 
-
-EMPTY_HEX_STR = '0x0'
 
 TX_DICT = {
     'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
@@ -24,6 +25,17 @@ TX_DICT = {
 @pytest.fixture
 def skale_bp():
     yield app.test_client()
+
+
+def test_crop_tx_dict():
+    tx_dict = copy.deepcopy(TX_DICT)
+    tx_dict['data'] = '0x' + '0' * 1000
+    cropped = crop_tx_dict(tx_dict)
+    assert tx_dict['data'] == '0x' + '0' * 1000
+    assert cropped['data'] == '0x' + '0' * 48
+    cropped.pop('data')
+    tx_dict.pop('data')
+    assert cropped == tx_dict
 
 
 def test_address(skale_bp):
@@ -107,9 +119,10 @@ def send_transactions(opts):
             'gas': 22000
         }
         tx_dict_str = json.dumps(txn)
-        data = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
+        result = post_bp_data(opts['skale_bp'], '/sign-and-send', params={
             'transaction_dict': tx_dict_str
         })
+        data = result['data']
         assert isinstance(data['transaction_hash'], str)
 
 

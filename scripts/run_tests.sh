@@ -16,4 +16,4 @@ export PK_FILE=$PROJECT_DIR/pk_file
 
 echo $ETH_PRIVATE_KEY > $PROJECT_DIR/pk_file
 
-py.test $PROJECT_DIR/tests/server_test.py -k test_send_transaction_errored
+py.test $PROJECT_DIR/tests/

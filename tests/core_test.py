@@ -2,13 +2,9 @@ import pytest
 from mock import Mock
 
 from sgx.http import SgxUnreachableError
-from skale import Skale
-from skale.utils.web3_utils import init_web3, wait_for_receipt_by_blocks
+from skale.utils.web3_utils import wait_for_receipt_by_blocks
 
-from configs.web3 import ENDPOINT, ABI_FILEPATH
 from core import sign_and_send
-from nonce_manager import NonceManager
-from tools.helper import init_wallet
 
 
 TX_DICT = {
@@ -20,23 +16,6 @@ TX_DICT = {
     'chainId': None,
     'data': '0x0'
 }
-
-
-@pytest.fixture
-def wallet():
-    web3 = init_web3(ENDPOINT)
-    return init_wallet(web3)
-
-
-@pytest.fixture
-def skale(wallet):
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
-
-
-@pytest.fixture
-def nonce_manager(skale, wallet):
-    nm = NonceManager(skale, wallet)
-    return nm
 
 
 def test_sign_and_send(wallet, skale, nonce_manager):

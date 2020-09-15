@@ -17,12 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
+import copy
 import json
-from time import sleep
-from http import HTTPStatus
+import logging
+import os
 from flask import Response
+from http import HTTPStatus
+from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
 
@@ -35,6 +36,19 @@ logger = logging.getLogger(__name__)
 
 class WalletInitError(Exception):
     """Raised when wallet initialization fails"""
+
+
+MAX_DISPLAYED_DATA_LEN = 50
+
+
+def crop_tx_dict(tx_dict: dict) -> str:
+    cropped = copy.deepcopy(tx_dict)
+    try:
+        cropped['data'] = cropped['data'][:MAX_DISPLAYED_DATA_LEN]
+    except Exception as err:
+        logger.error('Cropping failed', exc_info=err)
+        return ''
+    return cropped
 
 
 def construct_response(status, data):
