@@ -18,9 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from configs import NODE_DATA_PATH
 
-HERE = os.path.dirname(os.path.realpath(__file__))
+LOG_FOLDER_NAME = 'log'
+LOG_FOLDER = os.path.join(NODE_DATA_PATH, LOG_FOLDER_NAME)
 
-FLASK_APP_HOST = os.environ['FLASK_APP_HOST']
-FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
-FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
+TM_LOG_FILENAME = 'tm.log'
+TM_LOG_PATH = os.path.join(LOG_FOLDER, TM_LOG_FILENAME)
+
+TM_DEBUG_LOG_FILENAME = 'debug_tm.log'
+TM_DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, TM_DEBUG_LOG_FILENAME)
+
+LOG_FILE_SIZE_MB = 100
+LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
+
+LOG_BACKUP_COUNT = 3
+
+LOG_FORMAT = '[%(asctime)s %(levelname)s] %(name)s - %(threadName)s - %(message)s'

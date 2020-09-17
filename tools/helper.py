@@ -17,16 +17,18 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-import logging
+import copy
 import json
-from time import sleep
-from http import HTTPStatus
+import logging
+import os
 from flask import Response
+from http import HTTPStatus
+from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
-from configs import (NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT,
-                     SGX_CERTIFICATES_FOLDER)
+
+from configs import NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT
+from configs.sgx import SGX_CERTIFICATES_FOLDER
 
 
 logger = logging.getLogger(__name__)
@@ -34,6 +36,19 @@ logger = logging.getLogger(__name__)
 
 class WalletInitError(Exception):
     """Raised when wallet initialization fails"""
+
+
+MAX_DISPLAYED_DATA_LEN = 50
+
+
+def crop_tx_dict(tx_dict: dict) -> str:
+    cropped = copy.deepcopy(tx_dict)
+    try:
+        cropped['data'] = cropped['data'][:MAX_DISPLAYED_DATA_LEN]
+    except Exception as err:
+        logger.error('Cropping failed', exc_info=err)
+        return ''
+    return cropped
 
 
 def construct_response(status, data):
@@ -45,7 +60,8 @@ def construct_response(status, data):
 
 
 def construct_err_response(status, err):
-    return construct_response(status, {'data': None, 'error': str(err)})
+    err = err if err is None else str(err)
+    return construct_response(status, {'data': None, 'error': err})
 
 
 def construct_ok_response(data=None):
@@ -129,6 +145,12 @@ def init_sgx_wallet(sgx_server_url, web3):
     :returns SgxWallet: Inited SGXWallet object
     """
     sgx_key_name = get_sgx_key_name()
+    logger.info(
+        'Initializing SgxWallet'
+        f'Server URL: {sgx_server_url} '
+        f'Key name: {sgx_key_name} '
+        f'Path to cert: {SGX_CERTIFICATES_FOLDER}'
+    )
     return SgxWallet(
         sgx_server_url,
         web3,

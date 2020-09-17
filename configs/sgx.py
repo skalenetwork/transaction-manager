@@ -1,6 +1,6 @@
 #   -*- coding: utf-8 -*-
 #
-#   This file is part of SKALE Transaction Manager
+#   This file is part of SKALE  Transaction Manager
 #
 #   Copyright (C) 2019 SKALE Labs
 #
@@ -18,9 +18,21 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
+from urllib.parse import urlparse
 
-HERE = os.path.dirname(os.path.realpath(__file__))
+from configs import NODE_DATA_PATH
 
-FLASK_APP_HOST = os.environ['FLASK_APP_HOST']
-FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
-FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
+SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
+
+SGX_URL = urlparse(SGX_SERVER_URL)
+SGX_HTTPS_ENABLED = SGX_URL.scheme == 'https'
+
+SGX_CERTIFICATES_FOLDER_NAME = os.getenv('SGX_CERTIFICATES_DIR_NAME')
+
+if SGX_HTTPS_ENABLED:
+    if SGX_CERTIFICATES_FOLDER_NAME:
+        SGX_CERTIFICATES_FOLDER = os.path.join(NODE_DATA_PATH, SGX_CERTIFICATES_FOLDER_NAME)
+    else:
+        SGX_CERTIFICATES_FOLDER = os.getenv('SGX_CERTIFICATES_FOLDER')
+else:
+    SGX_CERTIFICATES_FOLDER = None

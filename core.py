@@ -18,31 +18,43 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-import threading
+import time
+
+
+from sgx.http import SgxUnreachableError
+from tools.helper import crop_tx_dict
 
 logger = logging.getLogger(__name__)
-threadLock = threading.Lock()
+
+ATTEMPTS = 3
+TIMEOUT = 1
+
+SGX_UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
 
 
-def wait_for_the_next_block(skale):
-    block_number = next_block = skale.web3.eth.blockNumber
-    logger.info(f'Current block number is {block_number}, waiting for the next block')
-    while next_block <= block_number:
-        next_block = skale.web3.eth.blockNumber
-    logger.info(f'Next block is mined: {next_block}.')
-
-
-def sign_and_send(web3, nonce_manager, transaction_hash, wallet):
-    # todo: handle errors and return errors as a dict
-    with threadLock:
-        nonce = nonce_manager.transaction_nonce()
-        transaction_hash['nonce'] = nonce
-        signed_txn = web3.eth.account.sign_transaction(
-            transaction_hash,
-            private_key=wallet['private_key']
-        )
-        logger.info(f'Sending transaction with nonce {nonce}...')
-        tx = web3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    # todo: decrease nonce if cannot send transaction
-    logger.info(f'Sent: {transaction_hash} - tx: {tx}')
-    return tx
+def sign_and_send(transaction_dict: str, wallet, nonce_manager) -> tuple:
+    error, tx = None, None
+    for attempt in range(ATTEMPTS):
+        try:
+            transaction_dict['nonce'] = nonce_manager.nonce
+            cropped_tx = crop_tx_dict(transaction_dict)
+            logger.info(f'Transaction dict {cropped_tx}')
+            logger.info(f'Signing transaction with nonce: {nonce_manager.nonce}')
+            tx = wallet.sign_and_send(transaction_dict)
+        except SgxUnreachableError:
+            error = SGX_UNREACHABLE_MESSAGE
+            break
+        except Exception as e:  # todo: catch specific error
+            logger.error('Error occured', exc_info=e)
+            nonce_manager.fix_nonce()
+            time.sleep(TIMEOUT)
+            error = str(e)
+        else:
+            error = None
+            break
+    if tx is not None and error is None:
+        logger.info('Incrementing nonce...')
+        nonce_manager.increment()
+        logger.info(f'Transaction sent - tx: {tx}, '
+                    f'nonce: {transaction_dict["nonce"]}')
+    return tx, error
