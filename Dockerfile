@@ -10,4 +10,4 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 
 ENV PYTHONPATH="/app"
-CMD ["uwsgi", "--ini", "uwsgi.ini"]
+CMD ["python", "tx_queue.py"]

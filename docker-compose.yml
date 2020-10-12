@@ -1,0 +1,35 @@
+version: '3'
+services:
+  sgxwallet:
+    image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
+    container_name: sgx-server
+    restart: always
+    network_mode: host
+    ports:
+      - "1026:1026"
+      - "1027:1027"
+      - "1028:1028"
+      - "1029:1029"
+    volumes:
+      - ${TEST_DATA_DIR}/sgx-data:/usr/src/sdk/sgx_data:Z
+      -  /dev/urandom:/dev/random
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "4"
+    restart: unless-stopped
+    command: -s -y
+
+  redis:
+    container_name: redis
+    image: "redis:6.0-alpine"
+    network_mode: host
+    tty: true
+    environment:
+      - REDIS_REPLICATION_MODE=master
+    command: "redis-server /config/redis.conf"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ${TEST_DATA_DIR}/redis-data:/data/db:Z
+      - ${TEST_DATA_DIR}/redis-config:/config:Z
