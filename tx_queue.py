@@ -17,30 +17,31 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import enum
 import json
 import logging
-import os
 
+from redis import Redis
 from eth_account.datastructures import AttributeDict
 from hexbytes import HexBytes
-from redis import Redis
-from skale.wallets import BaseWallet
 from skale.utils.web3_utils import init_web3, wait_for_receipt_by_blocks
-from web3 import Web3
 
 from configs.web3 import ENDPOINT
+from configs import REDIS_URI
+from nonce_manager import NonceManager
 from tools.logger import init_tm_logger
 from tools.helper import init_wallet
 
-
 logger = logging.getLogger(__name__)
-
-redis = Redis(host='localhost', port=6379, db=0)
 
 POST_CHANNEL_PATTERN = 'tx.post.*'
 RECEIPT_CHANNEL_TEMPLATE = 'tx.receipt.{}'
 
-ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
+
+class ErrorType(enum.Enum):
+    NOT_SENT = 'not-sent'
+    NOT_FOUND = 'not-found'
+    TX_FAILED = 'tx-failed'
 
 
 def send_response(redis: Redis, channel: str,
@@ -84,22 +85,25 @@ def channel_tx_from_message(message: dict) -> tuple:
     return channel, tx
 
 
-def handle_tx_message(web3: Web3, wallet: BaseWallet, message: dict) -> dict:
+def handle_tx_message(redis: Redis, nonce_manager: NonceManager,
+                      message: dict) -> dict:
     channel, tx = channel_tx_from_message(message)
     if channel is None or tx is None:
         logger.warning(f'Invalid tx message data: {channel} - {tx}')
         return
     method = tx.get('method')
     logger.info(f'Trying to sent transaction in {channel} with method {method}')
+    tx['nonce'] = nonce_manager.nonce
     try:
-        tx_hash = wallet.sign_and_send(tx)
+        tx_hash = nonce_manager.wallet.sign_and_send(tx)
     except Exception as err:
         logger.exception(f'Sending tx in channel {channel} failed')
         payload = make_error_payload('not-sent', None, err, None)
         send_response(redis, channel, status='error', payload=payload)
         return
     try:
-        attr_dict_receipt = wait_for_receipt_by_blocks(web3, tx_hash)
+        attr_dict_receipt = wait_for_receipt_by_blocks(
+            nonce_manager.web3, tx_hash)
     except Exception as err:
         logger.exception(f'Waiting for receipt failed in channel {channel}')
         payload = make_error_payload('not-found', tx_hash, err, None)
@@ -117,14 +121,16 @@ def handle_tx_message(web3: Web3, wallet: BaseWallet, message: dict) -> dict:
 def main() -> None:
     init_tm_logger()
     logger.info('Starting transaction manager ...')
+    redis = Redis.from_uri(REDIS_URI, db=0)
     sub = redis.pubsub()
     sub.psubscribe(POST_CHANNEL_PATTERN)
     web3 = init_web3(ENDPOINT)
     wallet = init_wallet(web3)
+    nonce_manager = NonceManager(web3, wallet)
     for message in sub.listen():
         msg_type = message.get('type')
         if msg_type == 'pmessage':
-            handle_tx_message(web3, wallet, message)
+            handle_tx_message(redis, nonce_manager, message)
 
 
 if __name__ == '__main__':
