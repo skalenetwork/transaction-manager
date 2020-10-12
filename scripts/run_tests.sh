@@ -26,8 +26,7 @@ mkdir -p $SKALE_DIR_HOST/redis-config
 
 TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose up -d
 
-# python tx_queue.py
 py.test $PROJECT_DIR/tests/queue_test.py
 
-# TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose down
-# TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose rm -f
+TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose down
+TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose rm -f

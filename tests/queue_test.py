@@ -100,7 +100,7 @@ def test_send_tx_failed(tx_manager, redis, skale):
     assert msg_data['channel'] == channel_name
     assert msg_data['status'] == 'error'
     print(repr(msg_data))
-    # TODO: Investiagete is this ganache specific
+    # TODO: Investigate, may be ganache specific
     assert msg_data == {
         'channel': 'schain.test',
         'status': 'error',
@@ -111,7 +111,9 @@ def test_send_tx_failed(tx_manager, redis, skale):
             'receipt': None
         }
     }
+    # TODO: Add other error types coverage
 
 
 def test_send_txs_concurrently():
+    # TODO: Implement
     pass
