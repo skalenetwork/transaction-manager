@@ -121,7 +121,7 @@ def handle_tx_message(redis: Redis, nonce_manager: NonceManager,
 def main() -> None:
     init_tm_logger()
     logger.info('Starting transaction manager ...')
-    redis = Redis.from_uri(REDIS_URI, db=0)
+    redis = Redis.from_url(REDIS_URI, db=0)
     sub = redis.pubsub()
     sub.psubscribe(POST_CHANNEL_PATTERN)
     web3 = init_web3(ENDPOINT)

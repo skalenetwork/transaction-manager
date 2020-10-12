@@ -15,6 +15,7 @@ export FLASK_DEBUG_MODE=True
 export FLASK_SECRET_KEY=123
 export TEST_ABI_FILEPATH=test_abi.json
 export SGX_SERVER_URL=https://127.0.0.1:1026
+export REDIS_URI=redis://localhost:6379
 
 export PK_FILE=$PROJECT_DIR/pk_file
 
