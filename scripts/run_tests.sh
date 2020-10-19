@@ -17,10 +17,6 @@ export TEST_ABI_FILEPATH=test_abi.json
 export SGX_SERVER_URL=https://127.0.0.1:1026
 export REDIS_URI=redis://localhost:6379
 
-export PK_FILE=$PROJECT_DIR/pk_file
-
-echo $ETH_PRIVATE_KEY > $PROJECT_DIR/pk_file
-
 mkdir -p $SKALE_DIR_HOST/sgx-data
 mkdir -p $SKALE_DIR_HOST/redis-data
 mkdir -p $SKALE_DIR_HOST/redis-config
@@ -29,5 +25,5 @@ TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose up -
 
 py.test $PROJECT_DIR/tests/queue_test.py
 
-TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose down
-TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose rm -f
+# TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose down
+# TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose rm -f

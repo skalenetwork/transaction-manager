@@ -57,3 +57,5 @@ SGX_KEY_NAME_RETRIES = 30
 SGX_KEY_NAME_TIMEOUT = 20
 
 REDIS_URI = os.getenv('REDIS_URI')
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH',
+                              'helper-scripts/contracts_data/manager.json')

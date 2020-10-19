@@ -20,7 +20,7 @@
 import os
 import colorful as cf
 
-from config import LONG_LINE
+from configs import LONG_LINE
 
 DISABLE_COLORS = os.environ.get('DISABLE_COLORS', None)
 
