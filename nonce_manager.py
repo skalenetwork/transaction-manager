@@ -28,10 +28,12 @@ logger = logging.getLogger(__name__)
 
 
 class NonceManager:
-    def __init__(self, web3: Web3, wallet: BaseWallet) -> None:
+    def __init__(self, web3: Web3, wallet: BaseWallet,
+                 wait_for_blocks: bool = True) -> None:
         self.web3 = web3
         self.wallet = wallet
-        self.wait_for_blocks()
+        if wait_for_blocks:
+            self.wait_for_blocks()
         self._nonce = self.request_nonce()
 
     @property
@@ -50,7 +52,7 @@ class NonceManager:
         logger.info('Running request_nonce...')
         address = self.wallet.address
         logger.info(f'Got wallet address: {address}, going to request eth nonce')
-        eth_nonce = get_eth_nonce(self.skale.web3, address)
+        eth_nonce = get_eth_nonce(self.web3, address)
         logger.info(f'Got network nonce for {address}: {eth_nonce}')
         return eth_nonce
 
@@ -84,13 +86,13 @@ class NonceManager:
         logger.info(f'Incremented nonce: {self.nonce}')
 
     def wait_for_blocks(self, timeout: int = 5, blocks_to_wait: int = 5):
-        current_block = start_block = self.skale.web3.eth.blockNumber
+        current_block = start_block = self.web3.eth.blockNumber
         logger.info(
             f'Current block number is {current_block}, '
             f'waiting for {blocks_to_wait} blocks to be mined'
         )
         while current_block < start_block + blocks_to_wait:
-            new_block = self.skale.web3.eth.blockNumber
+            new_block = self.web3.eth.blockNumber
             if new_block > current_block:
                 logger.info(f'{new_block} is mined')
                 current_block = new_block
