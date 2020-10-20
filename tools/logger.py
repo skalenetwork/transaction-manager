@@ -24,8 +24,11 @@ import sys
 from logging import Formatter, StreamHandler
 from logging.handlers import RotatingFileHandler
 
-from configs.logs import (TM_LOG_PATH, TM_DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES, LOG_BACKUP_COUNT,
-                          LOG_FORMAT)
+from configs.logs import (
+    TM_LOG_PATH, TM_DEBUG_LOG_PATH,
+    LOG_FILE_SIZE_BYTES, LOG_BACKUP_COUNT,
+    LOG_FORMAT, STDERR_LOG
+)
 
 
 HIDING_PATTERNS = [
@@ -55,22 +58,26 @@ class HidingFormatter:
         return getattr(self.base_formatter, attr)
 
 
-def init_logger(log_file_path, debug_file_path=None):
+def init_logger(log_file_path=None, debug_file_path=None):
     handlers = []
 
     base_formatter = Formatter(LOG_FORMAT)
     formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
 
-    f_handler = RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
-                                    backupCount=LOG_BACKUP_COUNT)
-    f_handler.setFormatter(formatter)
-    f_handler.setLevel(logging.INFO)
-    handlers.append(f_handler)
+    if log_file_path:
+        f_handler = RotatingFileHandler(
+            log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
+            backupCount=LOG_BACKUP_COUNT
+        )
+        f_handler.setFormatter(formatter)
+        f_handler.setLevel(logging.INFO)
+        handlers.append(f_handler)
 
-    stream_handler = StreamHandler(sys.stderr)
-    stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(logging.INFO)
-    handlers.append(stream_handler)
+    if STDERR_LOG:
+        stream_handler = StreamHandler(sys.stderr)
+        stream_handler.setFormatter(formatter)
+        stream_handler.setLevel(logging.INFO)
+        handlers.append(stream_handler)
 
     if debug_file_path:
         f_handler_debug = RotatingFileHandler(debug_file_path,

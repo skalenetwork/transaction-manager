@@ -11,7 +11,7 @@ services:
       - "1028:1028"
       - "1029:1029"
     volumes:
-      - ${TEST_DATA_DIR}/sgx-data:/usr/src/sdk/sgx_data:Z
+      - ${SGX_DIR}:/usr/src/sdk/sgx_data:Z
       -  /dev/urandom:/dev/random
     logging:
       driver: json-file
@@ -31,5 +31,23 @@ services:
     command: "redis-server /config/redis.conf"
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ${TEST_DATA_DIR}/redis-data:/data/db:Z
-      - ${TEST_DATA_DIR}/redis-config:/config:Z
+      - ${REDIS_DATA_DIR}:/data/db:Z
+      - ${REDIS_CONFIG_DIR}:/config:Z
+
+        #   transaction-manager:
+        #     container_name: skale_transaction-manager
+        #     image: "transaction-manager:${TAG:-latest}"
+        #     build:
+        #       context: "."
+        #       dockerfile: Dockerfile
+        #     network_mode: host
+        #     tty: true
+        #     environment:
+        #       SGX_SERVER_URL: ${SGX_SERVER_URL}
+        #       SGX_CERTIFICATES_DIR_NAME: ${SGX_CERTIFICATES_DIR_NAME}
+        #       ENDPOINT: ${ENDPOINT}
+        #       NODE_DATA_PATH: /skale_node_data
+        #       REDIS_URI: ${REDIS_URI}
+        #     volumes:
+        #       - ${SKALE_DIR}/node_data:/skale_node_data:Z
+

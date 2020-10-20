@@ -20,18 +20,20 @@
 import os
 from configs import NODE_DATA_PATH
 
-LOG_FOLDER_NAME = 'log'
-LOG_FOLDER = os.path.join(NODE_DATA_PATH, LOG_FOLDER_NAME)
+LOG_DIR_NAME = 'log'
+LOG_DIR = os.path.join(NODE_DATA_PATH, LOG_DIR_NAME)
 
 TM_LOG_FILENAME = 'tm.log'
-TM_LOG_PATH = os.path.join(LOG_FOLDER, TM_LOG_FILENAME)
+TM_LOG_PATH = os.path.join(LOG_DIR, TM_LOG_FILENAME)
 
 TM_DEBUG_LOG_FILENAME = 'debug_tm.log'
-TM_DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, TM_DEBUG_LOG_FILENAME)
+TM_DEBUG_LOG_PATH = os.path.join(LOG_DIR, TM_DEBUG_LOG_FILENAME)
 
 LOG_FILE_SIZE_MB = 100
 LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
 
 LOG_BACKUP_COUNT = 3
 
-LOG_FORMAT = '[%(asctime)s %(levelname)s] %(name)s - %(threadName)s - %(message)s'
+LOG_FORMAT = '[%(asctime)s %(levelname)s] %(name)s - %(message)s'
+
+STDERR_LOG = os.getenv('STDOUT_LOG', 'True') == 'True'

@@ -1,25 +1,52 @@
 import json
+import os
 import time
-from multiprocessing import Process
 from concurrent.futures import as_completed, ThreadPoolExecutor
+from multiprocessing import Process
 
 import pytest
 import redis as redis_py
+from sgx import SgxClient
 from skale import Skale
+from skale.utils.account_tools import send_ether
 from skale.utils.web3_utils import init_web3
+from skale.wallets import Web3Wallet
 
-from configs import TEST_ABI_FILEPATH
-from configs.web3 import ENDPOINT
-from tools.helper import init_wallet
+from configs import ENDPOINT, NODE_CONFIG_FILEPATH
+from configs.sgx import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
+from tools.wallet import init_sgx_wallet
 from tx_queue import main as run_tx_manager
+
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
+ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
 
 
 @pytest.fixture
-def tx_manager():
+def sgx_key():
+    if not os.path.isdir(SGX_CERTIFICATES_FOLDER):
+        # Useful debug info. Will be removed in cleanup script
+        os.mkdir(SGX_CERTIFICATES_FOLDER)
+    sgx = SgxClient(SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER)
+    key_info = sgx.generate_key()
+    with open(NODE_CONFIG_FILEPATH, 'w') as node_config_file:
+        json.dump({'sgx_key_name': key_info.name}, node_config_file)
+    yield key_info.name
+
+
+@pytest.fixture
+def tx_manager(sgx_key):
+    try:
+        from pytest_cov.embed import cleanup_on_sigterm
+    except ImportError:
+        pass
+    else:
+        cleanup_on_sigterm()
     p = Process(target=run_tx_manager)
     p.start()
-    yield
-    p.terminate()
+    # Wait for tm initialization
+    yield p
+    if p.is_alive():
+        p.terminate()
 
 
 @pytest.fixture
@@ -30,13 +57,17 @@ def redis():
 @pytest.fixture
 def skale():
     web3 = init_web3(ENDPOINT)
-    wallet = init_wallet(web3)
+    owner_wallet = Web3Wallet(ETH_PRIVATE_KEY, web3)
+    wallet = init_sgx_wallet(SGX_SERVER_URL, web3)
+    eth_amount = 1000
+    send_ether(web3, owner_wallet, wallet.address, eth_amount)
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
 
 
 @pytest.mark.skip
-def test_run_tx_manager():
-    run_tx_manager()
+def test_run_tx_manager(tx_manager):
+    timeout_to_wait_tm_init = 50
+    time.sleep(timeout_to_wait_tm_init)
 
 
 def run_simple_tx(redis, address, amount, gas_price, channel_name):
@@ -53,6 +84,16 @@ def run_simple_tx(redis, address, amount, gas_price, channel_name):
                   json.dumps(message_data).encode('utf-8'))
 
 
+def wait_for_response(sub):
+    result_message = None
+    for msg in sub.listen():
+        msg_type = msg.get('type')
+        if msg_type == 'message':
+            result_message = msg
+            break
+    return result_message
+
+
 def test_send_tx(tx_manager, redis, skale):
     amount_to_send = 5
     channel_name = 'schain.test'
@@ -60,10 +101,7 @@ def test_send_tx(tx_manager, redis, skale):
     sub.subscribe(f'tx.receipt.{channel_name}')
     run_simple_tx(redis, skale.wallet.address, amount_to_send,
                   skale.web3.eth.gasPrice, channel_name)
-    time.sleep(5)
-    message = sub.get_message()
-    assert message['type'] == 'subscribe'
-    message = sub.get_message()
+    message = wait_for_response(sub)
     assert message['type'] == 'message'
     msg_data = json.loads(message['data'].decode('utf-8'))
     assert msg_data['channel'] == channel_name
@@ -81,11 +119,7 @@ def test_send_tx_failed(tx_manager, redis, skale):
     sub.subscribe(f'tx.receipt.{channel_name}')
     run_simple_tx(redis, skale.wallet.address, amount_to_send,
                   skale.web3.eth.gasPrice, channel_name)
-    time.sleep(5)
-    message = sub.get_message()
-    assert message['type'] == 'subscribe'
-    message = sub.get_message()
-    assert message['type'] == 'message'
+    message = wait_for_response(sub)
     msg_data = json.loads(message['data'].decode('utf-8'))
     assert msg_data['channel'] == channel_name
     assert msg_data['status'] == 'error'
@@ -104,7 +138,8 @@ def test_send_tx_failed(tx_manager, redis, skale):
 
 
 def test_send_txs_concurrently(tx_manager, redis, skale):
-    # TODO: Implement
+    # Sleep to mine all the unmined transactions
+    time.sleep(50)
     max_workers = 10
     tx_number = 10
     amount_to_send = 5
@@ -129,10 +164,7 @@ def test_send_txs_concurrently(tx_manager, redis, skale):
             future.result()
 
     def check_message(sub, channel_name):
-        message = sub.get_message()
-        assert message['type'] == 'subscribe'
-        message = sub.get_message()
-        assert message['type'] == 'message'
+        message = wait_for_response(sub)
         msg_data = json.loads(message['data'].decode('utf-8'))
         assert msg_data['channel'] == channel_name
         receipt = msg_data['payload']['receipt']

@@ -17,15 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import copy
 import json
 import logging
 import os
-from flask import Response
-from http import HTTPStatus
 from time import sleep
 
-from skale.wallets import Web3Wallet, SgxWallet
+from skale.wallets import BaseWallet, SgxWallet, Web3Wallet
+from web3 import Web3
 
 from configs import NODE_CONFIG_FILEPATH, SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT
 from configs.sgx import SGX_CERTIFICATES_FOLDER
@@ -38,37 +36,7 @@ class WalletInitError(Exception):
     """Raised when wallet initialization fails"""
 
 
-MAX_DISPLAYED_DATA_LEN = 50
-
-
-def crop_tx_dict(tx_dict: dict) -> str:
-    cropped = copy.deepcopy(tx_dict)
-    try:
-        cropped['data'] = cropped['data'][:MAX_DISPLAYED_DATA_LEN]
-    except Exception as err:
-        logger.error('Cropping failed', exc_info=err)
-        return ''
-    return cropped
-
-
-def construct_response(status, data):
-    return Response(
-        response=json.dumps(data),
-        status=status,
-        mimetype='application/json'
-    )
-
-
-def construct_err_response(status, err):
-    err = err if err is None else str(err)
-    return construct_response(status, {'data': None, 'error': err})
-
-
-def construct_ok_response(data=None):
-    return construct_response(HTTPStatus.OK, {'data': data, 'error': None})
-
-
-def retry(exceptions, times, delay=0):
+def retry(exceptions: list, times: int, delay: int = 0):
     """
     Retry Decorator
 
@@ -101,7 +69,7 @@ def retry(exceptions, times, delay=0):
     return decorator
 
 
-def init_wallet(web3):
+def init_wallet(web3: Web3) -> BaseWallet:
     """
     Inits SGXWallet if SGX_SERVER_URL found it the env, Web3Wallet otherwise.
 
@@ -109,8 +77,9 @@ def init_wallet(web3):
 
     :returns Web3Wallet/SGXWallet: Inited Web3Wallet or SGXWallet object
     """
-    PK_FILE = os.environ.get('PK_FILE')
-    SGX_SERVER_URL = os.environ.get('SGX_SERVER_URL')
+
+    PK_FILE = os.getenv('PK_FILE')
+    SGX_SERVER_URL = os.getenv('SGX_SERVER_URL')
     if SGX_SERVER_URL:
         return init_sgx_wallet(SGX_SERVER_URL, web3)
     if PK_FILE:
@@ -120,7 +89,7 @@ def init_wallet(web3):
         'Unable to initialize wallet - provide PK_FILE or SGX_SERVER_URL env variable')
 
 
-def init_web3_wallet(web3, pk_file):
+def init_web3_wallet(web3: Web3, pk_file: str) -> Web3Wallet:
     """
     Inits Web3Wallet object with private key from provided file.
 
@@ -134,7 +103,7 @@ def init_web3_wallet(web3, pk_file):
     return Web3Wallet(pk, web3)
 
 
-def init_sgx_wallet(sgx_server_url, web3):
+def init_sgx_wallet(sgx_server_url: str, web3: Web3) -> SgxWallet:
     """
     Inits SgxWallet object with SGX key name from node config
     and SGX server URL from environment.
@@ -160,7 +129,7 @@ def init_sgx_wallet(sgx_server_url, web3):
 
 
 @retry((KeyError, FileNotFoundError), SGX_KEY_NAME_RETRIES, SGX_KEY_NAME_TIMEOUT)
-def get_sgx_key_name():
+def get_sgx_key_name() -> str:
     """
     Reads SGX key name from the node config file.
     Retries multiple times if node config file or sgx_key_name field is not found.

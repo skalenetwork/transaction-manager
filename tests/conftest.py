@@ -1,10 +1,14 @@
+import os
 import pytest
 from skale import Skale
 from skale.utils.web3_utils import init_web3
 
-from configs.web3 import ENDPOINT, ABI_FILEPATH
+from configs import ENDPOINT
 from nonce_manager import NonceManager
-from tools.helper import init_wallet
+from tools.wallet import init_wallet
+
+
+TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
 
 
 @pytest.fixture
@@ -15,7 +19,7 @@ def wallet():
 
 @pytest.fixture
 def skale(wallet):
-    return Skale(ENDPOINT, ABI_FILEPATH, wallet)
+    return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
 
 
 @pytest.fixture

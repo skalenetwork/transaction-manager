@@ -1,6 +1,6 @@
 FROM python:3.8-buster
 
-RUN apt-get update && apt-get install build-essential python-dev --yes
+RUN apt-get update && apt-get install build-essential --yes
 RUN mkdir app
 WORKDIR /app
 
