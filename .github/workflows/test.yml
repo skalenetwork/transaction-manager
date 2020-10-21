@@ -36,6 +36,7 @@ jobs:
         flake8 .
     - name: Deploy manager 
       run: |
+        ls -latr .
         bash ./helper-scripts/deploy_test_manager.sh
     - name: Run tests
       run: |
