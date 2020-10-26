@@ -105,6 +105,8 @@ def test_send_tx(tx_manager, redis, skale):
     assert message['type'] == 'message'
     msg_data = json.loads(message['data'].decode('utf-8'))
     assert msg_data['channel'] == channel_name
+    tx_hash = msg_data['payload']['receipt']
+    assert tx_hash
     receipt = msg_data['payload']['receipt']
     assert receipt['status'] == 1
     assert receipt['to'] == skale.wallet.address

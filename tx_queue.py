@@ -119,7 +119,8 @@ def handle_tx_message(redis: Redis, web3: Web3, wallet: BaseWallet,
         payload = make_error_payload('tx-failed', tx_hash, None, receipt)
         send_response(redis, channel, status='error', payload=payload)
         return
-    send_response(redis, channel, status='ok', payload={'receipt': receipt})
+    send_response(redis, channel, status='ok',
+                  payload={'tx_hash': tx_hash, 'receipt': receipt})
 
 
 def main() -> None:
