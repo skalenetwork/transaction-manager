@@ -35,6 +35,8 @@ jobs:
         flake8 .
     - name: Deploy manager 
       run: |
+        docker ps -a
+        echo $ENDPOINT
         bash ./helper-scripts/deploy_test_manager.sh
     - name: Run tests
       run: |
