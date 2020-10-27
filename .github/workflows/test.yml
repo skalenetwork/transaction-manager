@@ -12,6 +12,7 @@ jobs:
       ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MANAGER_TAG: "1.5.2-develop.16"
+      SGX_WALLET_TAG: "1.58.5-develop.7"
     steps:
     - uses: actions/checkout@v2
       with:
@@ -20,10 +21,6 @@ jobs:
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
-        #    - name: Checkout submodules
-        #      uses: textbook/git-checkout-submodule-action@master
-        #      with:
-        #        remote: true
     - name: Update host dependencies
       run: |
         sudo apt-get update --fix-missing
@@ -38,7 +35,6 @@ jobs:
         flake8 .
     - name: Deploy manager 
       run: |
-        ls -latr .
         bash ./helper-scripts/deploy_test_manager.sh
     - name: Run tests
       run: |
