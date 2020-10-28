@@ -15,7 +15,7 @@ from skale.wallets import Web3Wallet
 from configs import ENDPOINT, NODE_CONFIG_FILEPATH
 from configs.sgx import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.wallet import init_sgx_wallet
-from tx_queue import main as run_tx_manager
+from main import main as run_tx_manager
 
 TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
