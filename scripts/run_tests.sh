@@ -42,7 +42,7 @@ STDERR_LOG=True \
 TEST_ABI_FILEPATH=$TEST_ABI_FILEPATH \
     py.test \
     --cov-report term-missing --cov=. --capture no \
-    $PROJECT_DIR/tests/queue_test.py
+    $PROJECT_DIR/tests/main_test.py
 
 # TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose down
 # TEST_DATA_DIR=$SKALE_DIR_HOST SGX_WALLET_TAG=$SGX_WALLET_TAG docker-compose rm -f
