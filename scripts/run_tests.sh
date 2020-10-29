@@ -35,6 +35,9 @@ export SGX_DIR=$SGX_DIR
 
 docker-compose build --no-cache && docker-compose up -d
 
+echo 'Wating for sgx initialization ...'
+sleep 50
+
 TEST_DATA_DIR='helper-scripts/contracts_data/manager.json'
 
 NODE_DATA_PATH=$SKALE_NODE_DATA_DIR \
