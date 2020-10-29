@@ -125,11 +125,11 @@ def handle_tx_message(redis: Redis, web3: Web3, wallet: BaseWallet,
 
 def main() -> None:
     logger.info('Starting transaction manager ...')
+    web3 = init_web3(ENDPOINT)
+    wallet = init_wallet(web3)
     redis = Redis.from_url(REDIS_URI, db=0)
     sub = redis.pubsub()
     sub.psubscribe(POST_CHANNEL_PATTERN)
-    web3 = init_web3(ENDPOINT)
-    wallet = init_wallet(web3)
     for message in sub.listen():
         msg_type = message.get('type')
         if msg_type == 'pmessage':

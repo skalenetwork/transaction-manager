@@ -22,10 +22,10 @@ cp tests/test-redis.conf $REDIS_CONFIG_DIR/redis.conf
 
 export ENDPOINT=http://127.0.0.1:8545
 export PYTHONPATH=$PROJECT_DIR
-export TEST_ABI_FILEPATH=${TEST_ABI_FILEPATH:-helper-scripts/manager.json}
+export TEST_ABI_FILEPATH=${TEST_ABI_FILEPATH:-helper-scripts/contracts_data/manager.json}
 export SGX_SERVER_URL=https://127.0.0.1:1026
 export REDIS_URI=redis://127.0.0.1:6379
-export SGX_CERTIFICATES_FOLDER_NAME=sgx_certs
+export SGX_CERTIFICATES_DIR_NAME=sgx_certs
 export SKALE_DIR=$SKALE_DIR
 export SGX_WALLET_TAG=$SGX_WALLET_TAG
 export REDIS_DATA_DIR=$REDIS_DATA_DIR
