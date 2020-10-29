@@ -13,6 +13,7 @@ jobs:
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MANAGER_TAG: "1.5.2-develop.16"
       SGX_WALLET_TAG: "1.58.5-develop.7"
+      DOCKER_NETWORK: "ga-test"
     steps:
     - uses: actions/checkout@v2
       with:
@@ -35,8 +36,6 @@ jobs:
         flake8 .
     - name: Deploy manager 
       run: |
-        docker ps -a
-        echo $ENDPOINT
         bash ./helper-scripts/deploy_test_manager.sh
     - name: Run tests
       run: |

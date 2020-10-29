@@ -1,10 +1,15 @@
 version: '3'
+
+networks:
+  default:
+    external:
+      name: ${DOCKER_NETWORK}
+
 services:
   sgxwallet:
     image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
     container_name: sgx-server
     restart: always
-    network_mode: host
     ports:
       - "1026:1026"
       - "1027:1027"
@@ -24,7 +29,6 @@ services:
   redis:
     container_name: redis
     image: "redis:6.0-alpine"
-    network_mode: host
     tty: true
     environment:
       - REDIS_REPLICATION_MODE=master

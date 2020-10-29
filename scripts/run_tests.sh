@@ -31,6 +31,7 @@ export SGX_WALLET_TAG=$SGX_WALLET_TAG
 export REDIS_DATA_DIR=$REDIS_DATA_DIR
 export REDIS_CONFIG_DIR=$REDIS_CONFIG_DIR
 export SGX_DIR=$SGX_DIR
+export DOCKER_NETWORK=$DOCKER_NETWORK
 
 
 docker-compose build --no-cache && docker-compose up -d
