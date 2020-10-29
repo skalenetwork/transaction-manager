@@ -64,7 +64,6 @@ def skale():
     return Skale(ENDPOINT, TEST_ABI_FILEPATH, wallet)
 
 
-@pytest.mark.skip
 def test_run_tx_manager(tx_manager):
     timeout_to_wait_tm_init = 50
     time.sleep(timeout_to_wait_tm_init)
