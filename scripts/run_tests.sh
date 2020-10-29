@@ -20,7 +20,7 @@ mkdir -p $REDIS_CONFIG_DIR $REDIS_DATA_DIR
 mkdir -p $SGX_DIR
 cp tests/test-redis.conf $REDIS_CONFIG_DIR/redis.conf
 
-export ENDPOINT=http://localhost:8545
+export ENDPOINT=http://ganache:8545
 export PYTHONPATH=$PROJECT_DIR
 export TEST_ABI_FILEPATH=test_abi.json
 export SGX_SERVER_URL=https://sgx-server:1026
