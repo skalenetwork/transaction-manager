@@ -6,7 +6,7 @@ networks:
       name: ${DOCKER_NETWORK}
 
 services:
-  sgxwallet:
+  sgx-server:
     image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
     container_name: sgx-server
     restart: always
