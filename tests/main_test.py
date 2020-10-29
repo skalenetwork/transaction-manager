@@ -51,7 +51,7 @@ def tx_manager(sgx_key):
 
 @pytest.fixture
 def redis():
-    return redis_py.Redis(host='localhost', port=6379, db=0)
+    return redis_py.Redis(host='127.0.0.1', port=6379, db=0)
 
 
 @pytest.fixture

@@ -20,18 +20,17 @@ mkdir -p $REDIS_CONFIG_DIR $REDIS_DATA_DIR
 mkdir -p $SGX_DIR
 cp tests/test-redis.conf $REDIS_CONFIG_DIR/redis.conf
 
-export ENDPOINT=http://ganache:8545
+export ENDPOINT=http://127.0.0.1:8545
 export PYTHONPATH=$PROJECT_DIR
 export TEST_ABI_FILEPATH=test_abi.json
-export SGX_SERVER_URL=https://sgx-server:1026
-export REDIS_URI=redis://redis:6379
+export SGX_SERVER_URL=https://127.0.0.1:1026
+export REDIS_URI=redis://127.0.0.1:6379
 export SGX_CERTIFICATES_FOLDER_NAME=sgx_certs
 export SKALE_DIR=$SKALE_DIR
 export SGX_WALLET_TAG=$SGX_WALLET_TAG
 export REDIS_DATA_DIR=$REDIS_DATA_DIR
 export REDIS_CONFIG_DIR=$REDIS_CONFIG_DIR
 export SGX_DIR=$SGX_DIR
-export DOCKER_NETWORK=$DOCKER_NETWORK
 
 
 docker-compose build --no-cache && docker-compose up -d
