@@ -70,6 +70,9 @@ def make_error_payload(error_type: str, tx_hash: str, err: Exception,
 
 
 def attribute_dict_to_dict(at_dict: AttributeDict) -> dict:
+    logger.info(f'IVD at_dict {at_dict}')
+    # IVD: remove
+    return dict(at_dict)
     plain_data = {}
     for key, value in at_dict.items():
         if isinstance(value, HexBytes):
@@ -124,12 +127,15 @@ def handle_tx_message(redis: Redis, web3: Web3, wallet: BaseWallet,
 
 
 def main() -> None:
-    logger.info('Starting transaction manager ...')
+    logger.info('Initializing transaction manager ...')
+    logger.info(f'Redis url: {REDIS_URI}')
+    logger.info(f'Endpoint: {ENDPOINT}')
     web3 = init_web3(ENDPOINT)
     wallet = init_wallet(web3)
     redis = Redis.from_url(REDIS_URI, db=0)
     sub = redis.pubsub()
     sub.psubscribe(POST_CHANNEL_PATTERN)
+    logger.info(f'Listening messages from {POST_CHANNEL_PATTERN} ...')
     for message in sub.listen():
         msg_type = message.get('type')
         if msg_type == 'pmessage':
