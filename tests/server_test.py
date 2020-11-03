@@ -38,6 +38,13 @@ def test_crop_tx_dict():
     assert cropped == tx_dict
 
 
+def test_crop_tx_dict_without_data():
+    tx_dict = copy.deepcopy(TX_DICT)
+    tx_dict.pop('data')
+    cropped = crop_tx_dict(tx_dict)
+    assert cropped == tx_dict
+
+
 def test_address(skale_bp):
     response = get_bp_data(skale_bp, '/address')
     assert response['error'] is None
