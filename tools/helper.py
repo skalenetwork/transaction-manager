@@ -43,11 +43,12 @@ MAX_DISPLAYED_DATA_LEN = 50
 
 def crop_tx_dict(tx_dict: dict) -> str:
     cropped = copy.deepcopy(tx_dict)
-    try:
-        cropped['data'] = cropped['data'][:MAX_DISPLAYED_DATA_LEN]
-    except Exception as err:
-        logger.error('Cropping failed', exc_info=err)
-        return ''
+    if 'data' in cropped:
+        try:
+            cropped['data'] = cropped['data'][:MAX_DISPLAYED_DATA_LEN]
+        except Exception as err:
+            logger.error('Cropping failed', exc_info=err)
+            return ''
     return cropped
 
 
