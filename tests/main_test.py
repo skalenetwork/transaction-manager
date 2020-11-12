@@ -6,6 +6,8 @@ from multiprocessing import Process
 
 import pytest
 import redis as redis_py
+from eth_account.datastructures import AttributeDict
+from hexbytes import HexBytes
 from sgx import SgxClient
 from skale import Skale
 from skale.utils.account_tools import send_ether
@@ -15,7 +17,11 @@ from skale.wallets import Web3Wallet
 from configs import ENDPOINT, NODE_CONFIG_FILEPATH
 from configs.sgx import SGX_SERVER_URL, SGX_CERTIFICATES_FOLDER
 from tools.wallet import init_sgx_wallet
-from main import main as run_tx_manager
+from main import (
+    convert_to_backwards_format,
+    main as run_tx_manager,
+    to_vanilla_types
+)
 
 TEST_ABI_FILEPATH = os.getenv('TEST_ABI_FILEPATH')
 ETH_PRIVATE_KEY = os.getenv('ETH_PRIVATE_KEY')
@@ -175,3 +181,97 @@ def test_send_txs_concurrently(tx_manager, redis, skale):
 
     for sub, channel_name in zip(subs, channels):
         check_message(sub, channel_name)
+
+
+def test_to_vanilla_types():
+    data = {
+        'blockHash': HexBytes('0x101d936f79954c111'),
+        'blockNumber': 7531067,
+        'contractAddress': None,
+        'cumulativeGasUsed': 4,
+        'from': '0x7fA9d7090',
+        'gasUsed': 220167,
+        'logs': [
+            AttributeDict(
+                {'address': '0x00Eb0f0f85056',
+                 'topics': [
+                     HexBytes('0x47'),
+                     HexBytes('0x14'),
+                     HexBytes('0x0')],
+                 'data': '0x0000',
+                 'blockNumber': 7531067,
+                 'transactionHash': HexBytes('0xe86'),
+                 'transactionIndex': 17,
+                 'blockHash': HexBytes('0x101'),
+                 'logIndex': 26, 'removed': False})],
+        'logsBloom': HexBytes('0x00000000100000400000000000000'),
+        'status': 1,
+        'to': '0x00Eb0f0f3c29',
+        'transactionHash': HexBytes('0xe894c9b355493cb4b1db506'),
+        'transactionIndex': 17
+    }
+    plain_data = to_vanilla_types(data)
+    assert plain_data == {
+        'blockHash': '0x0101d936f79954c111',
+        'blockNumber': 7531067,
+        'contractAddress': None,
+        'cumulativeGasUsed': 4,
+        'from': '0x7fA9d7090',
+        'gasUsed': 220167, 'logs':
+        [
+            {'address': '0x00Eb0f0f85056',
+             'topics': ['0x47', '0x14', '0x00'],
+             'data': '0x0000',
+             'blockNumber': 7531067,
+             'transactionHash': '0x0e86',
+             'transactionIndex': 17,
+             'blockHash': '0x0101',
+             'logIndex': 26,
+             'removed': False}
+        ],
+        'logsBloom': '0x000000000100000400000000000000',
+        'status': 1, 'to': '0x00Eb0f0f3c29',
+        'transactionHash': '0x0e894c9b355493cb4b1db506',
+        'transactionIndex': 17
+    }
+
+
+def test_convert_to_backwards_format():
+    receipt = {
+        'blockHash': HexBytes('0x101d936f79954c111'),
+        'blockNumber': 7531067,
+        'contractAddress': None,
+        'cumulativeGasUsed': 4,
+        'from': '0x7fA9d7090',
+        'gasUsed': 220167,
+        'logs': [
+            AttributeDict(
+                {'address': '0x00Eb0f0f85056',
+                 'topics': [
+                     HexBytes('0x47'),
+                     HexBytes('0x14'),
+                     HexBytes('0x0')],
+                 'data': '0x0000',
+                 'blockNumber': 7531067,
+                 'transactionHash': HexBytes('0xe86'),
+                 'transactionIndex': 17,
+                 'blockHash': HexBytes('0x101'),
+                 'logIndex': 26, 'removed': False})],
+        'logsBloom': HexBytes('0x00000000100000400000000000000'),
+        'status': 1,
+        'to': '0x00Eb0f0f3c29',
+        'transactionHash': HexBytes('0xe894c9b355493cb4b1db506'),
+        'transactionIndex': 17
+    }
+    plain_data = convert_to_backwards_format(receipt)
+    assert plain_data == {
+        'blockHash': '0x0101d936f79954c111',
+        'blockNumber': 7531067, 'contractAddress': None,
+        'cumulativeGasUsed': 4,
+        'from': '0x7fA9d7090',
+        'gasUsed': 220167,
+        'status': 1,
+        'to': '0x00Eb0f0f3c29',
+        'transactionHash': '0x0e894c9b355493cb4b1db506',
+        'transactionIndex': 17
+    }

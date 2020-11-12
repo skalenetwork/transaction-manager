@@ -21,9 +21,9 @@ import enum
 import json
 import logging
 
-from redis import Redis
 from eth_account.datastructures import AttributeDict
 from hexbytes import HexBytes
+from redis import Redis
 from skale.utils.web3_utils import init_web3, wait_for_receipt_by_blocks
 from skale.wallets import BaseWallet
 from web3 import Web3
@@ -54,7 +54,8 @@ def send_response(redis: Redis, channel: str,
     }
     raw_data = json.dumps(data).encode('utf-8')
     channel = RECEIPT_CHANNEL_TEMPLATE.format(channel)
-    logger.info(f'Sending response with status {status} into {channel} channel')
+    logger.info(
+        f'Sending response with status {status} into {channel} channel')
     redis.publish(channel, raw_data)
 
 
@@ -69,17 +70,27 @@ def make_error_payload(error_type: str, tx_hash: str, err: Exception,
     }
 
 
-def attribute_dict_to_dict(at_dict: AttributeDict) -> dict:
-    logger.info(f'IVD at_dict {at_dict}')
-    # IVD: remove
-    return dict(at_dict)
-    plain_data = {}
-    for key, value in at_dict.items():
-        if isinstance(value, HexBytes):
-            plain_data[key] = value.hex()
-        else:
-            plain_data[key] = value
-    return plain_data
+def to_vanilla_types(data: dict):
+    if isinstance(data, dict):
+        return {
+            key: to_vanilla_types(value)
+            for key, value in data.items()
+        }
+    elif isinstance(data, list):
+        return [to_vanilla_types(e) for e in data]
+    elif isinstance(data, HexBytes):
+        return data.hex()
+    else:
+        return data
+
+
+def convert_to_backwards_format(receipt: dict) -> dict:
+    converted = AttributeDict(receipt)
+    if 'logs' in converted:
+        converted.pop('logs')
+    if 'logsBloom' in converted:
+        converted.pop('logsBloom')
+    return to_vanilla_types(converted)
 
 
 def channel_tx_from_message(message: dict) -> tuple:
@@ -97,28 +108,29 @@ def handle_tx_message(redis: Redis, web3: Web3, wallet: BaseWallet,
         logger.warning(f'Invalid tx message data: {channel} - {tx}')
         return
     method = tx.get('method')
-    logger.info(f'Trying to sent transaction in {channel} with method {method}')
+    logger.info(
+        f'Trying to sent transaction in [{channel}] with method: {method}')
     tx['nonce'] = web3.eth.getTransactionCount(wallet.address)
     try:
         tx_hash = wallet.sign_and_send(tx)
     except Exception as err:
-        logger.exception(f'Sending tx in channel {channel} failed')
+        logger.exception(f'Sending tx in channel: [{channel}] failed')
         payload = make_error_payload('not-sent', None, err, None)
         send_response(redis, channel, status='error', payload=payload)
         return
     logger.info(f'Waiting for transaction receipt for '
-                f'hash: {tx_hash} and channel {channel}')
+                f'hash: {tx_hash} and channel: [{channel}]')
     try:
         attr_dict_receipt = wait_for_receipt_by_blocks(web3, tx_hash)
     except Exception as err:
-        logger.exception(f'Waiting for receipt failed for channel {channel}')
+        logger.exception(f'Waiting for receipt failed for channel [{channel}]')
         payload = make_error_payload('not-found', tx_hash, err, None)
         send_response(redis, channel, status='error', payload=payload)
         return
-    logger.info(f'Received transaction receipt for channel {channel}')
-    receipt = attribute_dict_to_dict(attr_dict_receipt)
+    logger.info(f'Received transaction receipt for channel: [{channel}]')
+    receipt = convert_to_backwards_format(attr_dict_receipt)
     if receipt['status'] != 1:
-        logger.exception(f'Transaction failed for channel {channel}')
+        logger.exception(f'Transaction failed for channel [{channel}]')
         payload = make_error_payload('tx-failed', tx_hash, None, receipt)
         send_response(redis, channel, status='error', payload=payload)
         return
