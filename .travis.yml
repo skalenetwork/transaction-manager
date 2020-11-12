@@ -17,6 +17,7 @@ jobs:
       script:
         - git submodule update --remote
         - bash helper-scripts/run_ganache.sh
+        - sleep 30
         - bash scripts/run_tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
