@@ -17,8 +17,8 @@ def test_increment_with_sending_tx(nonce_manager):
 
     # Incrementing using local nonce
     nonce_manager.increment()
-    eth_nonce = get_eth_nonce(nonce_manager.skale.web3,
-                              nonce_manager.skale.wallet.address)
+    eth_nonce = get_eth_nonce(nonce_manager.web3,
+                              nonce_manager.wallet.address)
     assert nonce_manager._nonce == eth_nonce + 1
 
 
@@ -27,8 +27,8 @@ def test_increment_with_request_network_nonce(nonce_manager):
     nonce_manager.healthcheck()
     # Incrementing with requesting network_nonce
     nonce_manager.increment(request_from_network=True)
-    eth_nonce = get_eth_nonce(nonce_manager.skale.web3,
-                              nonce_manager.skale.wallet.address)
+    eth_nonce = get_eth_nonce(nonce_manager.web3,
+                              nonce_manager.wallet.address)
     assert nonce_manager._nonce == eth_nonce + 1
 
 
