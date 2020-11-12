@@ -23,7 +23,6 @@ import threading
 from http import HTTPStatus
 
 from flask import Flask, request
-from skale import Skale
 from skale.utils.web3_utils import init_web3
 
 from nonce_manager import NonceManager
@@ -34,7 +33,7 @@ from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
 
 from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from configs.web3 import ENDPOINT, ABI_FILEPATH
+from configs.web3 import ENDPOINT
 
 
 thread_lock = threading.Lock()
@@ -50,8 +49,7 @@ app.use_reloader = False
 
 web3 = init_web3(ENDPOINT)
 wallet = init_wallet(web3)
-skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
-nonce_manager = NonceManager(skale, wallet)
+nonce_manager = NonceManager(web3, wallet)
 
 
 @app.route('/sign-and-send', methods=['POST'])

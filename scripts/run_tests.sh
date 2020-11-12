@@ -4,7 +4,7 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 PROJECT_DIR=$(dirname $DIR)
 
 export SKALE_DIR_HOST=$PWD/tests/skale-data
-export ENDPOINT=http://localhost:8545
+export ENDPOINT=http://0.0.0.0:8545
 
 export PYTHONPATH=$PROJECT_DIR
 export FLASK_APP_HOST=0.0.0.0

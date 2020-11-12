@@ -18,11 +18,11 @@ TX_DICT = {
 }
 
 
-def test_sign_and_send(wallet, skale, nonce_manager):
+def test_sign_and_send(wallet, nonce_manager):
     tx, error = sign_and_send(TX_DICT, wallet, nonce_manager)
     assert error is None
     wait_for_receipt_by_blocks(
-        skale.web3,
+        wallet._web3,
         tx
     )
     assert isinstance(tx, str)
@@ -35,7 +35,7 @@ def broken_wallet():
     return bw_mock
 
 
-def test_sign_and_send_broken_wallet(broken_wallet, skale, nonce_manager):
+def test_sign_and_send_broken_wallet(broken_wallet, nonce_manager):
     tx, error = sign_and_send(TX_DICT, broken_wallet, nonce_manager)
     assert tx is None
     assert error == 'Nonce to low mock'
@@ -50,8 +50,7 @@ def sgx_unreachable_wallet():
     return sw_mock
 
 
-def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet,
-                                         skale, nonce_manager):
+def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet, nonce_manager):
     tx, error = sign_and_send(TX_DICT, sgx_unreachable_wallet, nonce_manager)
     assert tx is None
     assert error == 'Sgx server is unreachable'
