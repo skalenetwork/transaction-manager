@@ -1,20 +1,18 @@
+import os
+
 import pytest
 from skale.utils.web3_utils import init_web3
 
 from configs.web3 import ENDPOINT
-from nonce_manager import NonceManager
-from tools.helper import init_wallet
+from tools.helper import init_web3_wallet
 
 
 @pytest.fixture
-def wallet():
-    web3 = init_web3(ENDPOINT)
-    return init_wallet(web3)
+def web3():
+    return init_web3(ENDPOINT)
 
 
 @pytest.fixture
-def nonce_manager(wallet):
-    web3 = init_web3(ENDPOINT)
-    nm = NonceManager(web3, wallet)
-    yield nm
-    nm.ensure_nonce()
+def wallet(web3):
+    pk_file = os.getenv('PK_FILE')
+    return init_web3_wallet(web3, pk_file)
