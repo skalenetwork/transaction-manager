@@ -1,0 +1,38 @@
+version: '3'
+
+services:
+  sgx-server:
+    image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
+    container_name: sgx-server
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${SGX_DIR}:/usr/src/sdk/sgx_data
+      -  /dev/urandom:/dev/random
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "4"
+    command: -s -y
+
+  transaction-manager:
+    container_name: tm
+    image: "transaction-manager:${TAG:-latest}"
+    network_mode: host
+    build:
+      context: "."
+      dockerfile: Dockerfile
+    tty: true
+    environment:
+      SGX_SERVER_URL: ${SGX_SERVER_URL}
+      SGX_CERTIFICATES_DIR_NAME: ${SGX_CERTIFICATES_DIR_NAME}
+      ENDPOINT: ${ENDPOINT}
+      NODE_DATA_PATH: /skale_node_data
+      SKALE_DIR_HOST: ${SKALE_DIR}
+      FLASK_APP_HOST: 127.0.0.1
+      FLASK_APP_PORT: 3008
+      FLASK_DEBUG_MODE: "False"
+      DEFAULT_GAS_PRICE_WEI: "${DEFAULT_GAS_PRICE_WEI}"
+    volumes:
+      - ${SKALE_DIR}/node_data:/skale_node_data
