@@ -30,7 +30,7 @@ from configs import (
     DEFAULT_TIMEOUT,
     GAS_PRICE_INC_PERCENT,
     LONG_TIMEOUT,
-    MAX_GAS_PRICE, MAX_GAS_PRICE_COEFF, MAX_RETRY_ITERATIONS
+    MAX_GAS_PRICE_WEI, MAX_GAS_PRICE_COEFF, MAX_RETRY_ITERATIONS
 )
 from tools.helper import crop_tx_dict
 
@@ -39,7 +39,7 @@ logger = logging.getLogger(__name__)
 
 
 def get_max_gas_price(web3: Web3) -> int:
-    return MAX_GAS_PRICE or MAX_GAS_PRICE_COEFF * web3.eth.gasPrice
+    return MAX_GAS_PRICE_WEI or MAX_GAS_PRICE_COEFF * web3.eth.gasPrice
 
 
 def next_gas_price(gas_price: int) -> int:

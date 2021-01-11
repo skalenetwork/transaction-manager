@@ -37,11 +37,9 @@ else:
 NODE_CONFIG_FILENAME = 'node_config.json'
 NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, NODE_CONFIG_FILENAME)
 
-DEFAULT_SLEEP_TIMEOUT = 5
-
 ENDPOINT = os.environ['ENDPOINT']
 BLOCKS_TO_WAIT = int(os.getenv('BLOCKS_TO_WAIT') or 5)
-MAX_GAS_PRICE = int(os.getenv('MAX_GAS_PRICE') or 0)
+MAX_GAS_PRICE_WEI = int(os.getenv('MAX_GAS_PRICE_WEI') or 0)
 DEFAULT_TIMEOUT = int(os.getenv('DEFAULT_TIMEOUT') or 120)
 GAS_PRICE_INC_PERCENT = int(os.getenv('GAS_PRICE_INC_PERCENT') or 12)
 LONG_TIMEOUT = int(os.getenv('LONG_TIMEOUT') or 60 * 60)
