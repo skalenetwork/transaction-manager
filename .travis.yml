@@ -18,6 +18,7 @@ jobs:
         - git submodule update --remote
         - bash helper-scripts/run_ganache.sh
         - sleep 30
+        - export PYTHONPATH=${PYTHONPATH}:.
         - bash scripts/run_tests.sh
     - stage: deploy
       if: branch IN (develop, beta, stable, master)
@@ -27,7 +28,6 @@ jobs:
         - echo "Version $VERSION"
         - export VERSION=$VERSION
         - export BRANCH=$BRANCH
-        - export PYTHONPATH=${PYTHONPATH}:.
         - export RELEASE=true
         - bash ./scripts/build.sh
       before_deploy:
