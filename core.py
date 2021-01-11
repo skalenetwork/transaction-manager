@@ -78,7 +78,7 @@ def sign_and_send(web3: Web3,
     gas_price = tx_data['gasPrice']
     max_gas_price = get_max_gas_price(web3)
     attempt = 0
-    logger.info(f'Sending tx. Wallet: {wallet}, data: {tx_data}')
+    logger.info(f'Sending tx. Data: {tx_data}')
     while not receipt and attempt < max_iter:
         receipt = None
         sending_req_errored = False

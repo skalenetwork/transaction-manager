@@ -21,9 +21,9 @@ import copy
 import json
 import logging
 import os
+import time
 from flask import Response
 from http import HTTPStatus
-from time import sleep
 
 from skale.wallets import Web3Wallet, SgxWallet
 
@@ -98,7 +98,7 @@ def retry(exceptions, times, delay=0):
                         exc_info=True
                     )
                     attempt += 1
-                    sleep(delay)
+                    time.sleep(delay)
             return func(*args, **kwargs)
         return newfn
     return decorator
