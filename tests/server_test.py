@@ -63,7 +63,6 @@ def test_sign_and_send(web3, skale_bp):
     assert receipt['status'] == 1
 
 
-# @mock.patch('main.sign_and_send', side_effect=Exception)
 def test_sign_and_send_500_error(web3, skale_bp):
     tx_dict_str = json.dumps({})
     response = post_bp_data(skale_bp, '/sign-and-send', params=tx_dict_str,

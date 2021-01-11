@@ -20,10 +20,7 @@
 import logging
 import time
 from decimal import Decimal
-# from json.decoder import JSONDecodeError
 
-
-# import requests
 from skale.wallets import BaseWallet
 from skale.utils.web3_utils import get_eth_nonce
 from web3 import Web3
@@ -47,22 +44,6 @@ def get_max_gas_price(web3: Web3) -> int:
 
 def next_gas_price(gas_price: int) -> int:
     return gas_price * (100 + GAS_PRICE_INC_PERCENT) // 100
-
-
-# def get_receipt2(tx_hash: str) -> dict:
-#     data = {'jsonrpc': '2.0', 'method': 'eth_getTransactionReceipt',
-#             'params': [tx_hash],
-#             'id': 1}
-#     response = requests.post(ENDPOINT, json=data)
-#     content = response.content
-#     try:
-#         json_response = response.json()
-#     except JSONDecodeError:
-#         logger.exception(content)
-#     result = json_response.get('result')
-#     if result is None:
-#         return {}
-#     return result
 
 
 def get_receipt(web3: Web3, tx_hash: str) -> dict:
