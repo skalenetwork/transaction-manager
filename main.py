@@ -23,24 +23,24 @@ import threading
 from http import HTTPStatus
 
 from flask import Flask, request
+from werkzeug.exceptions import InternalServerError
 from skale.utils.web3_utils import init_web3
 
-from nonce_manager import NonceManager
+from configs import ENDPOINT
+from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
 from core import sign_and_send
 
 from tools.logger import init_tm_logger
 from tools.str_formatters import arguments_list_string
-from tools.helper import construct_ok_response, construct_err_response, init_wallet
+from tools.helper import (
+    construct_ok_response, construct_err_response, init_wallet
+)
 
-from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from configs.web3 import ENDPOINT
-
-
-thread_lock = threading.Lock()
 
 init_tm_logger()
 
 logger = logging.getLogger(__name__)
+thread_lock = threading.Lock()
 
 app = Flask(__name__)
 app.port = FLASK_APP_PORT
@@ -49,84 +49,33 @@ app.use_reloader = False
 
 web3 = init_web3(ENDPOINT)
 wallet = init_wallet(web3)
-nonce_manager = NonceManager(web3, wallet)
+
+
+@app.errorhandler(InternalServerError)
+def handle_500(e):
+    original = getattr(e, "original_exception", None)
+    return construct_err_response(status=500, err=original)
 
 
 @app.route('/sign-and-send', methods=['POST'])
 def _sign_and_send():
-    logger.info(request)
-    transaction_dict_str = request.json.get('transaction_dict')
-    transaction_dict = json.loads(transaction_dict_str)
+    logger.debug(request)
+    plain_tx_data = request.json.get('transaction_dict')
+    tx_data = json.loads(plain_tx_data)
     thread_id = threading.get_ident()
     logger.info(f'thread_id {thread_id} waiting for the lock')
     with thread_lock:
         logger.info(f'thread_id {thread_id} got the lock')
-        tx_hash, error = sign_and_send(transaction_dict, wallet, nonce_manager)
+        tx_hash, error = sign_and_send(web3, wallet, tx_data)
         if error is None:
-            logger.warning(f'thread_id {thread_id} going to release the lock')
             return construct_ok_response({'transaction_hash': tx_hash})
         else:
-            logger.warning(f'thread_id {thread_id} going to release the lock due to an error')
             return construct_err_response(HTTPStatus.BAD_REQUEST, error)
 
 
-@app.route('/sign', methods=['POST'])
-def _sign():
-    logger.info(request)
-    transaction_dict_str = request.json.get('transaction_dict')
-    transaction_dict = json.loads(transaction_dict_str)
-    signed_transaction = None
-    with thread_lock:
-        try:
-            signed_transaction = wallet.sign(transaction_dict)
-        except Exception as e:  # todo: catch specific error
-            logger.error(e)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-
-    logger.info(f'Transaction signed - {signed_transaction}')
-    return construct_ok_response({
-        'rawTransaction': signed_transaction.rawTransaction.hex(),
-        'hash': signed_transaction.hash.hex(),
-        'r': signed_transaction.r,
-        's': signed_transaction.s,
-        'v': signed_transaction.v
-    })
-
-
-@app.route('/sign-hash', methods=['POST'])
-def _sign_hash():
-    logger.info(request)
-    unsigned_hash = request.json.get('unsigned_hash')
-    signed_data = None
-    with thread_lock:
-        try:
-            signed_data = wallet.sign_hash(unsigned_hash)
-        except Exception as e:  # todo: catch specific error
-            logger.error(e)
-            return construct_err_response(HTTPStatus.BAD_REQUEST, e)
-
-    logger.info(f'Hash signed - signed data: {signed_data}')
-
-    data = {
-        'messageHash': signed_data.messageHash.hex(),
-        'r': signed_data.r,
-        's': signed_data.s,
-        'v': signed_data.v,
-        'signature': signed_data.signature.hex()
-    }
-    return construct_ok_response(data)
-
-
-@app.route('/address', methods=['GET'])
-def _address():
-    logger.info(request)
-    return construct_ok_response({'address': wallet.address})
-
-
-@app.route('/public-key', methods=['GET'])
-def _public_key():
-    logger.info(request)
-    return construct_ok_response({'public_key': wallet.public_key})
+@app.route('/', methods=['GET'])
+def index():
+    return construct_ok_response({'status': 'ok'})
 
 
 def main():

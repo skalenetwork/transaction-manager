@@ -4,16 +4,18 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 PROJECT_DIR=$(dirname $DIR)
 
 export SKALE_DIR_HOST=$PWD/tests/skale-data
-export ENDPOINT=http://0.0.0.0:8545
+export ENDPOINT=http://127.0.0.1:8545
 
-export PYTHONPATH=$PROJECT_DIR
 export FLASK_APP_HOST=0.0.0.0
 export FLASK_APP_PORT=3008
 export FLASK_DEBUG_MODE=True
 export FLASK_SECRET_KEY=123
+export GAS_PRICE_INC_PERCENT=13
+export PYTHONPATH=$PYTHONPATH
 
 export PK_FILE=$PROJECT_DIR/pk_file
 
 echo $ETH_PRIVATE_KEY > $PROJECT_DIR/pk_file
 
-py.test $PROJECT_DIR/tests/
+
+py.test --ignore tests/tm_test.py --cov=$PROJECT_DIR/ tests/ $@

@@ -1,16 +1,15 @@
 import json
+import mock
 import copy
 from random import randint
 
 import pytest
 
-from main import app, wallet
-from hexbytes import HexBytes
-from eth_account._utils import transactions
 
 from custom_thread import CustomThread
-from tests.utils import get_bp_data, post_bp_data
+from utils import get_bp_data, post_bp_data
 from tools.helper import crop_tx_dict
+from main import app, wallet
 
 
 TX_DICT = {
@@ -45,75 +44,43 @@ def test_crop_tx_dict_without_data():
     assert cropped == tx_dict
 
 
-def test_address(skale_bp):
-    response = get_bp_data(skale_bp, '/address')
-    assert response['error'] is None
-    assert response['data']['address'] == wallet.address
+def test_index(skale_bp):
+    data = get_bp_data(skale_bp, '/')
+    assert data == {'data': {'status': 'ok'}, 'error': None}
 
 
-def test_public_key(skale_bp):
-    response = get_bp_data(skale_bp, '/public-key')
-    assert response['error'] is None
-    assert response['data']['public_key'] == wallet.public_key
-
-
-def test_sign(skale_bp):
-    tx_dict_str = json.dumps(TX_DICT)
-    response = post_bp_data(skale_bp, '/sign', params={
-        'transaction_dict': tx_dict_str
-    })
-
-    signed_transaction = wallet.sign(TX_DICT)
-
-    assert response['error'] is None
-    data = response['data']
-    assert data['rawTransaction'] == signed_transaction.rawTransaction.hex()
-    assert data['hash'] == signed_transaction.hash.hex()
-    assert data['r'] == signed_transaction.r
-    assert data['s'] == signed_transaction.s
-    assert data['v'] == signed_transaction.v
-
-
-def test_sign_and_send(skale_bp):
+def test_sign_and_send(web3, skale_bp):
     tx_dict_str = json.dumps(TX_DICT)
     response = post_bp_data(skale_bp, '/sign-and-send', params={
         'transaction_dict': tx_dict_str
     })
     assert response['error'] is None
     data = response['data']
-    assert isinstance(data['transaction_hash'], str), data
+    tx_hash = data.get('transaction_hash')
+    assert isinstance(tx_hash, str)
+    receipt = web3.eth.getTransactionReceipt(tx_hash)
+    assert receipt is not None
+    assert receipt['status'] == 1
 
 
-def test_send_transaction_errored(skale_bp):
-    txn = {}
-    tx_dict_str = json.dumps(txn)
+def test_sign_and_send_500_error(web3, skale_bp):
+    tx_dict_str = json.dumps({})
+    response = post_bp_data(skale_bp, '/sign-and-send', params=tx_dict_str,
+                            plain_response=True)
+    assert response.status_code == 500
+    assert response.data == b'{"data": null, "error": null}'
+
+
+@mock.patch('main.sign_and_send',
+            return_value=(None, 'Failed to fetch receipt'))
+def test_sign_and_send_error_not_none(web3, skale_bp):
+    tx_dict_str = json.dumps(TX_DICT)
     response = post_bp_data(skale_bp, '/sign-and-send', params={
         'transaction_dict': tx_dict_str
-    })
-    assert response['data'] is None
-    assert response['error'] in (
-        "Transaction must include these fields: {'gas', 'gasPrice'}",
-        "Transaction must include these fields: {'gasPrice', 'gas'}"
-    )
-
-
-def test_sign_hash(skale_bp):
-    unsigned_transaction = transactions.serializable_unsigned_transaction_from_dict(TX_DICT)
-    raw_hash = unsigned_transaction.hash()
-    unsigned_hash = HexBytes(raw_hash).hex()
-    response = post_bp_data(skale_bp, '/sign-hash', params={
-        'unsigned_hash': unsigned_hash
-    })
-
-    assert response['error'] is None
-    signed_hash = wallet.sign_hash(unsigned_hash)
-
-    data = response['data']
-    assert data['signature'] == signed_hash.signature.hex()
-    assert data['messageHash'] == signed_hash.messageHash.hex()
-    assert data['r'] == signed_hash.r
-    assert data['s'] == signed_hash.s
-    assert data['v'] == signed_hash.v
+    }, plain_response=True)
+    assert response.status_code == 400
+    assert response.data == \
+        b'{"data": null, "error": "Failed to fetch receipt"}'
 
 
 def send_transactions(opts):

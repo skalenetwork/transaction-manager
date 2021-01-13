@@ -1,57 +1,90 @@
-import pytest
-from mock import Mock
+import mock
 
-from sgx.http import SgxUnreachableError
-from skale.utils.web3_utils import wait_for_receipt_by_blocks
+from skale.utils.web3_utils import get_receipt
 
-from core import sign_and_send
+from core import next_gas_price, sign_and_send, wait_for_receipt
 
 
-TX_DICT = {
-    'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
-    'value': 9,
-    'gas': 200000,
-    'gasPrice': 1,
-    'nonce': 7,
-    'chainId': None,
-    'data': '0x0'
-}
+def test_sign_and_send(web3, wallet):
+    tx_data = {
+        'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+        'value': 9,
+        'gas': 200000,
+        'gasPrice': web3.eth.gasPrice,
+        'nonce': 7,
+        'chainId': None,
+        'data': '0x0'
+    }
+    tx_hash, error = sign_and_send(web3, wallet, tx_data)
+    receipt = get_receipt(web3, tx_hash)
+    assert receipt['status'] == 1
+    assert isinstance(tx_hash, str)
 
 
-def test_sign_and_send(wallet, nonce_manager):
-    tx, error = sign_and_send(TX_DICT, wallet, nonce_manager)
-    assert error is None
-    wait_for_receipt_by_blocks(
-        wallet._web3,
-        tx
-    )
-    assert isinstance(tx, str)
+def test_wait_for_receipt(web3):
+    web3.eth.getTransactionReceipt = mock.Mock(side_effect=ValueError)
+    tx_hash = '0x123'
+    receipt = wait_for_receipt(web3, tx_hash, timeout=0.5, it_timeout=0.1)
+    assert receipt is None
+    assert web3.eth.getTransactionReceipt.call_count > 0
 
 
-@pytest.fixture
-def broken_wallet():
-    bw_mock = Mock()
-    bw_mock.sign_and_send = Mock(side_effect=ValueError('Nonce to low mock'))
-    return bw_mock
+def test_next_gas_price():
+    gas_price = 100
+    assert next_gas_price(gas_price) == 113
 
 
-def test_sign_and_send_broken_wallet(broken_wallet, nonce_manager):
-    tx, error = sign_and_send(TX_DICT, broken_wallet, nonce_manager)
-    assert tx is None
-    assert error == 'Nonce to low mock'
-    assert broken_wallet.sign_and_send.call_count == 3
+def test_sign_and_send_wallet_error(web3, wallet):
+    wallet.sign_and_send = mock.Mock(side_effect=ValueError('Test error'))
+    tx_data = {
+        'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+        'value': 9,
+        'gas': 200000,
+        'gasPrice': web3.eth.gasPrice,
+        'nonce': 7,
+        'chainId': None,
+        'data': '0x0'
+    }
+    with mock.patch('core.get_max_gas_price',
+                    mock.Mock(return_value=web3.eth.gasPrice * 1.1 * 1.1)):
+        tx_hash, error = sign_and_send(web3, wallet, tx_data,
+                                       max_iter=3,
+                                       timeout=1, long_timeout=2)
+        assert tx_hash is None
+        assert error == 'Transaction was not sent'
 
 
-@pytest.fixture
-def sgx_unreachable_wallet():
-    sw_mock = Mock()
-    sw_mock.sign_and_send = Mock(
-        side_effect=SgxUnreachableError('sgx unreachable'))
-    return sw_mock
+@mock.patch('core.get_receipt', lambda *args: {})
+def test_sign_and_send_wait_for_too_long(web3, wallet):
+    tx_data = {
+        'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+        'value': 9,
+        'gas': 200000,
+        'gasPrice': web3.eth.gasPrice,
+        'nonce': 7,
+        'chainId': None,
+        'data': '0x0'
+    }
+    tx_hash, error = sign_and_send(web3, wallet, tx_data,
+                                   max_iter=1,
+                                   timeout=1, long_timeout=0)
+    assert tx_hash is not None
+    assert error == 'Fetching receipt failed: waiting limit exceded'
 
 
-def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet, nonce_manager):
-    tx, error = sign_and_send(TX_DICT, sgx_unreachable_wallet, nonce_manager)
-    assert tx is None
-    assert error == 'Sgx server is unreachable'
-    assert sgx_unreachable_wallet.sign_and_send.call_count == 1
+@mock.patch('core.get_receipt', lambda *args: None)
+def test_sign_and_send_wait(web3, wallet):
+    tx_data = {
+        'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+        'value': 9,
+        'gas': 200000,
+        'gasPrice': web3.eth.gasPrice,
+        'nonce': 7,
+        'chainId': None,
+        'data': '0x0'
+    }
+    tx_hash, error = sign_and_send(web3, wallet, tx_data,
+                                   max_iter=1,
+                                   timeout=1, long_timeout=0)
+    assert tx_hash is not None
+    assert error == 'Failed to fetch receipt'
