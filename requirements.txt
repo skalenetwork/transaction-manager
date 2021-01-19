@@ -1,4 +1,5 @@
 Flask==1.0.2
 colorful==0.5.4
 uwsgi==2.0.18
-skale.py==4.1b6
+# skale.py==4.1b6
+git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3753-call-block-check#egg=skale.py
