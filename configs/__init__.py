@@ -48,3 +48,8 @@ try:
     BLOCKS_TO_WAIT = int(BLOCKS_TO_WAIT)
 except TypeError:
     BLOCKS_TO_WAIT = DEFAULT_BLOCKS_TO_WAIT
+
+
+STATE_FILENAME = os.getenv('STATE_FILENAME')
+STATE_FILEPATH = None if not STATE_FILENAME \
+                    else os.path.join(NODE_DATA_PATH, STATE_FILENAME)

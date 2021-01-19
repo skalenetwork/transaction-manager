@@ -25,15 +25,14 @@ from http import HTTPStatus
 from flask import Flask, request
 from skale.utils.web3_utils import init_web3
 
-from nonce_manager import NonceManager
 from core import sign_and_send
-
+from configs import STATE_FILEPATH
+from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
+from configs.web3 import ENDPOINT
+from nonce_manager import NonceManager
 from tools.logger import init_tm_logger
 from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
-
-from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from configs.web3 import ENDPOINT
 
 
 thread_lock = threading.Lock()
@@ -47,7 +46,7 @@ app.port = FLASK_APP_PORT
 app.host = FLASK_APP_HOST
 app.use_reloader = False
 
-web3 = init_web3(ENDPOINT)
+web3 = init_web3(ENDPOINT, state_path=STATE_FILEPATH)
 wallet = init_wallet(web3)
 nonce_manager = NonceManager(web3, wallet)
 
