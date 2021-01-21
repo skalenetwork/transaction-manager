@@ -50,6 +50,7 @@ except TypeError:
     BLOCKS_TO_WAIT = DEFAULT_BLOCKS_TO_WAIT
 
 
+STATE_BASE_PATH = os.path.join(NODE_DATA_PATH, 'eth-state')
 STATE_FILENAME = os.getenv('STATE_FILENAME')
 STATE_FILEPATH = None if not STATE_FILENAME \
-                    else os.path.join(NODE_DATA_PATH, STATE_FILENAME)
+                    else os.path.join(STATE_BASE_PATH, STATE_FILENAME)
