@@ -36,10 +36,11 @@ def sign_and_send(transaction_dict: str, wallet, nonce_manager) -> tuple:
     error, tx = None, None
     for attempt in range(ATTEMPTS):
         try:
-            transaction_dict['nonce'] = nonce_manager.nonce
+            nonce = nonce_manager.nonce
+            transaction_dict['nonce'] = nonce
             cropped_tx = crop_tx_dict(transaction_dict)
-            logger.info(f'Transaction dict {cropped_tx}')
-            logger.info(f'Signing transaction with nonce: {nonce_manager.nonce}')
+            logger.info(f'Transaction data {cropped_tx}')
+            logger.info(f'Signing transaction with nonce: {nonce}')
             tx = wallet.sign_and_send(transaction_dict)
         except SgxUnreachableError:
             error = SGX_UNREACHABLE_MESSAGE
