@@ -62,7 +62,9 @@ def test_dry_run(nonce_manager, wallet):
 
 
 def test_estimate_gas(nonce_manager, wallet):
-    result, gas = execute_dry_run(nonce_manager.web3, wallet, TX_DICT)
+    tx = TX_DICT.copy()
+    del tx['gas']
+    result, gas = execute_dry_run(nonce_manager.web3, wallet, tx)
     assert result == {'status': 1, 'payload': gas}
     assert isinstance(gas, int)
     assert gas > 0
