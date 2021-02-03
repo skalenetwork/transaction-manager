@@ -41,7 +41,9 @@ def sign_and_send(transaction_dict: dict, wallet, nonce_manager) -> tuple:
     error, tx = None, None
     dry_run_result = None
     if not DISABLE_DRY_RUN:
-        dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3, wallet, transaction_dict)
+        dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3,
+                                                        wallet,
+                                                        transaction_dict)
         if not is_success(dry_run_result):
             error = f'Dry run failed: {dry_run_result["error"]}'
         else:
