@@ -38,25 +38,29 @@ GAS_LIMIT_COEFFICIENT = 1.2
 
 def sign_and_send(transaction_dict: dict, wallet, nonce_manager) -> tuple:
     error, tx = None, None
-    for attempt in range(ATTEMPTS):
-        try:
-            nonce = nonce_manager.nonce
-            transaction_dict['nonce'] = nonce
-            cropped_tx = crop_tx_dict(transaction_dict)
-            logger.info(f'Transaction data {cropped_tx}')
-            logger.info(f'Signing transaction with nonce: {nonce}')
-            tx = wallet.sign_and_send(transaction_dict)
-        except SgxUnreachableError:
-            error = SGX_UNREACHABLE_MESSAGE
-            break
-        except Exception as e:  # todo: catch specific error
-            logger.error('Error occured', exc_info=e)
-            nonce_manager.fix_nonce()
-            time.sleep(TIMEOUT)
-            error = str(e)
-        else:
-            error = None
-            break
+    dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3, wallet, transaction_dict)
+    if not is_success(dry_run_result):
+        error = f'Dry run failed: {dry_run_result["error"]}'
+    else:
+        for attempt in range(ATTEMPTS):
+            try:
+                nonce = nonce_manager.nonce
+                transaction_dict['nonce'] = nonce
+                cropped_tx = crop_tx_dict(transaction_dict)
+                logger.info(f'Transaction data {cropped_tx}')
+                logger.info(f'Signing transaction with nonce: {nonce}')
+                tx = wallet.sign_and_send(transaction_dict)
+            except SgxUnreachableError:
+                error = SGX_UNREACHABLE_MESSAGE
+                break
+            except Exception as e:  # todo: catch specific error
+                logger.error('Error occured', exc_info=e)
+                nonce_manager.fix_nonce()
+                time.sleep(TIMEOUT)
+                error = str(e)
+            else:
+                error = None
+                break
     if tx is not None and error is None:
         logger.info('Incrementing nonce...')
         nonce_manager.increment()
@@ -69,10 +73,10 @@ def is_success(result: dict) -> bool:
     return result.get('status') == SUCCESS_STATUS
 
 
-def execute_dry_run(skale, method, custom_gas_limit) -> tuple:
-    dry_run_result = make_dry_run_call(skale, method, custom_gas_limit)
+def execute_dry_run(web3, wallet, transaction_dict: dict) -> tuple:
+    dry_run_result = make_dry_run_call(web3, wallet, transaction_dict)
     estimated_gas_limit = None
-    if is_success(dry_run_result):
+    if dry_run_result['status'] == SUCCESS_STATUS:
         estimated_gas_limit = dry_run_result['payload']
     return dry_run_result, estimated_gas_limit
 
@@ -89,7 +93,6 @@ def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
             estimated_gas = transaction_dict['gas_limit']
             web3.eth.call(transaction_dict)
         else:
-            pass
             estimated_gas = estimate_gas(web3, transaction_dict)
             logger.info(f'Estimated gas for tx: {estimated_gas}')
     except Exception as err:
