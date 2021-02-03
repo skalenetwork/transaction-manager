@@ -4,8 +4,7 @@ from mock import Mock
 from sgx.http import SgxUnreachableError
 from skale.utils.web3_utils import wait_for_receipt_by_blocks
 
-from core import sign_and_send
-
+from core import sign_and_send, execute_dry_run
 
 TX_DICT = {
     'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
@@ -13,7 +12,6 @@ TX_DICT = {
     'gas': 200000,
     'gasPrice': 1,
     'nonce': 7,
-    'chainId': None,
     'data': '0x0'
 }
 
@@ -55,3 +53,16 @@ def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet, nonce_manager):
     assert tx is None
     assert error == 'Sgx server is unreachable'
     assert sgx_unreachable_wallet.sign_and_send.call_count == 1
+
+
+def test_dry_run(nonce_manager, wallet):
+    result, gas = execute_dry_run(nonce_manager.web3, wallet, TX_DICT)
+    assert result == {'status': 1, 'payload': gas}
+    assert gas == TX_DICT['gas']
+
+
+def test_estimate_gas(nonce_manager, wallet):
+    result, gas = execute_dry_run(nonce_manager.web3, wallet, TX_DICT)
+    assert result == {'status': 1, 'payload': gas}
+    assert isinstance(gas, int)
+    assert gas > 0

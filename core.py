@@ -89,8 +89,8 @@ def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
     )
 
     try:
-        if 'gas_limit' in transaction_dict:
-            estimated_gas = transaction_dict['gas_limit']
+        if 'gas' in transaction_dict:
+            estimated_gas = transaction_dict['gas']
             web3.eth.call(transaction_dict)
         else:
             estimated_gas = estimate_gas(web3, transaction_dict)
