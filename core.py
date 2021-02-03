@@ -86,28 +86,28 @@ def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
 
     try:
         if 'gas_limit' in transaction_dict:
-            # estimated_gas = transaction_dict['gas_limit']
+            estimated_gas = transaction_dict['gas_limit']
             web3.eth.call(transaction_dict)
         else:
             pass
-            # estimated_gas = estimate_gas(skale.web3, method, opts)
-            # logger.info(f'Estimated gas for tx: {estimated_gas}')
+            estimated_gas = estimate_gas(web3, transaction_dict)
+            logger.info(f'Estimated gas for tx: {estimated_gas}')
     except Exception as err:
         logger.error('Dry run for tx failed with error', exc_info=err)
         return {'status': 0, 'error': str(err)}
 
-    # return {'status': 1, 'payload': estimated_gas}
+    return {'status': 1, 'payload': estimated_gas}
 
 
-def estimate_gas(web3, method, opts):
+def estimate_gas(web3, transaction_dict: dict):
     try:
         block_gas_limit = get_block_gas_limit(web3)
     except AttributeError:
         block_gas_limit = get_block_gas_limit(web3)
 
-    estimated_gas = method.estimateGas(opts)
+    estimated_gas = web3.eth.estimateGas(transaction_dict)
     normalized_estimated_gas = int(estimated_gas * GAS_LIMIT_COEFFICIENT)
     if normalized_estimated_gas > block_gas_limit:
-        logger.warning(f'Estimate gas for {method.fn_name} exceeds block gas limit')
+        logger.warning('Estimate gas for tx exceeds block gas limit')
         return block_gas_limit
     return normalized_estimated_gas
