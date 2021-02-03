@@ -17,4 +17,7 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import os
+
 LONG_LINE = '=' * 100
+DISABLE_DRY_RUN = os.getenv('DISABLE_DRY_RUN', 'False') == 'True'

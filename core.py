@@ -24,6 +24,7 @@ import time
 from sgx.http import SgxUnreachableError
 from web3._utils.transactions import get_block_gas_limit
 
+from config import DISABLE_DRY_RUN
 from tools.helper import crop_tx_dict
 
 logger = logging.getLogger(__name__)
@@ -38,10 +39,14 @@ GAS_LIMIT_COEFFICIENT = 1.2
 
 def sign_and_send(transaction_dict: dict, wallet, nonce_manager) -> tuple:
     error, tx = None, None
-    dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3, wallet, transaction_dict)
-    if not is_success(dry_run_result):
-        error = f'Dry run failed: {dry_run_result["error"]}'
-    else:
+    dry_run_result = None
+    if not DISABLE_DRY_RUN:
+        dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3, wallet, transaction_dict)
+        if not is_success(dry_run_result):
+            error = f'Dry run failed: {dry_run_result["error"]}'
+        else:
+            transaction_dict['gas'] = estimated_gas
+    if is_success(dry_run_result) or dry_run_result is None:
         for attempt in range(ATTEMPTS):
             try:
                 nonce = nonce_manager.nonce
