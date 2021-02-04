@@ -1,6 +1,7 @@
 import json
 import copy
 from random import randint
+from unittest import mock
 
 import pytest
 
@@ -82,6 +83,19 @@ def test_sign_and_send(skale_bp):
     assert response['error'] is None
     data = response['data']
     assert isinstance(data['transaction_hash'], str), data
+
+
+def test_sign_and_send_without_dry_run(skale_bp):
+    tx_dict_str = json.dumps(TX_DICT)
+    with mock.patch('core.execute_dry_run') as dry_run_mock:
+        response = post_bp_data(skale_bp, '/sign-and-send', params={
+            'transaction_dict': tx_dict_str,
+            'skip_dry_run': True
+        })
+        dry_run_mock.assert_not_called()
+        assert response['error'] is None
+        data = response['data']
+        assert isinstance(data['transaction_hash'], str), data
 
 
 def test_send_transaction_errored(skale_bp):

@@ -36,10 +36,10 @@ SUCCESS_STATUS = 1
 GAS_LIMIT_COEFFICIENT = 1.2
 
 
-def sign_and_send(transaction_dict: dict, wallet, nonce_manager) -> tuple:
+def sign_and_send(transaction_dict: dict, wallet, nonce_manager, skip_dry_run=False) -> tuple:
     error, tx = None, None
     dry_run_result = None
-    if not config.DISABLE_DRY_RUN:
+    if not config.DISABLE_DRY_RUN and not skip_dry_run:
         dry_run_result, estimated_gas = execute_dry_run(nonce_manager.web3,
                                                         wallet,
                                                         transaction_dict)

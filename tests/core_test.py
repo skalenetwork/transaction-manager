@@ -71,9 +71,21 @@ def test_estimate_gas(nonce_manager, wallet):
     assert gas > 0
 
 
-def test_disable_dry_run(nonce_manager, wallet, disable_dry_run_env):
+def test_disable_dry_run_env(nonce_manager, wallet, disable_dry_run_env):
     with mock.patch('core.execute_dry_run') as dry_run_mock:
         tx, error = sign_and_send(TX_DICT, wallet, nonce_manager)
+        dry_run_mock.assert_not_called()
+        assert error is None
+        wait_for_receipt_by_blocks(
+            wallet._web3,
+            tx
+        )
+        assert isinstance(tx, str)
+
+
+def test_skip_dry_run(nonce_manager, wallet):
+    with mock.patch('core.execute_dry_run') as dry_run_mock:
+        tx, error = sign_and_send(TX_DICT, wallet, nonce_manager, skip_dry_run=True)
         dry_run_mock.assert_not_called()
         assert error is None
         wait_for_receipt_by_blocks(
