@@ -1,9 +1,14 @@
+import importlib
+import os
+from unittest import mock
+
 import pytest
 from mock import Mock
 
 from sgx.http import SgxUnreachableError
 from skale.utils.web3_utils import wait_for_receipt_by_blocks
 
+import config
 from core import sign_and_send, execute_dry_run
 
 TX_DICT = {
@@ -68,3 +73,24 @@ def test_estimate_gas(nonce_manager, wallet):
     assert result == {'status': 1, 'payload': gas}
     assert isinstance(gas, int)
     assert gas > 0
+
+
+@pytest.fixture
+def disable_dry_run_env():
+    os.environ['DISABLE_DRY_RUN'] = 'True'
+    importlib.reload(config)
+    yield
+    os.environ.pop('DISABLE_DRY_RUN')
+    importlib.reload(config)
+
+
+def test_disable_dry_run(nonce_manager, wallet, disable_dry_run_env):
+    with mock.patch('core.execute_dry_run') as dry_run_mock:
+        tx, error = sign_and_send(TX_DICT, wallet, nonce_manager)
+        dry_run_mock.assert_not_called()
+        assert error is None
+        wait_for_receipt_by_blocks(
+            wallet._web3,
+            tx
+        )
+        assert isinstance(tx, str)
