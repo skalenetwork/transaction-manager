@@ -54,14 +54,15 @@ nonce_manager = NonceManager(web3, wallet)
 @app.route('/sign-and-send', methods=['POST'])
 def _sign_and_send():
     logger.info(request)
-    skip_dry_run = request.json.get('skip_dry_run')
+    skip_dry_run = request.json.get('skip_dry_run', False)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
     thread_id = threading.get_ident()
     logger.info(f'thread_id {thread_id} waiting for the lock')
     with thread_lock:
         logger.info(f'thread_id {thread_id} got the lock')
-        tx_hash, error = sign_and_send(transaction_dict, wallet, nonce_manager, skip_dry_run)
+        tx_hash, error = sign_and_send(transaction_dict, wallet,
+                                       nonce_manager, skip_dry_run)
         if error is None:
             logger.warning(f'thread_id {thread_id} going to release the lock')
             return construct_ok_response({'transaction_hash': tx_hash})
