@@ -16,4 +16,4 @@ export PK_FILE=$PROJECT_DIR/pk_file
 
 echo $ETH_PRIVATE_KEY > $PROJECT_DIR/pk_file
 
-py.test $PROJECT_DIR/tests/
+py.test $PROJECT_DIR/tests/ $@

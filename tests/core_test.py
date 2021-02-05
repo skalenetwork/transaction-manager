@@ -5,6 +5,8 @@ from mock import Mock
 
 from sgx.http import SgxUnreachableError
 from skale.utils.web3_utils import wait_for_receipt_by_blocks
+from skale.wallets.web3_wallet import generate_wallet
+
 from core import sign_and_send, execute_dry_run
 
 TX_DICT = {
@@ -58,7 +60,23 @@ def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet, nonce_manager):
 
 def test_dry_run(nonce_manager, wallet):
     result, gas = execute_dry_run(nonce_manager.web3, wallet, TX_DICT)
-    assert result == {'status': 1, 'payload': gas}
+    assert result == {'status': 1, 'gas': gas}
+    assert gas == TX_DICT['gas']
+
+
+def test_dry_run_failed(nonce_manager, wallet):
+    failed_tx_dict = {
+        'to': '0x1057dc7277a319927D3eB43e05680B75a00eb5f4',
+        'value': 10000000000,
+        'gas': 200000,
+        'gasPrice': 1,
+        'nonce': 7
+    }
+    new_address = generate_wallet(nonce_manager.web3).address
+    failed_tx_dict['from'] = new_address
+    result, gas = execute_dry_run(nonce_manager.web3, wallet, failed_tx_dict)
+    # Return status 1 on ganache
+    assert result == {'status': 1, 'gas': gas}
     assert gas == TX_DICT['gas']
 
 
@@ -66,7 +84,7 @@ def test_estimate_gas(nonce_manager, wallet):
     tx = TX_DICT.copy()
     del tx['gas']
     result, gas = execute_dry_run(nonce_manager.web3, wallet, tx)
-    assert result == {'status': 1, 'payload': gas}
+    assert result == {'status': 1, 'gas': gas}
     assert isinstance(gas, int)
     assert gas > 0
 

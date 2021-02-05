@@ -87,7 +87,7 @@ def is_success(result: dict) -> bool:
 def execute_dry_run(web3, wallet, transaction_dict: dict) -> tuple:
     dry_run_result = make_dry_run_call(web3, wallet, transaction_dict)
     gas = None
-    if dry_run_result['status'] == SUCCESS_STATUS:
+    if is_success(dry_run_result):
         gas = dry_run_result['gas']
     return dry_run_result, gas
 
@@ -95,7 +95,8 @@ def execute_dry_run(web3, wallet, transaction_dict: dict) -> tuple:
 def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
     tx_data = transaction_dict.copy()
     tx_data.pop('nonce')
-    logger.info('Executing dry run ...')
+    tx_data['from'] = wallet.address
+    logger.info('Making dry run call ...')
 
     try:
         if 'gas' in tx_data:
@@ -107,6 +108,7 @@ def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
     except Exception as err:
         logger.error('Dry run for tx failed with error', exc_info=err)
         return {'status': 0, 'error': str(err)}
+    logger.info('Dry run call passed')
 
     return {'status': 1, 'gas': gas}
 
