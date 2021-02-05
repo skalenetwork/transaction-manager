@@ -37,7 +37,8 @@ def broken_wallet():
 
 
 def test_sign_and_send_broken_wallet(broken_wallet, nonce_manager):
-    tx, error = sign_and_send(TX_DICT, broken_wallet, nonce_manager)
+    tx, error = sign_and_send(TX_DICT, broken_wallet, nonce_manager,
+                              skip_dry_run=True)
     assert tx is None
     assert error == 'Nonce to low mock'
     assert broken_wallet.sign_and_send.call_count == 3
@@ -52,7 +53,10 @@ def sgx_unreachable_wallet():
 
 
 def test_sign_and_send_sgx_broken_wallet(sgx_unreachable_wallet, nonce_manager):
-    tx, error = sign_and_send(TX_DICT, sgx_unreachable_wallet, nonce_manager)
+    tx, error = sign_and_send(
+        TX_DICT, sgx_unreachable_wallet,
+        nonce_manager, skip_dry_run=True
+    )
     assert tx is None
     assert error == 'Sgx server is unreachable'
     assert sgx_unreachable_wallet.sign_and_send.call_count == 1

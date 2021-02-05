@@ -94,7 +94,8 @@ def execute_dry_run(web3, wallet, transaction_dict: dict) -> tuple:
 
 def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
     tx_data = transaction_dict.copy()
-    tx_data.pop('nonce')
+    if 'nonce' in tx_data:
+        tx_data.pop('nonce')
     tx_data['from'] = wallet.address
     logger.info('Making dry run call ...')
 
