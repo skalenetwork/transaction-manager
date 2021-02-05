@@ -71,6 +71,7 @@ class NonceManager:
         return res
 
     def fix_nonce(self):
+        logger.info('Trying to fix nonce')
         self.wait_for_blocks()
         network_nonce = self.request_nonce()
         logger.info(f'Resetting nonce to the network value: {network_nonce}')
