@@ -98,14 +98,10 @@ def make_dry_run_call(web3, wallet, transaction_dict: dict) -> dict:
         tx_data.pop('nonce')
     tx_data['from'] = wallet.address
     logger.info('Making dry run call ...')
-
+    gas = tx_data.get('gas')
     try:
-        if 'gas' in tx_data:
-            gas = tx_data['gas']
-            web3.eth.call(tx_data)
-        else:
-            gas = estimate_gas(web3, tx_data)
-            logger.info(f'Estimated gas for tx: {gas}')
+        gas = estimate_gas(web3, tx_data)
+        logger.info(f'Estimated gas for tx: {gas}')
     except Exception as err:
         logger.error('Dry run for tx failed with error', exc_info=err)
         return {'status': 0, 'error': str(err)}
