@@ -1,10 +1,11 @@
 import json
 import copy
 from random import randint
+from unittest import mock
 
 import pytest
 
-from main import app, skale
+from main import app, wallet
 from hexbytes import HexBytes
 from eth_account._utils import transactions
 
@@ -38,16 +39,23 @@ def test_crop_tx_dict():
     assert cropped == tx_dict
 
 
+def test_crop_tx_dict_without_data():
+    tx_dict = copy.deepcopy(TX_DICT)
+    tx_dict.pop('data')
+    cropped = crop_tx_dict(tx_dict)
+    assert cropped == tx_dict
+
+
 def test_address(skale_bp):
     response = get_bp_data(skale_bp, '/address')
     assert response['error'] is None
-    assert response['data']['address'] == skale.wallet.address
+    assert response['data']['address'] == wallet.address
 
 
 def test_public_key(skale_bp):
     response = get_bp_data(skale_bp, '/public-key')
     assert response['error'] is None
-    assert response['data']['public_key'] == skale.wallet.public_key
+    assert response['data']['public_key'] == wallet.public_key
 
 
 def test_sign(skale_bp):
@@ -56,7 +64,7 @@ def test_sign(skale_bp):
         'transaction_dict': tx_dict_str
     })
 
-    signed_transaction = skale.wallet.sign(TX_DICT)
+    signed_transaction = wallet.sign(TX_DICT)
 
     assert response['error'] is None
     data = response['data']
@@ -77,6 +85,19 @@ def test_sign_and_send(skale_bp):
     assert isinstance(data['transaction_hash'], str), data
 
 
+def test_sign_and_send_without_dry_run(skale_bp):
+    tx_dict_str = json.dumps(TX_DICT)
+    with mock.patch('core.execute_dry_run') as dry_run_mock:
+        response = post_bp_data(skale_bp, '/sign-and-send', params={
+            'transaction_dict': tx_dict_str,
+            'skip_dry_run': True
+        })
+        dry_run_mock.assert_not_called()
+        assert response['error'] is None
+        data = response['data']
+        assert isinstance(data['transaction_hash'], str), data
+
+
 def test_send_transaction_errored(skale_bp):
     txn = {}
     tx_dict_str = json.dumps(txn)
@@ -84,10 +105,7 @@ def test_send_transaction_errored(skale_bp):
         'transaction_dict': tx_dict_str
     })
     assert response['data'] is None
-    assert response['error'] in (
-        "Transaction must include these fields: {'gas', 'gasPrice'}",
-        "Transaction must include these fields: {'gasPrice', 'gas'}"
-    )
+    assert response['error'] == "Transaction must include these fields: {'gasPrice'}"
 
 
 def test_sign_hash(skale_bp):
@@ -99,7 +117,7 @@ def test_sign_hash(skale_bp):
     })
 
     assert response['error'] is None
-    signed_hash = skale.wallet.sign_hash(unsigned_hash)
+    signed_hash = wallet.sign_hash(unsigned_hash)
 
     data = response['data']
     assert data['signature'] == signed_hash.signature.hex()
@@ -113,9 +131,9 @@ def send_transactions(opts):
     for _ in range(0, 10):
         amount = randint(0, 100000)
         txn = {
-            'to': opts['skale'].wallet.address,
+            'to': opts['wallet'].address,
             'value': amount,
-            'gasPrice': opts['skale'].web3.eth.gasPrice,
+            'gasPrice': opts['wallet']._web3.eth.gasPrice,
             'gas': 22000
         }
         tx_dict_str = json.dumps(txn)
@@ -134,7 +152,7 @@ def test_multithreading(skale_bp):
             f'Thread i={i}', send_transactions,
             opts={
                 'skale_bp': skale_bp,
-                'skale': skale
+                'wallet': wallet
             },
             once=True
         )

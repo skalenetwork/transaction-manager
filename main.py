@@ -23,18 +23,16 @@ import threading
 from http import HTTPStatus
 
 from flask import Flask, request
-from skale import Skale
 from skale.utils.web3_utils import init_web3
 
-from nonce_manager import NonceManager
 from core import sign_and_send
-
+from configs import STATE_FILEPATH
+from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
+from configs.web3 import ENDPOINT
+from nonce_manager import NonceManager
 from tools.logger import init_tm_logger
 from tools.str_formatters import arguments_list_string
 from tools.helper import construct_ok_response, construct_err_response, init_wallet
-
-from configs.flask import FLASK_APP_HOST, FLASK_APP_PORT, FLASK_DEBUG_MODE
-from configs.web3 import ENDPOINT, ABI_FILEPATH
 
 
 thread_lock = threading.Lock()
@@ -48,22 +46,23 @@ app.port = FLASK_APP_PORT
 app.host = FLASK_APP_HOST
 app.use_reloader = False
 
-web3 = init_web3(ENDPOINT)
+web3 = init_web3(ENDPOINT, state_path=STATE_FILEPATH)
 wallet = init_wallet(web3)
-skale = Skale(ENDPOINT, ABI_FILEPATH, wallet)
-nonce_manager = NonceManager(skale, wallet)
+nonce_manager = NonceManager(web3, wallet)
 
 
 @app.route('/sign-and-send', methods=['POST'])
 def _sign_and_send():
     logger.info(request)
+    skip_dry_run = request.json.get('skip_dry_run', False)
     transaction_dict_str = request.json.get('transaction_dict')
     transaction_dict = json.loads(transaction_dict_str)
     thread_id = threading.get_ident()
     logger.info(f'thread_id {thread_id} waiting for the lock')
     with thread_lock:
         logger.info(f'thread_id {thread_id} got the lock')
-        tx_hash, error = sign_and_send(transaction_dict, wallet, nonce_manager)
+        tx_hash, error = sign_and_send(transaction_dict, wallet,
+                                       nonce_manager, skip_dry_run)
         if error is None:
             logger.warning(f'thread_id {thread_id} going to release the lock')
             return construct_ok_response({'transaction_hash': tx_hash})

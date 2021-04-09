@@ -18,7 +18,5 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import os
-from configs import CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME
 
 ENDPOINT = os.environ['ENDPOINT']
-ABI_FILEPATH = os.path.join(CONTRACTS_INFO_FOLDER, MANAGER_CONTRACTS_INFO_NAME)

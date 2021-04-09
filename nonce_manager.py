@@ -22,12 +22,15 @@ from time import sleep
 from skale.utils.web3_utils import get_eth_nonce
 from skale.utils.account_tools import send_ether
 
+from configs import BLOCKS_TO_WAIT
+
+
 logger = logging.getLogger(__name__)
 
 
 class NonceManager:
-    def __init__(self, skale, wallet):
-        self.skale = skale
+    def __init__(self, web3, wallet):
+        self.web3 = web3
         self.wallet = wallet
         self.wait_for_blocks()
         self._nonce = self.request_nonce()
@@ -48,14 +51,14 @@ class NonceManager:
         logger.info('Running request_nonce...')
         address = self.wallet.address
         logger.info(f'Got wallet address: {address}, going to request eth nonce')
-        eth_nonce = get_eth_nonce(self.skale.web3, address)
+        eth_nonce = get_eth_nonce(self.web3, address)
         logger.info(f'Got network nonce for {address}: {eth_nonce}')
         return eth_nonce
 
     def healthcheck(self):
         logger.info('Running healthcheck...')
         receipt = send_ether(
-            web3=self.skale.web3,
+            web3=self.web3,
             sender_wallet=self.wallet,
             receiver_account=self.wallet.address,
             amount=0
@@ -68,6 +71,7 @@ class NonceManager:
         return res
 
     def fix_nonce(self):
+        logger.info('Trying to fix nonce')
         self.wait_for_blocks()
         network_nonce = self.request_nonce()
         logger.info(f'Resetting nonce to the network value: {network_nonce}')
@@ -81,14 +85,14 @@ class NonceManager:
         self._nonce += 1
         logger.info(f'Incremented nonce: {self.nonce}')
 
-    def wait_for_blocks(self, timeout=5, blocks_to_wait=5):
-        current_block = start_block = self.skale.web3.eth.blockNumber
+    def wait_for_blocks(self, timeout=5, blocks_to_wait=BLOCKS_TO_WAIT):
+        current_block = start_block = self.web3.eth.blockNumber
         logger.info(
             f'Current block number is {current_block}, '
             f'waiting for {blocks_to_wait} blocks to be mined'
         )
         while current_block < start_block + blocks_to_wait:
-            new_block = self.skale.web3.eth.blockNumber
+            new_block = self.web3.eth.blockNumber
             if new_block > current_block:
                 logger.info(f'{new_block} is mined')
                 current_block = new_block

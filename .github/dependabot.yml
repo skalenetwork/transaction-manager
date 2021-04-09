@@ -1,8 +1,10 @@
 version: 2
 updates:
-- package-ecosystem: pip
+- package-ecosystem: "pip"
   directory: "/"
   schedule:
-    interval: weekly
-    day: saturday
+    interval: "weekly"
+    day: "saturday"
   open-pull-requests-limit: 10
+  allow:
+    - dependency-type: "production"
