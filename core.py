@@ -33,7 +33,7 @@ TIMEOUT = 1
 
 SGX_UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
 SUCCESS_STATUS = 1
-GAS_LIMIT_COEFFICIENT = 1.2
+GAS_LIMIT_COEFFICIENT = 1.5
 
 
 def sign_and_send(transaction_dict: dict, wallet,
@@ -119,6 +119,7 @@ def estimate_gas(web3, transaction_dict: dict):
     estimated_gas = web3.eth.estimateGas(transaction_dict)
     normalized_estimated_gas = int(estimated_gas * GAS_LIMIT_COEFFICIENT)
     if normalized_estimated_gas > block_gas_limit:
-        logger.warning('Estimate gas for tx exceeds block gas limit')
+        logger.warning(f'Estimate gas - {normalized_estimated_gas} exceeds \
+block gas limit, going to use block_gas_limit ({block_gas_limit}) for this transaction')
         return block_gas_limit
     return normalized_estimated_gas
