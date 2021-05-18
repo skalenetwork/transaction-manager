@@ -33,7 +33,7 @@ TIMEOUT = 1
 
 SGX_UNREACHABLE_MESSAGE = 'Sgx server is unreachable'
 SUCCESS_STATUS = 1
-GAS_LIMIT_COEFFICIENT = 1.5
+GAS_LIMIT_COEFFICIENT = 1.8
 
 
 def sign_and_send(transaction_dict: dict, wallet,
