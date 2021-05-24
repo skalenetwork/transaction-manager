@@ -1,7 +1,7 @@
-import dataclasses
 import json
+from dataclasses import asdict, dataclass
 from enum import Enum
-from typing import Dict
+from typing import Dict, Optional
 
 
 class TxStatus(Enum):
@@ -12,19 +12,23 @@ class TxStatus(Enum):
     TIMEOUT = 5
 
 
-@dataclasses.dataclass
+@dataclass
 class Tx:
     tx_id: str
     status: TxStatus
     priority: int
     to: str
     value: int
-    gas: int
-    gas_price: int
-    nonce: int
-    data: Dict
-    tx_hash: str = None
-    receipt: Dict = None
+    gas: Optional[int] = None
+    gas_price: Optional[int] = None
+    nonce: Optional[int] = None
+    data: Optional[Dict] = None
+    tx_hash: Optional[str] = None
+    receipt: Optional[Dict] = None
+
+    @property
+    def raw_id(self) -> bytes:
+        return self.tx_id.encode('utf-8')
 
     def is_completed(self) -> bool:
         return self.status in (
@@ -45,7 +49,7 @@ class Tx:
         }
 
     def to_bytes(self) -> bytes:
-        plain_tx = dataclasses.asdict(self)
+        plain_tx = asdict(self)
         del plain_tx['tx_id']
         del plain_tx['gas_price']
         plain_tx['status'] = self.status.name
@@ -56,6 +60,10 @@ class Tx:
     def from_bytes(cls, tx_id: bytes, tx_bytes: bytes) -> 'Tx':
         plain_tx = json.loads(tx_bytes.decode('utf-8'))
         plain_tx['status'] = TxStatus[plain_tx['status']]
-        plain_tx['gas_price'] = plain_tx['gasPrice']
-        del plain_tx['gasPrice']
+        plain_tx['gas_price'] = plain_tx.get('gasPrice')
+        if 'gasPrice' in plain_tx:
+            del plain_tx['gasPrice']
+        plain_tx['tx_hash'] = plain_tx.get('hash')
+        if 'hash' in plain_tx:
+            del plain_tx['hash']
         return Tx(tx_id=tx_id.decode('utf-8'), **plain_tx)
