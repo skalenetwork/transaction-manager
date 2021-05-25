@@ -1,12 +1,16 @@
-""" Configuration params """
 import os
 import sys
+from typing import Optional
 
-REDIS_URI = 'redis://@127.0.0.1:6379'
+REDIS_URI: str = 'redis://@127.0.0.1:6379'
 
-SGX_URL = 'https://127.0.0.1:1026'
+SGX_URL: Optional[str] = 'http://127.0.0.1:1026'
 
-ETH_PRIVATE_KEY = None
+ETH_PRIVATE_KEY: Optional[str] = None
+
+ENDPOINT: str = 'http://127.0.0.1:1919'
+
+GAS_MULTIPLIER: float = 1.8
 
 
 for v in list(
@@ -16,4 +20,7 @@ for v in list(
     )
 ):
     type_ = type(getattr(sys.modules[__name__], v))
-    globals()[v] = type_(os.environ[v])
+    if not isinstance(None, type_):
+        casted = type_(os.environ[v])
+    else:
+        globals()[v] = os.environ[v]
