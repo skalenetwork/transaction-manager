@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Dict, Optional
+from typing import cast, Dict, Optional
 
 from eth_typing.evm import ChecksumAddress, HexStr
 from web3 import Web3
@@ -26,7 +26,7 @@ class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
 
 
 class Eth:
-    def __init__(self, web3: Optional[Web3]) -> None:
+    def __init__(self, web3: Optional[Web3] = None) -> None:
         self.w3: Web3 = web3 or gw3
 
     @property
@@ -35,11 +35,15 @@ class Eth:
         block = self.w3.eth.getBlock(latest_block_number)
         return block['gasLimit']
 
+    @property
+    def chain_id(self) -> int:
+        return self.w3.eth.chainId
+
     def balance(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getBalance(address)
 
-    def calculate_gas(self, tx: TxParams) -> int:
-        estimated = self.w3.eth.estimateGas(tx)
+    def calculate_gas(self, tx: Dict) -> int:
+        estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
         gas = int(GAS_MULTIPLIER * estimated)
         gas_limit = self.block_gas_limit
         if gas < gas_limit:
@@ -49,10 +53,11 @@ class Eth:
             gas = self.block_gas_limit
         return gas
 
-    def send_tx(self, signed_tx: Dict) -> str:
-        return self.w3.eth.sendRawTransaction(
+    def send_tx(self, signed_tx: Dict) -> HexStr:
+        tx_hash = self.w3.eth.sendRawTransaction(
             signed_tx['rawTransaction']
         ).hex()
+        return cast(HexStr, tx_hash)
 
     def get_nonce(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getTransactionCount(address)
