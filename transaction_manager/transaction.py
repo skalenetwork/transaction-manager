@@ -3,9 +3,6 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Dict, Optional
 
-from eth_typing.evm import ChecksumAddress, HexStr
-from web3.types import TxReceipt
-
 
 class TxStatus(Enum):
     PROPOSED = 1
@@ -20,16 +17,18 @@ class Tx:
     tx_id: str
     status: TxStatus
     priority: int
-    to: ChecksumAddress
+    to: str
     value: int
-    source: Optional[ChecksumAddress]
+    source: Optional[str]
     gas: Optional[int] = None
     chain_id: Optional[int] = None
     gas_price: Optional[int] = None
     nonce: Optional[int] = None
     data: Optional[Dict] = None
-    tx_hash: Optional[HexStr] = None
-    receipt: Optional[TxReceipt] = None
+    tx_hash: Optional[str] = None
+    receipt: Optional[Dict] = None
+    attempts: Optional[int] = None
+    sent_ts: Optional[int] = None
 
     @property
     def raw_id(self) -> bytes:
@@ -41,6 +40,9 @@ class Tx:
             TxStatus.FAILED,
             TxStatus.TIMEOUT
         )
+
+    def is_sent(self) -> bool:
+        return self.tx_hash is not None
 
     @property
     def eth_tx(self) -> Dict:
