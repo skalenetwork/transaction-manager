@@ -2,19 +2,20 @@
 
 import logging
 import time
+from functools import cached_property
 from typing import cast, Dict, Optional
 
 from eth_typing.evm import ChecksumAddress, HexStr
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
-from web3.types import TxParams, TxReceipt
+from web3.types import TxParams
 
 from .resources import w3 as gw3
 from .config import GAS_MULTIPLIER
 
 logger = logging.getLogger(__name__)
 
-MAX_WAITING_TIME = 60
+MAX_WAITING_TIME = 500
 
 
 class BlockTimeoutError(TimeoutError):
@@ -23,6 +24,11 @@ class BlockTimeoutError(TimeoutError):
 
 class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
     pass
+
+
+def is_replacement_underpriced(err: Exception) -> bool:
+    return isinstance(err, ValueError) and \
+        err.args[0]['message'] == 'replacement transaction underpriced'
 
 
 class Eth:
@@ -35,12 +41,16 @@ class Eth:
         block = self.w3.eth.getBlock(latest_block_number)
         return block['gasLimit']
 
-    @property
+    @cached_property
     def chain_id(self) -> int:
         return self.w3.eth.chainId
 
-    def balance(self, address: ChecksumAddress) -> int:
+    def get_balance(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getBalance(address)
+
+    @property
+    def avg_gas_price(self) -> int:
+        return self.w3.eth.gasPrice
 
     def calculate_gas(self, tx: Dict) -> int:
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
@@ -53,14 +63,27 @@ class Eth:
             gas = self.block_gas_limit
         return gas
 
-    def send_tx(self, signed_tx: Dict) -> HexStr:
+    def send_tx(self, signed_tx: Dict) -> str:
         tx_hash = self.w3.eth.sendRawTransaction(
             signed_tx['rawTransaction']
         ).hex()
-        return cast(HexStr, tx_hash)
+        return tx_hash
 
     def get_nonce(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getTransactionCount(address)
+
+    def get_receipt(
+        self,
+        tx_hash: str,
+        raise_err: bool = False
+    ) -> Optional[Dict]:
+        receipt = None
+        try:
+            receipt = self.w3.eth.getTransactionReceipt(cast(HexStr, tx_hash))
+        except TransactionNotFound as e:
+            if raise_err:
+                raise e
+        return cast(Optional[Dict], receipt)
 
     def wait_for_blocks(
         self,
@@ -81,15 +104,14 @@ class Eth:
 
     def wait_for_receipt(
         self,
-        tx_hash: HexStr,
+        tx_hash: str,
         max_time: int = MAX_WAITING_TIME
-    ) -> TxReceipt:
-
+    ) -> Dict:
         start_ts = time.time()
         receipt = None
         while time.time() - start_ts < max_time:
             try:
-                receipt = self.w3.eth.getTransactionReceipt(tx_hash)
+                self.get_receipt(tx_hash, raise_err=True)
             except TransactionNotFound:
                 time.sleep(1)
         if not receipt:
