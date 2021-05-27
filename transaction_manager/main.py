@@ -1,13 +1,15 @@
 import logging
-from transaction_manager.eth import Eth
-from transaction_manager.processor import Processor
-from transaction_manager.txpool import TxPool
-from transaction_manager.wallet import init_wallet
+from .eth import Eth
+from .processor import Processor
+from .txpool import TxPool
+from .wallet import init_wallet
+from .log import init_logger
 
 logger = logging.getLogger(__name__)
 
 
 def main() -> None:
+    init_logger()
     eth = Eth()
     pool = TxPool()
     wallet = init_wallet()
