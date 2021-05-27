@@ -29,8 +29,7 @@ class RedisSender:
         record = json.dumps({
             'status': 'PROPOSED',
             'priority': priority,
-            'hash': None,
-            'receipt': None,
+            'tx_hash': None,
             **tx
         }).encode('utf-8')
         return tx_id, record
@@ -57,12 +56,12 @@ class RedisSender:
         rid = self._to_raw_id(tx_id)
         return json.loads(self.rs.get(rid).decode('utf-8'))
 
-    def wait(self, tx_id: str, timeout: int = 5) -> str:
+    def wait(self, tx_id: str, timeout: int = 50) -> str:
         start_ts = time.time()
         while time.time() - start_ts < timeout:
             status = self.get_status(tx_id)
-            if status == 'Mined' or status == 'Lost':
-                return 'Finished'
+            if status in ('SUCCESS', 'FAILED', 'NOT_SENT'):
+                return self.get_record(tx_id)
         raise TimeoutError(f'Transaction has not been mined within {timeout}')
 
 

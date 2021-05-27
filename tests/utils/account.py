@@ -17,4 +17,4 @@ def send_eth(
     }
     signed_txn = wallet.sign(tx)
     h = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    w3.eth.waitForTransactionReceipt(h, timeout=10)
+    w3.eth.waitForTransactionReceipt(h, timeout=60)
