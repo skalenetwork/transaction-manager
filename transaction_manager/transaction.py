@@ -7,9 +7,10 @@ from typing import Dict, Optional
 class TxStatus(Enum):
     PROPOSED = 1
     PENDING = 2
-    SUCCESS = 3
-    FAILED = 4
-    TIMEOUT = 5
+    TIMEOUT = 3
+    SUCCESS = 4
+    FAILED = 5
+    NOT_SENT = 6
 
 
 @dataclass
@@ -19,15 +20,14 @@ class Tx:
     priority: int
     to: str
     value: int
-    source: Optional[str]
+    source: Optional[str] = None
     gas: Optional[int] = None
     chain_id: Optional[int] = None
     gas_price: Optional[int] = None
     nonce: Optional[int] = None
     data: Optional[Dict] = None
     tx_hash: Optional[str] = None
-    receipt: Optional[Dict] = None
-    attempts: Optional[int] = None
+    attempts: Optional[int] = 0
     sent_ts: Optional[int] = None
 
     @property
@@ -38,24 +38,34 @@ class Tx:
         return self.status in (
             TxStatus.SUCCESS,
             TxStatus.FAILED,
-            TxStatus.TIMEOUT
+            TxStatus.NOT_SENT
         )
 
     def is_sent(self) -> bool:
         return self.tx_hash is not None
 
+    def set_as_completed(self, receipt: Dict) -> None:
+        if receipt['status'] == 1:
+            s = TxStatus.SUCCESS
+        else:
+            s = TxStatus.FAILED
+        self.status = s
+        self.receipt = receipt
+
     @property
     def eth_tx(self) -> Dict:
-        return {
+        etx = {
             'from': self.source,
             'to': self.to,
             'value': self.value,
             'gas': self.gas,
             'gasPrice': self.gas_price,
             'nonce': self.nonce,
-            'data': self.data,
             'chainId': self.chain_id
         }
+        if self.data:
+            etx.update({'data': self.data})
+        return etx
 
     def to_bytes(self) -> bytes:
         plain_tx = asdict(self)
@@ -65,7 +75,8 @@ class Tx:
         plain_tx['status'] = self.status.name
         plain_tx['gasPrice'] = self.gas_price
         plain_tx['from'] = self.source
-        return json.dumps(plain_tx).encode('utf-8')
+
+        return json.dumps(plain_tx, sort_keys=True).encode('utf-8')
 
     @classmethod
     def from_bytes(cls, tx_id: bytes, tx_bytes: bytes) -> 'Tx':
@@ -75,9 +86,6 @@ class Tx:
         plain_tx['source'] = plain_tx.get('from')
         if 'gasPrice' in plain_tx:
             del plain_tx['gasPrice']
-        plain_tx['tx_hash'] = plain_tx.get('hash')
-        if 'hash' in plain_tx:
-            del plain_tx['hash']
         if 'from' in plain_tx:
             del plain_tx['from']
         return Tx(tx_id=tx_id.decode('utf-8'), **plain_tx)
