@@ -5,7 +5,7 @@ from typing import Generator, Optional
 
 import redis
 
-from .structures import Tx
+from .transaction import Tx
 from .resources import rs as grs
 
 
@@ -70,7 +70,8 @@ class TxPool:
 
     def release(self, tx: Tx) -> None:
         pipe = self.rs.pipeline()
+        if tx.is_sent():
+            pipe.set(tx.tx_id, tx.to_bytes())
         if tx.is_completed():
             pipe.zrem(self.name, tx.tx_id)
-        pipe.set(tx.tx_id, tx.to_bytes())
         pipe.execute()
