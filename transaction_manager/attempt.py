@@ -1,17 +1,20 @@
 import json
 import logging
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
-from typing import Optional
+from typing import Generator, Optional
 
 import redis
 
 from .resources import rs as grs
+from .transaction import Tx
 
 logger = logging.getLogger(__name__)
 
 # TODO: IVD Move to options
-MAX_RESUBMIT_TIME = 10
+MAX_RESUBMIT_AMOUNT = 10
 GAS_PRICE_INC_PERCENT = 10
+GRAD_GAS_PRICE_INC_PERCENT = 2
 MAX_GAS_PRICE = 3 * 10 ** 9
 BASE_WAITING_TIME = 10
 
@@ -29,12 +32,15 @@ class Attempt:
     wait_time: int
 
     def to_bytes(self) -> bytes:
-        return json.dumps(asdict(self)).encode('utf-8')
+        return json.dumps(asdict(self), sort_keys=True).encode('utf-8')
 
     @classmethod
     def from_bytes(cls, attempt_bytes: bytes) -> 'Attempt':
         raw = json.loads(attempt_bytes.decode('utf-8'))
         return Attempt(**raw)
+
+    def is_last(self) -> bool:
+        return self.index == MAX_RESUBMIT_AMOUNT
 
 
 def get_last_attempt(rs: redis.Redis = grs) -> Optional[Attempt]:
@@ -53,12 +59,20 @@ def calculate_next_waiting_time(attempt_index: int) -> int:
     return BASE_WAITING_TIME + 15 * attempt_index
 
 
+def inc_gas_price(gas_price: int, inc: int = GAS_PRICE_INC_PERCENT) -> int:
+    return gas_price * (100 + inc) // 100
+
+
+def grad_inc_gas_price(gas_price: int) -> int:
+    return inc_gas_price(gas_price=gas_price, inc=GRAD_GAS_PRICE_INC_PERCENT)
+
+
 def calculate_next_gas_price(
     last_attempt: Attempt,
     avg_gp: int,
     nonce: int
 ) -> int:
-    inc_gp = last_attempt.gas_price * (100 + GAS_PRICE_INC_PERCENT) // 100
+    inc_gp = inc_gas_price(last_attempt.gas_price, inc=GAS_PRICE_INC_PERCENT)
     if inc_gp > MAX_GAS_PRICE:
         logger.warning(
             f'Next gas price is not allowed ({inc_gp} > {MAX_GAS_PRICE})'
@@ -69,7 +83,7 @@ def calculate_next_gas_price(
     return max(avg_gp, inc_gp)
 
 
-def make_next_attempt(
+def create_next_attempt(
     nonce: int,
     avg_gas_price: int,
     tx_id: str,
@@ -90,3 +104,12 @@ def make_next_attempt(
         gas_price=next_gp,
         wait_time=next_wait_time
     )
+
+
+@contextmanager
+def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[None, None, None]:
+    try:
+        yield
+    finally:
+        if tx.is_sent():
+            set_last_attempt(attempt)

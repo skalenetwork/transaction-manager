@@ -3,8 +3,8 @@ import pytest
 from transaction_manager.attempt import (
     Attempt,
     GasPriceLimitExceededError,
+    create_next_attempt,
     get_last_attempt,
-    make_next_attempt,
     set_last_attempt
 )
 
@@ -29,7 +29,8 @@ def test_attempt():
     assert aa.wait_time == 30
 
     aa_raw = aa.to_bytes()
-    assert aa_raw == b'{"tx_id": "id-aaaa", "nonce": 1, "index": 2, "gas_price": 1000000000, "wait_time": 30}'  # noqa
+    expected = b'{"gas_price": 1000000000, "index": 2, "nonce": 1, "tx_id": "id-aaaa", "wait_time": 30}'  # noqa
+    assert aa_raw == expected
     assert Attempt.from_bytes(aa_raw) == aa
 
 
@@ -40,9 +41,9 @@ def test_get_set_last_attempt(trs):
     assert get_last_attempt(rs=trs) == aa
 
 
-def test_make_next_attempt():
+def test_create_next_attempt():
     aa = create_attempt()
-    bb = make_next_attempt(
+    bb = create_next_attempt(
         nonce=aa.nonce,
         avg_gas_price=10 ** 9,
         tx_id=aa.tx_id,
@@ -55,7 +56,7 @@ def test_make_next_attempt():
     assert bb.wait_time == 40
 
     cc_tid = 'id-cccc'
-    cc = make_next_attempt(
+    cc = create_next_attempt(
         nonce=bb.nonce + 1,
         avg_gas_price=10 ** 9,
         tx_id=cc_tid,
@@ -68,7 +69,7 @@ def test_make_next_attempt():
     assert cc.wait_time == 10
 
     dd_tid = 'id-dddd'
-    dd = make_next_attempt(
+    dd = create_next_attempt(
         nonce=0,
         avg_gas_price=10 ** 9,
         tx_id=dd_tid,
@@ -83,7 +84,7 @@ def test_make_next_attempt():
 
     ee_tid = 'id-eeee'
     with pytest.raises(GasPriceLimitExceededError):
-        make_next_attempt(
+        create_next_attempt(
             nonce=0,
             avg_gas_price=10 ** 9,
             tx_id=ee_tid,
