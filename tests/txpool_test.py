@@ -1,6 +1,6 @@
 import pytest
 
-from transaction_manager.structures import TxStatus
+from transaction_manager.transactions import TxStatus
 from transaction_manager.txpool import NoNextTransactionError
 
 from tests.utils.sender import RedisSender
