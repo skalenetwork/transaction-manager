@@ -12,6 +12,10 @@ ENDPOINT: str = 'http://127.0.0.1:1919'
 
 GAS_MULTIPLIER: float = 1.8
 
+GAS_PRICE_INC_COEFF: float = 1.2
+
+NODE_DATA_PATH = '/skale_node_data'
+
 
 for v in list(
     filter(
