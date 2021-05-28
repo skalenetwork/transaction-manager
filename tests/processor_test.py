@@ -1,9 +1,12 @@
 import json
 from multiprocessing import Process
+from concurrent.futures import as_completed, ProcessPoolExecutor
 
 import pytest
 
 from transaction_manager.processor import Processor
+
+TX_NUMBER = 10
 
 
 @pytest.fixture
@@ -13,6 +16,19 @@ def proc(tpool, eth, w3wallet, trs):
     r.start()
     yield p
     r.terminate()
+
+
+def send_tx(sender, etx):
+    return sender.send(etx)
+
+
+def make_simple_tx(sender, address):
+    etx = {'to': address, 'value': 10}
+    return send_tx(sender, etx)
+
+
+def wait_for_tx(sender, tx_id):
+    return sender.wait(tx_id, timeout=300)
 
 
 def test_processor(proc, tpool, eth, w3wallet, trs, sender):
@@ -37,3 +53,17 @@ def test_processor(proc, tpool, eth, w3wallet, trs, sender):
     assert tx['data'] is None
     assert tx['priority'] == 1
     assert tx_id == last_attempt['tx_id']
+
+
+def test_processor_many_tx(proc, tpool, eth, w3wallet, w3, trs, sender):
+    addrs = [w3.eth.account.create().address for i in range(TX_NUMBER)]
+    futures = []
+    with ProcessPoolExecutor(max_workers=3) as p:
+        futures = [p.submit(make_simple_tx, sender, addr) for addr in addrs]
+
+    tids = [f.result() for f in as_completed(futures)]
+
+    with ProcessPoolExecutor(max_workers=3) as p:
+        futures = [p.submit(wait_for_tx, sender, tid) for tid in tids]
+    tx = [f.result() for f in as_completed(futures)]
+    assert any(tx.status == 'SUCCESS', tx)

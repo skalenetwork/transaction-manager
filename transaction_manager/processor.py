@@ -38,7 +38,7 @@ class Processor:
                 if is_replacement_underpriced(err):
                     gas_price = grad_inc_gas_price(gas_price)
 
-        tx.sent_ts = time.time()
+        tx.sent_ts = int(time.time())
         tx.attempts += 1
 
     def handle(self, tx: Tx) -> None:
