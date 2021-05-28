@@ -21,7 +21,10 @@ class RedisSender:
 
     @classmethod
     def _make_raw_id(cls) -> bytes:
-        return b'tx-' + binascii.b2a_hex(os.urandom(cls.ID_SIZE))
+        prefix = b'tx-'
+        time_bytes = int(time.time()).to_bytes(4, 'big').hex().encode('utf-8')
+        unique = binascii.b2a_hex(os.urandom(cls.ID_SIZE))
+        return prefix + time_bytes + unique
 
     @classmethod
     def _make_record(cls, tx: Dict, priority: int) -> Tuple[bytes, bytes]:
@@ -38,7 +41,7 @@ class RedisSender:
     def _to_raw_id(cls, tx_id: str) -> bytes:
         return tx_id.encode('utf-8')
 
-    def _to_id(cls, raw_id: str) -> str:
+    def _to_id(cls, raw_id: bytes) -> str:
         return raw_id.decode('utf-8')
 
     def send(self, tx: Dict, priority: int = 1) -> str:
@@ -56,7 +59,7 @@ class RedisSender:
         rid = self._to_raw_id(tx_id)
         return json.loads(self.rs.get(rid).decode('utf-8'))
 
-    def wait(self, tx_id: str, timeout: int = 50) -> str:
+    def wait(self, tx_id: str, timeout: int = 50) -> Dict:
         start_ts = time.time()
         while time.time() - start_ts < timeout:
             status = self.get_status(tx_id)
