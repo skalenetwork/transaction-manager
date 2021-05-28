@@ -27,7 +27,7 @@ class Tx:
     nonce: Optional[int] = None
     data: Optional[Dict] = None
     tx_hash: Optional[str] = None
-    attempts: Optional[int] = 0
+    attempts: int = 0
     sent_ts: Optional[int] = None
 
     @property
@@ -54,14 +54,14 @@ class Tx:
 
     @property
     def eth_tx(self) -> Dict:
-        etx = {
+        etx: Dict = {
             'from': self.source,
             'to': self.to,
             'value': self.value,
             'gas': self.gas,
             'gasPrice': self.gas_price,
             'nonce': self.nonce,
-            'chainId': self.chain_id
+            'chainId': self.chain_id,
         }
         if self.data:
             etx.update({'data': self.data})
