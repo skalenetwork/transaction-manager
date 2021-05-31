@@ -1,4 +1,5 @@
 """ Process transaction messages from queue """
+import logging
 
 from contextlib import contextmanager
 from typing import Generator, Optional
@@ -7,6 +8,9 @@ import redis
 
 from .transaction import Tx
 from .resources import rs as grs
+
+
+logger = logging.getLogger(__name__)
 
 
 class NoNextTransactionError(Exception):
@@ -34,18 +38,6 @@ class TxPool:
         tx_id = self.rs.zrange(self.name, -1, -1)[0]
         return self.get(tx_id)
 
-    def set_last_id(self, tx_id: bytes) -> None:
-        self.rs.set('last_id', tx_id)
-
-    def get_last_id(self) -> bytes:
-        return self.rs.get('last_id')
-
-    def get_last(self) -> Optional[Tx]:
-        tx_id = self.get_last_id()
-        if tx_id is None:
-            return None
-        return self.get(tx_id)
-
     def clear(self) -> None:
         for tx_id, _ in self.rs.zscan_iter(self.name):
             self.drop(tx_id)
@@ -59,19 +51,22 @@ class TxPool:
     @contextmanager
     def aquire_next(self) -> Generator[Tx, None, None]:
         tx = self.get_next()
+        logger.info(f'Aquiring tx {tx.tx_id}')
         # TODO: IVD Revise
         if tx is None:
             raise NoNextTransactionError(f'No transactions in {self.name}')
-        self.set_last_id(tx.raw_id)
         try:
             yield tx
         finally:
             self.release(tx)
 
     def release(self, tx: Tx) -> None:
+        logger.info(f'Releasing tx {tx.tx_id}')
         pipe = self.rs.pipeline()
         if tx.is_sent():
+            logger.info(f'Updating record for tx {tx.tx_id}')
             pipe.set(tx.tx_id, tx.to_bytes())
         if tx.is_completed():
+            logger.info(f'Removing tx {tx.tx_id} from pool')
             pipe.zrem(self.name, tx.tx_id)
         pipe.execute()
