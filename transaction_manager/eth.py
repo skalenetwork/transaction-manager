@@ -31,6 +31,10 @@ def is_replacement_underpriced(err: Exception) -> bool:
         err.args[0]['message'] == 'replacement transaction underpriced'
 
 
+def is_nonce_too_low(err: Exception) -> bool:
+    return isinstance(err, ValueError) and 'nonce' in err.args[0]['message']
+
+
 class Eth:
     def __init__(self, web3: Optional[Web3] = None) -> None:
         self.w3: Web3 = web3 or gw3
@@ -53,6 +57,7 @@ class Eth:
         return self.w3.eth.gasPrice
 
     def calculate_gas(self, tx: Dict) -> int:
+        logger.info(f'Calculating gas for {tx}')
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
         gas = int(GAS_MULTIPLIER * estimated)
         gas_limit = self.block_gas_limit

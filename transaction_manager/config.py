@@ -8,13 +8,15 @@ SGX_URL: Optional[str] = 'http://127.0.0.1:1026'
 
 ETH_PRIVATE_KEY: Optional[str] = None
 
-ENDPOINT: str = 'http://127.0.0.1:1919'
+ENDPOINT: str = 'http://127.0.0.1:8545'
 
 GAS_MULTIPLIER: float = 1.8
 
 GAS_PRICE_INC_COEFF: float = 1.2
 
 NODE_DATA_PATH = '/skale_node_data'
+
+CONFIRMATION_BLOCKS = 2
 
 
 for v in list(
