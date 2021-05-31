@@ -15,7 +15,8 @@ logger = logging.getLogger(__name__)
 MAX_RESUBMIT_AMOUNT = 10
 GAS_PRICE_INC_PERCENT = 10
 GRAD_GAS_PRICE_INC_PERCENT = 2
-MAX_GAS_PRICE = 3 * 10 ** 9
+# MAX_GAS_PRICE = 3 * 10 ** 9
+MAX_GAS_PRICE = 10 ** 18
 BASE_WAITING_TIME = 10
 
 
@@ -108,8 +109,9 @@ def create_next_attempt(
 
 @contextmanager
 def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[None, None, None]:
+    logger.info(f'Aquiring attempt {attempt}')
     try:
-        yield
+        yield attempt
     finally:
         if tx.is_sent():
             set_last_attempt(attempt)
