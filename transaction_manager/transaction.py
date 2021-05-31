@@ -6,11 +6,12 @@ from typing import Dict, Optional
 
 class TxStatus(Enum):
     PROPOSED = 1
-    PENDING = 2
+    SENT = 2
     TIMEOUT = 3
-    SUCCESS = 4
-    FAILED = 5
-    NOT_SENT = 6
+    DROPPED = 4
+    SUCCESS = 5
+    FAILED = 6
+    CONFIRMED = 7
 
 
 @dataclass
@@ -38,7 +39,7 @@ class Tx:
         return self.status in (
             TxStatus.SUCCESS,
             TxStatus.FAILED,
-            TxStatus.NOT_SENT
+            TxStatus.DROPPED
         )
 
     def is_sent(self) -> bool:
@@ -58,11 +59,12 @@ class Tx:
             'from': self.source,
             'to': self.to,
             'value': self.value,
-            'gas': self.gas,
             'gasPrice': self.gas_price,
             'nonce': self.nonce,
             'chainId': self.chain_id,
         }
+        if self.gas:
+            etx.update({'gas': self.gas})
         if self.data:
             etx.update({'data': self.data})
         return etx
