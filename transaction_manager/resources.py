@@ -25,10 +25,10 @@ from web3 import Web3
 
 from .config import ENDPOINT, ETH_PRIVATE_KEY, REDIS_URI
 
-# TODO: IVD check out options to configure
+# TODO: check out options to configure
 cpool: redis.ConnectionPool = redis.ConnectionPool.from_url(REDIS_URI)
 rs: redis.Redis = redis.Redis(connection_pool=cpool)
-# TODO: IVD check out options to configure
+# TODO: check out options to configure
 w3: Web3 = init_web3(ENDPOINT)
 
 wallet: BaseWallet = Web3Wallet(ETH_PRIVATE_KEY, w3)

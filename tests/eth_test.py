@@ -44,7 +44,7 @@ def test_eth_tx(w3wallet, w3, eth):
         'nonce': 0,
         'chainId': w3.eth.chainId
     }
-    # TODO: IVD WHY 8000000 ?
+    # TODO: WHY 8000000 ?
     assert eth.calculate_gas(eth_tx_a) == 8000000
 
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)

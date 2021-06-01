@@ -70,7 +70,7 @@ class TxPool:
     def aquire_next(self) -> Generator[Tx, None, None]:
         tx = self.get_next()
         logger.info(f'Aquiring tx {tx.tx_id}')
-        # TODO: IVD Revise
+        # TODO: Revise
         if tx is None:
             raise NoNextTransactionError(f'No transactions in {self.name}')
         try:

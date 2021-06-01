@@ -85,7 +85,7 @@ def init_logger() -> None:
 
     stream_handler = StreamHandler(sys.stderr)
     stream_handler.setFormatter(formatter)
-    stream_handler.setLevel(logging.DEBUG)
+    stream_handler.setLevel(logging.INFO)
     handlers.append(stream_handler)
 
     f_handler_debug = RotatingFileHandler(

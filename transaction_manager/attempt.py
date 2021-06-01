@@ -30,7 +30,7 @@ from .transaction import Tx
 
 logger = logging.getLogger(__name__)
 
-# TODO: IVD Move to options
+# TODO: Move to options
 MAX_RESUBMIT_AMOUNT = 10
 GAS_PRICE_INC_PERCENT = 10
 GRAD_GAS_PRICE_INC_PERCENT = 2
@@ -75,7 +75,7 @@ def set_last_attempt(attempt: Attempt, rs: redis.Redis = grs) -> None:
 
 
 def calculate_next_waiting_time(attempt_index: int) -> int:
-    # TODO: IVD Better formula needed
+    # TODO: Better formula needed
     return BASE_WAITING_TIME + 15 * attempt_index
 
 

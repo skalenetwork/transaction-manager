@@ -53,12 +53,12 @@ class Processor:
         tx.gas_price = gas_price
         tx.nonce = nonce
         tx.gas = self.eth.calculate_gas(tx.eth_tx)
-        # IVD TODO: Handle sgx wallet failling
+        # TODO: Handle sgx wallet failling
         for _ in range(3):
             logger.info(f'Signing transaction {tx.tx_id} {tx.eth_tx} ...')
             signed = self.wallet.sign(tx.eth_tx)
             try:
-                # IVD TODO: Handle replacement underpriced error
+                # TODO: Handle replacement underpriced error
                 logger.info(f'Sending transaction {tx}')
                 tx.tx_hash = self.eth.send_tx(signed)
             except Exception as err:
