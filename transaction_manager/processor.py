@@ -112,6 +112,6 @@ class Processor:
                         self.handle(tx)
             except Exception:
                 logger.exception(
-                    'Fetching next tx failed'
+                    'Failed to process tx'
                 )
             time.sleep(1)

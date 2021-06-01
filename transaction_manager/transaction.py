@@ -1,7 +1,11 @@
 import json
+import logging
+
 from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Dict, Optional
+
+logger = logging.getLogger(__name__)
 
 
 class TxStatus(Enum):
@@ -82,6 +86,7 @@ class Tx:
 
     @classmethod
     def from_bytes(cls, tx_id: bytes, tx_bytes: bytes) -> 'Tx':
+        logger.debug(f'Transaction tx_bytes {tx_bytes}')
         plain_tx = json.loads(tx_bytes.decode('utf-8'))
         plain_tx['status'] = TxStatus[plain_tx['status']]
         plain_tx['gas_price'] = plain_tx.get('gasPrice')
