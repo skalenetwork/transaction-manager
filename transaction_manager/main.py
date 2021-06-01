@@ -20,6 +20,7 @@
 import logging
 # import time
 
+from .config import ENDPOINT
 from .eth import Eth
 from .log import init_logger
 # from .node import is_config_created
@@ -37,7 +38,7 @@ def main() -> None:
     #     logger.info('Waiting for node config generation ...')
     #     time.sleep(2)
 
-    logger.info('Initializing transaction manager ...')
+    logger.info(f'Initializing tx manager, endpoint: {ENDPOINT} ...')
     eth = Eth()
     pool = TxPool()
     wallet = init_wallet()

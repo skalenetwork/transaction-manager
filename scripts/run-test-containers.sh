@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
 set -ae
 
-export ENDPOINT=http://127.0.0.1:8545
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+PROJECT_DIR=$(dirname $DIR)
+
+cd $PROJECT_DIR
+
 export SKALE_DIR=./tests/data-volumes/skale-dir
 export REDIS_DIR=./tests/data-volumes/redis-dir
 
@@ -17,10 +22,6 @@ create_redis_dir() {
 
 run_containers() {
     docker-compose up --build --force-recreate -d
-}
-
-run_tests() {
-    pytest tests/docker_test.py
 }
 
 shutdown_containers() {
@@ -42,4 +43,3 @@ cleanup_redis_dir
 create_skale_dir
 create_redis_dir
 run_containers
-# run_tests
