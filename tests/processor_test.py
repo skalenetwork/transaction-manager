@@ -1,22 +1,21 @@
 import json
-import pytest
 
 
-def test_processor(tpool, eth, trs, w3wallet, rwallet):
+def test_processor(tpool, eth, trs, w3wallet, rdp):
     eth_tx_a = {
-        'from': rwallet.address,
-        'to': rwallet.address,
+        'from': rdp.address,
+        'to': rdp.address,
         'value': 10,
         'gasPrice': 1,
         'gas': 22000,
         'nonce': 0
     }
-    tx_id = rwallet.sign_and_send(eth_tx_a)
-    tx = rwallet.wait(tx_id, timeout=2)
+    tx_id = rdp.sign_and_send(eth_tx_a)
+    tx = rdp.wait(tx_id, timeout=2)
     assert tx['status'] == 'SUCCESS'
-    assert tx['from'] == rwallet.address
-    assert tx['to'] == rwallet.address
-    assert tx['nonce'] == eth.get_nonce(rwallet.address) - 1
+    assert tx['from'] == rdp.address
+    assert tx['to'] == rdp.address
+    assert tx['nonce'] == eth.get_nonce(rdp.address) - 1
     last_attempt = json.loads(trs.get(b'last_attempt').decode('utf-8'))
     assert tx['nonce'] == last_attempt['nonce']
     assert tx['attempts'] == last_attempt['index']

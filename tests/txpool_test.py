@@ -1,17 +1,14 @@
 import pytest
 
-from transaction_manager.transactions import TxStatus
+from transaction_manager.transaction import TxStatus
 from transaction_manager.txpool import NoNextTransactionError
-
-from tests.utils.sender import RedisSender
 
 # TODO: Add test for tx with data
 
 
-def test_get_next(tpool, trs, sender):
+def test_get_next(tpool, trs, rdp):
     assert tpool.size == 0
     assert tpool.get_next() is None
-    sender = RedisSender(trs, tpool.name)
 
     eth_tx_a = {
         'to': '0xa',
@@ -20,7 +17,7 @@ def test_get_next(tpool, trs, sender):
         'gas': 22000,
         'nonce': 0
     }
-    aid = sender.send(eth_tx_a, priority=2)
+    aid = rdp.send(eth_tx_a, priority=2)
     next_tx = tpool.get_next()
 
     assert next_tx.tx_id == aid
@@ -37,22 +34,22 @@ def test_get_next(tpool, trs, sender):
     assert len(next_tx.tx_id) == 35
 
     eth_tx_b = {'to': '0xb', 'value': 10}
-    bid = sender.send(eth_tx_b, priority=3)
+    bid = rdp.send(eth_tx_b, priority=3)
     next_tx = tpool.get_next()
     assert next_tx.tx_id == bid
 
 
-def test_mark_get_last(tpool, trs, sender):
+def test_mark_get_last(tpool, trs, rdp):
     assert tpool.get_last() is None
     eth_tx_a = {'to': '0xa', 'value': 10}
-    aid = sender.send(eth_tx_a, priority=2)
+    aid = rdp.send(eth_tx_a, priority=2)
     assert tpool.get_last() is None
 
     tpool.set_last_id(aid)
     assert tpool.get_last().tx_id == aid
 
     eth_tx_b = {'to': '0xb', 'value': 10}
-    bid = sender.send(eth_tx_b, priority=2)
+    bid = rdp.send(eth_tx_b, priority=2)
     assert tpool.get_last().tx_id == aid
 
     tpool.set_last_id(bid)
@@ -63,15 +60,15 @@ def test_aquire_release_no_tx():
     pass
 
 
-def test_aquire_release(tpool, sender):
+def test_aquire_release(tpool, rdp):
     with pytest.raises(NoNextTransactionError):
         with tpool.aquire_next():
             pass
 
     eth_tx_a = {'to': '0xa', 'value': 10}
-    aid = sender.send(eth_tx_a, priority=2)
+    aid = rdp.send(eth_tx_a, priority=2)
     eth_tx_b = {'to': '0xb', 'value': 10}
-    bid = sender.send(eth_tx_b, priority=1)
+    bid = rdp.send(eth_tx_b, priority=1)
 
     with tpool.aquire_next() as atx:
         assert atx.tx_id == aid
@@ -82,7 +79,7 @@ def test_aquire_release(tpool, sender):
 
     with tpool.aquire_next() as btx:
         assert btx.tx_id == bid
-        btx.status = TxStatus.PENDING
+        btx.status = TxStatus.SENT
 
     assert tpool.size == 1
-    assert tpool.get(bid.encode('utf-8')).status == TxStatus.PENDING
+    assert tpool.get(bid.encode('utf-8')).status == TxStatus.SENT

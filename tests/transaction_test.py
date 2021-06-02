@@ -68,18 +68,18 @@ def test_tx_completed():
         tx_hash=None
     )
     assert not tx.is_completed()
-    tx.status = TxStatus.PENDING
+    tx.status = TxStatus.SENT
     assert not tx.is_completed()
     tx.status = TxStatus.TIMEOUT
     assert not tx.is_completed()
-    tx.status = TxStatus.NOT_SENT
+    tx.status = TxStatus.DROPPED
     assert tx.is_completed()
     tx.status = TxStatus.SUCCESS
     assert tx.is_completed()
     tx.status = TxStatus.FAILED
     assert tx.is_completed()
 
-    tx.status = TxStatus.PENDING
+    tx.status = TxStatus.SENT
     tx.set_as_completed({'status': 1})
     tx.status == TxStatus.SUCCESS
     tx.set_as_completed({'status': 0})

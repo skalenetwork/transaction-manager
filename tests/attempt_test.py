@@ -1,10 +1,8 @@
-import pytest
-
 from transaction_manager.attempt import (
     Attempt,
-    GasPriceLimitExceededError,
     create_next_attempt,
     get_last_attempt,
+    MAX_GAS_PRICE,
     set_last_attempt
 )
 
@@ -83,10 +81,10 @@ def test_create_next_attempt():
     dd.gas_price = 3 * 10 ** 9 - 100
 
     ee_tid = 'id-eeee'
-    with pytest.raises(GasPriceLimitExceededError):
-        create_next_attempt(
-            nonce=0,
-            avg_gas_price=10 ** 9,
-            tx_id=ee_tid,
-            last=dd
-        )
+    ee = create_next_attempt(
+        nonce=0,
+        avg_gas_price=10 ** 9,
+        tx_id=ee_tid,
+        last=dd
+    )
+    assert ee.gas_price == MAX_GAS_PRICE

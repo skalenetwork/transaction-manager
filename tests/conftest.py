@@ -1,7 +1,7 @@
 import pytest
 import redis
 
-from skale.wallets import Web3Wallet
+from skale.wallets import RedisWalletAdapter, Web3Wallet
 
 from transaction_manager.config import ETH_PRIVATE_KEY
 from transaction_manager.eth import Eth
@@ -38,3 +38,9 @@ def w3wallet(w3):
     if not ETH_PRIVATE_KEY:
         return None
     return Web3Wallet(ETH_PRIVATE_KEY, w3)
+
+
+@pytest.fixture
+def rdp(trs, w3wallet):
+    """ Redis wallet for docker based tests """
+    return RedisWalletAdapter(trs, 'transactions', w3wallet)

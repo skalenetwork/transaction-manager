@@ -105,7 +105,7 @@ class TxPool:
             self.release(tx)
 
     def release(self, tx: Tx) -> None:
-        logger.info('Releasing tx %s', tx.tx_id)
+        logger.info('Releasing tx %s ...', tx.tx_id)
         pipe = self.rs.pipeline()
         if tx.is_sent():
             logger.info('Updating record for tx %s', tx.tx_id)
