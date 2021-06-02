@@ -28,11 +28,9 @@ from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
 
 from .resources import w3 as gw3
-from .config import CONFIRMATION_BLOCKS, GAS_MULTIPLIER
+from .config import CONFIRMATION_BLOCKS, GAS_MULTIPLIER, MAX_WAITING_TIME
 
 logger = logging.getLogger(__name__)
-
-MAX_WAITING_TIME = 500
 
 
 class BlockTimeoutError(TimeoutError):
