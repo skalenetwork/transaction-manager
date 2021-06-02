@@ -28,7 +28,7 @@ from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
 
 from .resources import w3 as gw3
-from .config import GAS_MULTIPLIER
+from .config import CONFIRMATION_BLOCKS, GAS_MULTIPLIER
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +74,6 @@ class Eth:
         return self.w3.eth.gasPrice
 
     def calculate_gas(self, tx: Dict) -> int:
-        logger.info(f'Calculating gas for {tx}')
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
         gas = int(GAS_MULTIPLIER * estimated)
         gas_limit = self.block_gas_limit
@@ -94,18 +93,21 @@ class Eth:
     def get_nonce(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getTransactionCount(address)
 
-    def get_receipt(
+    def get_status(
         self,
         tx_hash: str,
         raise_err: bool = False
-    ) -> Optional[Dict]:
-        receipt = None
+    ) -> int:
         try:
             receipt = self.w3.eth.getTransactionReceipt(cast(HexStr, tx_hash))
         except TransactionNotFound as e:
             if raise_err:
                 raise e
-        return cast(Optional[Dict], receipt)
+        logger.debug(f'Receipt for {tx_hash}: {receipt}')
+        rstatus = receipt.get('status', -1)
+        if rstatus < 0:
+            logger.error('Receipt has no "status" field')
+        return rstatus
 
     def wait_for_blocks(
         self,
@@ -127,17 +129,27 @@ class Eth:
     def wait_for_receipt(
         self,
         tx_hash: str,
-        max_time: int = MAX_WAITING_TIME
-    ) -> Dict:
+        max_time: int = MAX_WAITING_TIME,
+        confirmation_blocks=CONFIRMATION_BLOCKS
+    ) -> int:
         start_ts = time.time()
-        receipt = None
+        rstatus = None
         while time.time() - start_ts < max_time:
             try:
-                self.get_receipt(tx_hash, raise_err=True)
+                self.get_status(tx_hash, raise_err=True)
             except TransactionNotFound:
                 time.sleep(1)
-        if not receipt:
+
+        if not rstatus:
             raise ReceiptTimeoutError(
-                f'Transaction is not mined withing {max_time}'
+                f'No receipt after {max_time}'
             )
-        return receipt
+
+        self.wait_for_blocks(confirmation_blocks)
+        try:
+            rstatus = self.get_status(tx_hash, raise_err=True)
+        except TransactionNotFound:
+            raise ReceiptTimeoutError(
+                'No receipt after {confirmation_blocks} confirmation blocks'
+            )
+        return rstatus

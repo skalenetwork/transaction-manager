@@ -19,7 +19,6 @@
 
 import logging
 import time
-from typing import Dict
 
 from skale.wallets import BaseWallet  # type: ignore
 
@@ -30,7 +29,6 @@ from .attempt import (
     get_last_attempt,
     grad_inc_gas_price
 )
-from .config import CONFIRMATION_BLOCKS
 from .eth import (
     Eth, is_replacement_underpriced, ReceiptTimeoutError
 )
@@ -38,6 +36,8 @@ from .transaction import Tx, TxStatus
 from .txpool import TxPool
 
 logger = logging.getLogger(__name__)
+
+REPLACEMENT_UNDERPRICED_RETRIES = 5
 
 
 class Processor:
@@ -52,13 +52,16 @@ class Processor:
         tx.source = self.wallet.address
         tx.gas_price = gas_price
         tx.nonce = nonce
+
+        logger.info(f'Calculating gas for {tx} ...')
         tx.gas = self.eth.calculate_gas(tx.eth_tx)
-        # TODO: Handle sgx wallet failling
-        for _ in range(3):
-            logger.info(f'Signing transaction {tx.tx_id} {tx.eth_tx} ...')
+        logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
+
+        for i in range(REPLACEMENT_UNDERPRICED_RETRIES):
+            logger.info(f'({i}) Signing tx {tx.tx_id} ...')
             signed = self.wallet.sign(tx.eth_tx)
+
             try:
-                # TODO: Handle replacement underpriced error
                 logger.info(f'Sending transaction {tx}')
                 tx.tx_hash = self.eth.send_tx(signed)
             except Exception as err:
@@ -78,49 +81,60 @@ class Processor:
         tx.sent_ts = int(time.time())
         tx.attempts += 1
 
-    def wait(self, tx: Tx, attempt: Attempt) -> Dict:
+    def wait(self, tx: Tx, attempt: Attempt):
+        if not tx.tx_hash:
+            logger.warning(f'Tx {tx.tx_id} has not any receipt')
+            return None
         max_time = attempt.wait_time
-        receipt = None
-        if tx.tx_hash:
-            try:
-                receipt = self.eth.wait_for_receipt(
-                    tx_hash=tx.tx_hash,
-                    max_time=max_time
-                )
-            except ReceiptTimeoutError:
-                logger.info(f'{tx.tx_id} is not mined within {max_time}')
-                if attempt.is_last():
-                    tx.status = TxStatus.DROPPED
-                else:
-                    tx.status = TxStatus.TIMEOUT
-                return None
-        if receipt:
-            tx.set_as_completed(receipt)
-            self.eth.wait_for_blocks(CONFIRMATION_BLOCKS)
-            tx.status = TxStatus.CONFIRMED
+        try:
+            logger.info(f'Wating for {tx.tx_id}, timeout {max_time} ...')
+            self.eth.wait_for_receipt(
+                tx_hash=tx.tx_hash,
+                max_time=max_time
+            )
+        except ReceiptTimeoutError:
+            logger.info(f'{tx.tx_id} is not mined within {max_time}')
+            # TODO: use tx attempt count
+            if attempt.is_last():
+                tx.status = TxStatus.DROPPED
+            else:
+                tx.status = TxStatus.TIMEOUT
+            return
+        tx.status = TxStatus.MINED
+        # TODO: Rewrite confirmation
+        rstatus = self.eth.wait_for_receipt(
+            tx_hash=tx.tx_hash,
+            max_time=max_time
+        )
+        tx.set_as_completed(rstatus)
 
     def handle(self, tx: Tx) -> None:
         # TODO: use tx.sent and fix mypy issues
-        if tx.tx_hash is not None and (r := self.eth.get_receipt(tx.tx_hash)):
+        if tx.tx_hash is not None and (r := self.eth.get_status(tx.tx_hash)):
             logger.info(f'Tx {tx.tx_id} is already mined: {tx.tx_hash}')
             tx.set_as_completed(r)
             return
-        else:
-            logger.info(f'Configuring dynamic params for {tx.tx_id}')
-            avg_gp = self.eth.avg_gas_price
-            logger.info(f'Received avg gas pirce - {avg_gp}')
-            nonce = self.eth.get_nonce(self.address)
-            logger.info(f'Received current nonce - {nonce}')
-            prev_attempt = get_last_attempt()
-            attempt = create_next_attempt(
-                nonce,
-                avg_gp,
-                tx.tx_id,
-                prev_attempt
-            )
-            with aquire_attempt(attempt, tx) as attempt:
-                self.send(tx, attempt.nonce, attempt.gas_price)
-                self.wait(tx, attempt)
+
+        logger.info(f'Configuring dynamic params for {tx.tx_id} ...')
+        avg_gp = self.eth.avg_gas_price
+        logger.info(f'Received avg gas pirce - {avg_gp}')
+        nonce = self.eth.get_nonce(self.address)
+        logger.info(f'Received current nonce - {nonce}')
+        prev_attempt = get_last_attempt()
+        logger.info(f'Previous attempt: {prev_attempt}')
+        attempt = create_next_attempt(
+            nonce,
+            avg_gp,
+            tx.tx_id,
+            prev_attempt
+        )
+        logger.info(f'Current attempt: {attempt}')
+        with aquire_attempt(attempt, tx) as attempt:
+            self.send(tx, attempt.nonce, attempt.gas_price)
+        logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
+        self.pool.save(tx)
+        logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...')
+        self.wait(tx, attempt)
 
     def run(self) -> None:
         while True:
@@ -130,7 +144,5 @@ class Processor:
                         logger.info(f'Received transaction {tx}')
                         self.handle(tx)
             except Exception:
-                logger.exception(
-                    'Failed to process tx'
-                )
+                logger.exception('Failed to process tx')
             time.sleep(1)
