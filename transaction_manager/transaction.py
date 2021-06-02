@@ -20,9 +20,9 @@
 import json
 import logging
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, field
 from enum import Enum
-from typing import Dict, Optional
+from typing import Dict, List, Optional
 
 from .config import MAX_RESUBMIT_AMOUNT
 
@@ -51,6 +51,8 @@ class Tx:
     priority: int
     to: str
     value: int
+    hashes: List = field(default_factory=list)
+    attempts: int = 0
     source: Optional[str] = None
     gas: Optional[int] = None
     chain_id: Optional[int] = None
@@ -58,7 +60,6 @@ class Tx:
     nonce: Optional[int] = None
     data: Optional[Dict] = None
     tx_hash: Optional[str] = None
-    attempts: int = 0
     sent_ts: Optional[int] = None
 
     @property
@@ -66,7 +67,11 @@ class Tx:
         return self.tx_id.encode('utf-8')
 
     def is_mined(self) -> bool:
-        return self.status == TxStatus.MINED
+        return self.status in (
+            TxStatus.MINED,
+            TxStatus.SUCCESS,
+            TxStatus.FAILED
+        )
 
     def is_completed(self) -> bool:
         return self.status in (
@@ -84,10 +89,14 @@ class Tx:
     def set_as_completed(self, receipt_status: int) -> None:
         if receipt_status == 1:
             self.status = TxStatus.SUCCESS
-        if receipt_status == 0:
+        elif receipt_status == 0:
             self.status = TxStatus.FAILED
-        if receipt_status == -1:
+        else:
             self.status = TxStatus.ERROR
+
+    def add_hash(self, tx_hash: str) -> None:
+        self.tx_hash = tx_hash
+        self.hashes.append(tx_hash)
 
     @property
     def eth_tx(self) -> Dict:
@@ -138,7 +147,8 @@ class Tx:
             del plain_tx['gasPrice']
         if 'from' in plain_tx:
             del plain_tx['from']
-
+        if 'hashes' not in plain_tx:
+            plain_tx['hashes'] = []
         try:
             tx = Tx(**plain_tx)
         except TypeError:

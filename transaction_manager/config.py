@@ -23,7 +23,7 @@ from typing import Optional
 
 REDIS_URI: str = 'redis://@127.0.0.1:6379'
 
-SGX_URL: Optional[str] = 'http://127.0.0.1:1026'
+SGX_URL: Optional[str] = 'https://127.0.0.1:1026'
 
 ETH_PRIVATE_KEY: Optional[str] = None
 
@@ -37,7 +37,7 @@ CONFIRMATION_BLOCKS: int = 2
 
 MAX_RESUBMIT_AMOUNT: int = 10
 
-MAX_GAS_PRICE: int = 10 ** 18
+MAX_GAS_PRICE: int = 3 * 10 ** 9
 
 BASE_WAITING_TIME: int = 10
 
