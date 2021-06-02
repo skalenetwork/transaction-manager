@@ -27,14 +27,19 @@ from typing import Dict, Optional
 logger = logging.getLogger(__name__)
 
 
+class InvalidFormatError(Exception):
+    pass
+
+
 class TxStatus(Enum):
     PROPOSED = 1
     SENT = 2
     TIMEOUT = 3
     DROPPED = 4
-    SUCCESS = 5
-    FAILED = 6
-    CONFIRMED = 7
+    MINED = 5
+    SUCCESS = 6
+    FAILED = 7
+    ERROR = 8
 
 
 @dataclass
@@ -68,13 +73,14 @@ class Tx:
     def is_sent(self) -> bool:
         return self.tx_hash is not None
 
-    def set_as_completed(self, receipt: Dict) -> None:
-        if receipt['status'] == 1:
-            s = TxStatus.SUCCESS
-        else:
-            s = TxStatus.FAILED
-        self.status = s
-        self.receipt = receipt
+    def set_as_completed(self, receipt_status: int) -> None:
+        # TODO: Make independent from eth, get receipt status
+        if receipt_status == 1:
+            self.status = TxStatus.SUCCESS
+        if receipt_status == 0:
+            self.status = TxStatus.FAILED
+        if receipt_status == -1:
+            self.status = TxStatus.ERROR
 
     @property
     def eth_tx(self) -> Dict:
@@ -105,13 +111,31 @@ class Tx:
 
     @classmethod
     def from_bytes(cls, tx_id: bytes, tx_bytes: bytes) -> 'Tx':
-        logger.debug(f'Transaction tx_bytes {tx_bytes}')
-        plain_tx = json.loads(tx_bytes.decode('utf-8'))
-        plain_tx['status'] = TxStatus[plain_tx['status']]
+        logger.debug('Tx %s bytes %s', tx_id, tx_bytes)
+        try:
+            plain_tx = json.loads(tx_bytes.decode('utf-8'))
+            plain_tx['tx_id'] = tx_id.decode('utf-8')
+        except (json.decoder.JSONDecodeError, UnicodeError, TypeError):
+            logger.error('Failed to make tx %s from bytes', tx_id)
+            raise InvalidFormatError(f'Invalid record for {str(tx_id)}')
+
+        try:
+            status_name = plain_tx.get('status')
+            plain_tx['status'] = TxStatus[status_name]
+        except KeyError:
+            logger.error('Tx %s has wrong status %s', tx_id, status_name)
+            raise InvalidFormatError(f'No such status {status_name}')
+
         plain_tx['gas_price'] = plain_tx.get('gasPrice')
         plain_tx['source'] = plain_tx.get('from')
         if 'gasPrice' in plain_tx:
             del plain_tx['gasPrice']
         if 'from' in plain_tx:
             del plain_tx['from']
-        return Tx(tx_id=tx_id.decode('utf-8'), **plain_tx)
+
+        try:
+            tx = Tx(**plain_tx)
+        except TypeError:
+            logger.error('Tx creation for %s errored', tx_id)
+            raise InvalidFormatError(f'Missing fields for {str(tx_id)} record')
+        return tx

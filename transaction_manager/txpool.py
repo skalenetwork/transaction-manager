@@ -24,7 +24,7 @@ from typing import Generator, Optional
 
 import redis
 
-from .transaction import Tx
+from .transaction import InvalidFormatError, Tx
 from .resources import rs as grs
 
 
@@ -48,41 +48,67 @@ class TxPool:
         return self.rs.zcard(self.name)
 
     def get(self, tx_id: bytes) -> Optional[Tx]:
-        return Tx.from_bytes(tx_id, self.rs.get(tx_id))
+        if tx_id is None:
+            return None
+        r = self.rs.get(tx_id)
+        tx = None
+        try:
+            tx = Tx.from_bytes(tx_id, r)
+            if tx is None:
+                logger.error('Tx %s has no record', tx_id)
+        except InvalidFormatError:
+            logger.error('Invalid record for %s', tx_id)
+            tx = None
+        return tx
 
-    def get_next(self) -> Optional[Tx]:
+    def get_next_id(self) -> Optional[bytes]:
         if self.size == 0:
             return None
-        tx_id = self.rs.zrange(self.name, -1, -1)[0]
-        return self.get(tx_id)
+        return self.rs.zrange(self.name, -1, -1)[0]
 
     def clear(self) -> None:
         for tx_id, _ in self.rs.zscan_iter(self.name):
             self.drop(tx_id)
 
     def drop(self, tx_id: bytes) -> None:
+        logger.info('Removing %s from pool ...', tx_id)
         pipe = self.rs.pipeline()
         pipe.zrem(self.name, tx_id)
         pipe.delete(tx_id)
         pipe.execute()
 
+    def save(self, tx: Tx) -> None:
+        logger.info('Updating record for tx %s ...', tx.tx_id)
+        self.rs.set(tx.tx_id, tx.to_bytes())
+
+    def fetch_next(self) -> Optional[Tx]:
+        tx = None
+        while tx is None and self.size > 0:
+            tx_id = self.get_next_id()
+            if tx_id is None:
+                break
+            tx = self.get(tx_id)
+            if tx is None:
+                logger.error('Received malformed tx %s. Going to remove ...')
+                self.drop(tx_id)
+        return tx
+
     @contextmanager
     def aquire_next(self) -> Generator[Tx, None, None]:
-        tx = self.get_next()
-        logger.info(f'Aquiring tx {tx.tx_id}')
-        # TODO: Revise
+        tx = self.fetch_next()
         if tx is None:
-            raise NoNextTransactionError(f'No transactions in {self.name}')
+            raise NoNextTransactionError('No valid tx in pool')
+        logger.info('Aquiring tx %s ...', tx.tx_id)
         try:
             yield tx
         finally:
             self.release(tx)
 
     def release(self, tx: Tx) -> None:
-        logger.info(f'Releasing tx {tx.tx_id}')
+        logger.info('Releasing tx %s', tx.tx_id)
         pipe = self.rs.pipeline()
         if tx.is_sent():
-            logger.info(f'Updating record for tx {tx.tx_id}')
+            logger.info('Updating record for tx %s', tx.tx_id)
             pipe.set(tx.tx_id, tx.to_bytes())
         if tx.is_completed():
             logger.info(f'Removing tx {tx.tx_id} from pool')
