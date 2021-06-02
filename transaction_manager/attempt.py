@@ -39,10 +39,6 @@ MAX_GAS_PRICE = 10 ** 18
 BASE_WAITING_TIME = 10
 
 
-class GasPriceLimitExceededError(Exception):
-    pass
-
-
 @dataclass
 class Attempt:
     tx_id: str
@@ -84,7 +80,15 @@ def inc_gas_price(gas_price: int, inc: int = GAS_PRICE_INC_PERCENT) -> int:
 
 
 def grad_inc_gas_price(gas_price: int) -> int:
-    return inc_gas_price(gas_price=gas_price, inc=GRAD_GAS_PRICE_INC_PERCENT)
+    ngp = inc_gas_price(gas_price=gas_price, inc=GRAD_GAS_PRICE_INC_PERCENT)
+    if ngp < MAX_GAS_PRICE:
+        logger.warning(
+            f'Next gas {ngp} price is not allowed. '
+            f'Defaulting to {MAX_GAS_PRICE}'
+        )
+        return ngp
+    else:
+        return MAX_GAS_PRICE
 
 
 def calculate_next_gas_price(
@@ -92,15 +96,14 @@ def calculate_next_gas_price(
     avg_gp: int,
     nonce: int
 ) -> int:
-    inc_gp = inc_gas_price(last_attempt.gas_price, inc=GAS_PRICE_INC_PERCENT)
-    if inc_gp > MAX_GAS_PRICE:
+    ngp = inc_gas_price(last_attempt.gas_price, inc=GAS_PRICE_INC_PERCENT)
+    if ngp > MAX_GAS_PRICE:
         logger.warning(
-            f'Next gas price is not allowed ({inc_gp} > {MAX_GAS_PRICE})'
+            f'Next gas {ngp} price is not allowed. '
+            f'Defaulting to {MAX_GAS_PRICE}'
         )
-        raise GasPriceLimitExceededError(
-            f'Next gas price {inc_gp} is not allowed'
-        )
-    return max(avg_gp, inc_gp)
+        ngp = MAX_GAS_PRICE
+    return max(avg_gp, ngp)
 
 
 def create_next_attempt(
@@ -127,8 +130,8 @@ def create_next_attempt(
 
 
 @contextmanager
-def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[None, None, None]:
-    logger.info(f'Aquiring attempt {attempt}')
+def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[Attempt, None, None]:
+    logger.info(f'Aquiring attempt {attempt} ...')
     try:
         yield attempt
     finally:
