@@ -143,7 +143,7 @@ class Processor:
         logger.info(f'Current attempt: {attempt}')
         with aquire_attempt(attempt, tx) as attempt:
             self.send(tx, attempt.nonce, attempt.gas_price)
-        logger.ino(f'Saving tx: {tx.tx_id} record after sending ...')
+        logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
         self.pool.save(tx)
         logger.info(
             f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...'
