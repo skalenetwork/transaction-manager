@@ -27,16 +27,14 @@ import redis
 
 from .resources import rs as grs
 from .transaction import Tx
+from .config import (
+    BASE_WAITING_TIME,
+    GAS_PRICE_INC_PERCENT,
+    GRAD_GAS_PRICE_INC_PERCENT,
+    MAX_GAS_PRICE
+)
 
 logger = logging.getLogger(__name__)
-
-# TODO: Move to options
-MAX_RESUBMIT_AMOUNT = 10
-GAS_PRICE_INC_PERCENT = 10
-GRAD_GAS_PRICE_INC_PERCENT = 2
-# MAX_GAS_PRICE = 3 * 10 ** 9
-MAX_GAS_PRICE = 10 ** 18
-BASE_WAITING_TIME = 10
 
 
 @dataclass
@@ -54,9 +52,6 @@ class Attempt:
     def from_bytes(cls, attempt_bytes: bytes) -> 'Attempt':
         raw = json.loads(attempt_bytes.decode('utf-8'))
         return Attempt(**raw)
-
-    def is_last(self) -> bool:
-        return self.index == MAX_RESUBMIT_AMOUNT
 
 
 def get_last_attempt(rs: redis.Redis = grs) -> Optional[Attempt]:

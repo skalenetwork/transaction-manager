@@ -17,7 +17,7 @@ def test_get_next(tpool, trs, rdp):
         'gas': 22000,
         'nonce': 0
     }
-    aid = rdp.send(eth_tx_a, priority=2)
+    aid = rdp.sign_and_send(eth_tx_a, priority=2)
     next_tx = tpool.get_next()
 
     assert next_tx.tx_id == aid

@@ -31,11 +31,21 @@ ENDPOINT: str = 'http://127.0.0.1:8545'
 
 GAS_MULTIPLIER: float = 1.8
 
-GAS_PRICE_INC_COEFF: float = 1.2
-
 NODE_DATA_PATH = '/skale_node_data'
 
-CONFIRMATION_BLOCKS = 2
+CONFIRMATION_BLOCKS: int = 2
+
+MAX_RESUBMIT_AMOUNT: int = 10
+
+MAX_GAS_PRICE: int = 10 ** 18
+
+BASE_WAITING_TIME: int = 10
+
+GAS_PRICE_INC_PERCENT: int = 10
+
+GRAD_GAS_PRICE_INC_PERCENT: int = 2
+
+MAX_WAITING_TIME: int = 100  # TODO: determine value
 
 
 for v in list(

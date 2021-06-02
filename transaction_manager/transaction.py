@@ -24,6 +24,8 @@ from dataclasses import asdict, dataclass
 from enum import Enum
 from typing import Dict, Optional
 
+from .config import MAX_RESUBMIT_AMOUNT
+
 logger = logging.getLogger(__name__)
 
 
@@ -63,6 +65,9 @@ class Tx:
     def raw_id(self) -> bytes:
         return self.tx_id.encode('utf-8')
 
+    def is_mined(self) -> bool:
+        return self.status == TxStatus.MINED
+
     def is_completed(self) -> bool:
         return self.status in (
             TxStatus.SUCCESS,
@@ -73,8 +78,10 @@ class Tx:
     def is_sent(self) -> bool:
         return self.tx_hash is not None
 
+    def is_last_attempt(self) -> bool:
+        return self.attempts == MAX_RESUBMIT_AMOUNT
+
     def set_as_completed(self, receipt_status: int) -> None:
-        # TODO: Make independent from eth, get receipt status
         if receipt_status == 1:
             self.status = TxStatus.SUCCESS
         if receipt_status == 0:
@@ -106,7 +113,6 @@ class Tx:
         plain_tx['status'] = self.status.name
         plain_tx['gasPrice'] = self.gas_price
         plain_tx['from'] = self.source
-
         return json.dumps(plain_tx, sort_keys=True).encode('utf-8')
 
     @classmethod

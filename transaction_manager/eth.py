@@ -103,15 +103,18 @@ class Eth:
         except TransactionNotFound as e:
             if raise_err:
                 raise e
+            else:
+                return -1
         logger.debug(f'Receipt for {tx_hash}: {receipt}')
         rstatus = receipt.get('status', -1)
         if rstatus < 0:
             logger.error('Receipt has no "status" field')
+            return rstatus
         return rstatus
 
-    def wait_for_blocks(
+    def wait_for_confirmation(
         self,
-        amount: int,
+        amount: int = CONFIRMATION_BLOCKS,
         max_time: int = MAX_WAITING_TIME
     ) -> None:
         current_block = start_block = self.w3.eth.blockNumber
@@ -130,26 +133,15 @@ class Eth:
         self,
         tx_hash: str,
         max_time: int = MAX_WAITING_TIME,
-        confirmation_blocks=CONFIRMATION_BLOCKS
     ) -> int:
         start_ts = time.time()
         rstatus = None
         while time.time() - start_ts < max_time:
             try:
-                self.get_status(tx_hash, raise_err=True)
+                rstatus = self.get_status(tx_hash, raise_err=True)
             except TransactionNotFound:
                 time.sleep(1)
 
-        if not rstatus:
-            raise ReceiptTimeoutError(
-                f'No receipt after {max_time}'
-            )
-
-        self.wait_for_blocks(confirmation_blocks)
-        try:
-            rstatus = self.get_status(tx_hash, raise_err=True)
-        except TransactionNotFound:
-            raise ReceiptTimeoutError(
-                'No receipt after {confirmation_blocks} confirmation blocks'
-            )
+        if rstatus is None:
+            raise ReceiptTimeoutError(f'No receipt after {max_time}')
         return rstatus

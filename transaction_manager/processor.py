@@ -29,6 +29,7 @@ from .attempt import (
     get_last_attempt,
     grad_inc_gas_price
 )
+from .config import CONFIRMATION_BLOCKS
 from .eth import (
     Eth, is_replacement_underpriced, ReceiptTimeoutError
 )
@@ -58,9 +59,9 @@ class Processor:
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
         for i in range(REPLACEMENT_UNDERPRICED_RETRIES):
-            logger.info(f'({i}) Signing tx {tx.tx_id} ...')
+            logger.info('Retry %d', i)
+            logger.info('Signing tx %s ...', tx.tx_id)
             signed = self.wallet.sign(tx.eth_tx)
-
             try:
                 logger.info(f'Sending transaction {tx}')
                 tx.tx_hash = self.eth.send_tx(signed)
@@ -79,7 +80,6 @@ class Processor:
         logger.info(f'Transaction {tx.tx_id} was sent successfully')
         tx.status = TxStatus.SENT
         tx.sent_ts = int(time.time())
-        tx.attempts += 1
 
     def wait(self, tx: Tx, attempt: Attempt):
         if not tx.tx_hash:
@@ -87,62 +87,69 @@ class Processor:
             return None
         max_time = attempt.wait_time
         try:
-            logger.info(f'Wating for {tx.tx_id}, timeout {max_time} ...')
+            logger.info(f'Waiting for {tx.tx_id}, timeout {max_time} ...')
             self.eth.wait_for_receipt(
                 tx_hash=tx.tx_hash,
                 max_time=max_time
             )
         except ReceiptTimeoutError:
             logger.info(f'{tx.tx_id} is not mined within {max_time}')
-            # TODO: use tx attempt count
-            if attempt.is_last():
-                tx.status = TxStatus.DROPPED
-            else:
-                tx.status = TxStatus.TIMEOUT
-            return
+            tx.status = TxStatus.TIMEOUT
         tx.status = TxStatus.MINED
-        # TODO: Rewrite confirmation
-        rstatus = self.eth.wait_for_receipt(
+        self.eth.wait_for_receipt(
             tx_hash=tx.tx_hash,
             max_time=max_time
         )
-        tx.set_as_completed(rstatus)
 
-    def handle(self, tx: Tx) -> None:
-        # TODO: use tx.sent and fix mypy issues
-        if tx.tx_hash is not None and (r := self.eth.get_status(tx.tx_hash)):
-            logger.info(f'Tx {tx.tx_id} is already mined: {tx.tx_hash}')
-            tx.set_as_completed(r)
-            return
-
-        logger.info(f'Configuring dynamic params for {tx.tx_id} ...')
+    def create_attempt(self, tx_id: str) -> Attempt:
         avg_gp = self.eth.avg_gas_price
-        logger.info(f'Received avg gas pirce - {avg_gp}')
+        logger.info(f'Received avg gas price - {avg_gp}')
         nonce = self.eth.get_nonce(self.address)
         logger.info(f'Received current nonce - {nonce}')
-        prev_attempt = get_last_attempt()
-        logger.info(f'Previous attempt: {prev_attempt}')
-        attempt = create_next_attempt(
-            nonce,
-            avg_gp,
-            tx.tx_id,
-            prev_attempt
-        )
-        logger.info(f'Current attempt: {attempt}')
-        with aquire_attempt(attempt, tx) as attempt:
-            self.send(tx, attempt.nonce, attempt.gas_price)
-        logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
-        self.pool.save(tx)
-        logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...')
-        self.wait(tx, attempt)
+        prev = get_last_attempt()
+        logger.info(f'Previous attempt: {prev}')
+        return create_next_attempt(nonce, avg_gp, tx_id, prev)
+
+    def confirm(self, tx: Tx) -> None:
+        self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
+        r = self.eth.get_status(tx.tx_hash)
+        if r < 0:
+            raise Exception()
+        tx.set_as_completed(r)
+
+    def handle(self, tx: Tx) -> None:
+        if tx.is_sent():
+            r = self.eth.get_status(tx.tx_hash)
+            logger.info('Tx %s has receipt status %d', tx.tx_id, r)
+            if r >= 0 and tx.status != TxStatus.MINED:
+                tx.status = TxStatus.MINED
+
+        if tx.is_mined():
+            logger.info(f'Configuring attempt params for {tx.tx_id} ...')
+            attempt = self.create_attempt(tx.tx_id)
+            logger.info(f'Current attempt: {attempt}')
+            with aquire_attempt(attempt, tx) as attempt:
+                self.send(tx, attempt.nonce, attempt.gas_price)
+            logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
+            self.pool.save(tx)
+            logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...')
+            self.wait(tx, attempt)
+        self.confirm(tx)
 
     def run(self) -> None:
         while True:
+            # TODO: count attempts here add drop tx here instead of pool
+            # TODO: Make pool only handle redis
             try:
                 if self.pool.size > 0:
                     with self.pool.aquire_next() as tx:
                         logger.info(f'Received transaction {tx}')
-                        self.handle(tx)
+                        tx.attempt += 1
+                        try:
+                            self.handle(tx)
+                        except Exception:
+                            if not tx.is_completed() and tx.is_last_attempt():
+                                tx.status = TxStatus.DROPPED
             except Exception:
                 logger.exception('Failed to receive next tx')
                 logger.info('Waiting for next tx ...')

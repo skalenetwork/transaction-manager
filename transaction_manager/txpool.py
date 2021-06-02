@@ -72,10 +72,7 @@ class TxPool:
 
     def drop(self, tx_id: bytes) -> None:
         logger.info('Removing %s from pool ...', tx_id)
-        pipe = self.rs.pipeline()
-        pipe.zrem(self.name, tx_id)
-        pipe.delete(tx_id)
-        pipe.execute()
+        self.rs.zrem(self.name, tx_id)
 
     def save(self, tx: Tx) -> None:
         logger.info('Updating record for tx %s ...', tx.tx_id)
