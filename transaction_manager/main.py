@@ -18,12 +18,10 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-# import time
 
 from .config import ENDPOINT
 from .eth import Eth
 from .log import init_logger
-# from .node import is_config_created
 from .processor import Processor
 from .txpool import TxPool
 from .wallet import init_wallet
@@ -33,12 +31,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     init_logger()
-
-    # while not is_config_created():
-    #     logger.info('Waiting for node config generation ...')
-    #     time.sleep(2)
-
-    logger.info(f'Initializing tx manager, endpoint: {ENDPOINT} ...')
+    logger.info(f'Starting ... endpoint: {ENDPOINT}')
     eth = Eth()
     pool = TxPool()
     wallet = init_wallet()

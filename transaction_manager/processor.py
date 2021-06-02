@@ -144,5 +144,6 @@ class Processor:
                         logger.info(f'Received transaction {tx}')
                         self.handle(tx)
             except Exception:
-                logger.exception('Failed to process tx')
+                logger.exception('Failed to receive next tx')
+                logger.info('Waiting for next tx ...')
             time.sleep(1)

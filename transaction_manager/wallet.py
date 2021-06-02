@@ -24,7 +24,7 @@ from skale.wallets import BaseWallet, SgxWallet, Web3Wallet  # type: ignore
 from web3 import Web3
 
 from .config import ETH_PRIVATE_KEY, NODE_DATA_PATH, SGX_URL
-from .node import get_sgx_keyname
+from .node import wait_for_sgx_keyname
 from .resources import w3 as gw3
 
 logger = logging.getLogger(__name__)
@@ -43,7 +43,7 @@ def init_wallet(w3: Web3 = gw3) -> BaseWallet:
         wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
     elif SGX_URL:
         logger.info('Initializing sgx wallet ...')
-        keyname = get_sgx_keyname()
+        keyname = wait_for_sgx_keyname()
         wallet = SgxWallet(
             SGX_URL,
             w3,
