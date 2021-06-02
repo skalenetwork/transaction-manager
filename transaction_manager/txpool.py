@@ -19,8 +19,7 @@
 
 import logging
 
-from contextlib import contextmanager
-from typing import Generator, Optional
+from typing import Optional
 
 import redis
 
@@ -90,24 +89,9 @@ class TxPool:
                 self.drop(tx_id)
         return tx
 
-    @contextmanager
-    def aquire_next(self) -> Generator[Tx, None, None]:
-        tx = self.fetch_next()
-        if tx is None:
-            raise NoNextTransactionError('No valid tx in pool')
-        logger.info('Aquiring tx %s ...', tx.tx_id)
-        try:
-            yield tx
-        finally:
-            self.release(tx)
-
     def release(self, tx: Tx) -> None:
         logger.info('Releasing tx %s ...', tx.tx_id)
         pipe = self.rs.pipeline()
-        if tx.is_sent():
-            logger.info('Updating record for tx %s', tx.tx_id)
-            pipe.set(tx.tx_id, tx.to_bytes())
-        if tx.is_completed():
-            logger.info(f'Removing tx {tx.tx_id} from pool')
-            pipe.zrem(self.name, tx.tx_id)
+        pipe.set(tx.tx_id, tx.to_bytes())
+        pipe.zrem(self.name, tx.tx_id)
         pipe.execute()

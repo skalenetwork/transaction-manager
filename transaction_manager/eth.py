@@ -112,7 +112,7 @@ class Eth:
             return rstatus
         return rstatus
 
-    def wait_for_confirmation(
+    def wait_for_blocks(
         self,
         amount: int = CONFIRMATION_BLOCKS,
         max_time: int = MAX_WAITING_TIME

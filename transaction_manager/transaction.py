@@ -86,13 +86,12 @@ class Tx:
     def is_last_attempt(self) -> bool:
         return self.attempts == MAX_RESUBMIT_AMOUNT
 
-    def set_as_completed(self, receipt_status: int) -> None:
+    def set_as_completed(self, tx_hash: str, receipt_status: int) -> None:
+        self.tx_hash = tx_hash
         if receipt_status == 1:
             self.status = TxStatus.SUCCESS
-        elif receipt_status == 0:
-            self.status = TxStatus.FAILED
         else:
-            self.status = TxStatus.ERROR
+            self.status = TxStatus.FAILED
 
     def add_hash(self, tx_hash: str) -> None:
         self.tx_hash = tx_hash
