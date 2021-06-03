@@ -1,7 +1,16 @@
 import json
 from concurrent.futures import as_completed, ThreadPoolExecutor
 
+import pytest
+from skale.wallets import RedisWalletAdapter
+
 TX_NUMBER = 15
+
+
+@pytest.fixture
+def rdp(trs, w3wallet):
+    """ Redis wallet for docker based tests """
+    return RedisWalletAdapter(trs, 'transactions', w3wallet)
 
 
 def make_simple_tx(rdp, address):

@@ -20,7 +20,7 @@ def trs():
 def tpool(trs):
     tp = TxPool('test_pool', trs)
     yield tp
-    tp.clear()
+    tp._clear()
 
 
 @pytest.fixture
@@ -42,5 +42,5 @@ def w3wallet(w3):
 
 @pytest.fixture
 def rdp(trs, w3wallet):
-    """ Redis wallet for docker based tests """
-    return RedisWalletAdapter(trs, 'transactions', w3wallet)
+    """ Redis wallet for base tests """
+    return RedisWalletAdapter(trs, 'test_pool', w3wallet)
