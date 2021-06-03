@@ -47,6 +47,14 @@ class ConfirmationError(Exception):
     pass
 
 
+class SendingError(Exception):
+    pass
+
+
+class WaitTimeoutError(Exception):
+    pass
+
+
 class Processor:
     def __init__(self, eth: Eth, pool: TxPool, wallet: BaseWallet) -> None:
         self.eth: Eth = eth
@@ -80,11 +88,11 @@ class Processor:
                     )
                     gas_price = grad_inc_gas_price(gas_price)
                 else:
-                    raise err
+                    raise SendingError(err)
             else:
                 break
 
-        logger.info(f'Transaction {tx.tx_id} was sent successfully')
+        logger.info(f'Tx {tx.tx_id} was sent successfully')
         tx.status = TxStatus.SENT
         tx.sent_ts = int(time.time())
 
@@ -116,9 +124,9 @@ class Processor:
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
-            raise ConfirmationError('Transaction is not confirmed')
-        # TODO: Handle r != 0 and 1
+            raise ConfirmationError('Tx is not confirmed')
         tx.set_as_completed(h, r)
+        logger.info('Tx was confirmed %s', tx.tx_id)
 
     def get_exec_data(self, tx: Tx) -> Tuple[Optional[str], Optional[int]]:
         for h in reversed(tx.hashes):
@@ -166,13 +174,16 @@ class Processor:
             else:
                 self.pool.save(tx)
 
+    def process_next(self):
+        tx = self.pool.fetch_next()
+        if tx is not None:
+            with self.aquire_tx(tx) as tx:
+                self.handle(tx)
+
     def run(self) -> None:
         while True:
             try:
-                tx = self.pool.fetch_next()
-                if tx is not None:
-                    with self.aquire_tx(tx) as tx:
-                        self.handle(tx)
+                self.process_next()
             except Exception:
                 logger.exception('Failed to receive next tx')
                 logger.info('Waiting for next tx ...')
