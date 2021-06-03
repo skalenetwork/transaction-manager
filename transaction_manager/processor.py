@@ -107,9 +107,11 @@ class Processor:
                 tx_hash=tx.tx_hash,
                 max_time=max_time
             )
-        except ReceiptTimeoutError:
+        except ReceiptTimeoutError as err:
             logger.info(f'{tx.tx_id} is not mined within {max_time}')
             tx.status = TxStatus.TIMEOUT
+            raise WaitTimeoutError(err)
+
         return self.eth.wait_for_receipt(
             tx_hash=tx.tx_hash,
             max_time=max_time
