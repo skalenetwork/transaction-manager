@@ -58,4 +58,5 @@ for v in list(
     if not isinstance(None, type_):
         casted = type_(os.environ[v])
     else:
-        globals()[v] = os.environ[v]
+        casted = os.environ[v]
+    globals()[v] = casted
