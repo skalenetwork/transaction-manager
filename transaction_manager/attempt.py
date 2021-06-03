@@ -130,5 +130,7 @@ def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[Attempt, None, None]:
     try:
         yield attempt
     finally:
+        # TODO: Will save attempt even it was not sent if it was sent
+        # previously
         if tx.is_sent():
             set_last_attempt(attempt)

@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     init_logger()
-    logger.info(f'Starting ... endpoint: {ENDPOINT}')
+    logger.info(f'Starting. Endpoint: {ENDPOINT}')
     eth = Eth()
     pool = TxPool()
     wallet = init_wallet()

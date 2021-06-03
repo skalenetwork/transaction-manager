@@ -39,7 +39,7 @@ class WalletInitializationError(Exception):
 def init_wallet(w3: Web3 = gw3) -> BaseWallet:
     wallet = None
     if ETH_PRIVATE_KEY:
-        logger.info('Initializing web3 Wallet ...')
+        logger.info('Initializing web3 wallet ...')
         wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
     elif SGX_URL:
         logger.info('Initializing sgx wallet ...')
