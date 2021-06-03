@@ -64,15 +64,15 @@ class TxPool:
         if self.size == 0:
             return None
         # TODO: Fix
-        return self.rs.zrange(self.name, -1, -1)[0]
+        return self.rs.zrange(self.name, 0, 0)[0]
 
     def _add_record(
         self, tx_id: bytes,
-        priority: int,
+        score: int,
         tx_record: bytes
     ) -> None:
         pipe = self.rs.pipeline()
-        pipe.zadd(self.name, {tx_id: priority})
+        pipe.zadd(self.name, {tx_id: score})
         pipe.set(tx_id, tx_record)
         pipe.execute()
 

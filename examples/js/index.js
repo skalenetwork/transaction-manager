@@ -1,9 +1,11 @@
 'use strict';
 
+const REDIS_URI = process.env.REDIS_URI
+const ENDPOINT = process.env.ENDPOINT
 const Redis = require("ioredis");
-const redis = new Redis();
+const redis = new Redis(REDIS_URI);
 var Web3 = require('web3');
-var web3 = new Web3('http://127.0.0.1:8545'); // your eth network endpoint
+var web3 = new Web3(ENDPOINT); // your eth network endpoint
 
 const pool = 'transactions'
 
@@ -11,28 +13,33 @@ const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 
 
 function make_id() {
     const prefix = 'tx-';
-    const timeHex = Date.now().toString(16);
-    const unique = genRanHex(12);
-    return prefix + timeHex + unique;
+    const unique = genRanHex(16);
+    return prefix + unique;
 }
 
-function make_record(tx = {}, priority = 1) {
+function make_record(tx = {}, score) {
     const status = 'PROPOSED';
     return JSON.stringify({
-        'priority': priority,
+        'score': score,
         'status': status,
         ...tx
     });
 }
 
-async function send(tx, priority) {
-    console.log(`Sending tx ${tx}`)
+function make_score(priority) {
+    const ts = parseInt(Date.now() / 1000)
+    return priority * Math.pow(10, ts.toString().length) + ts;
+}
+
+async function send(tx, priority = 5) {
+    console.log('Sending tx', tx)
     var id = make_id();
-    var record = make_record(tx, priority);
-    console.log(id, record);
+    var score = make_score(priority)
+    var record = make_record(tx, score);
+    console.log(`Sending score: ${score}, record: ${record}`)
     await redis.multi()
         .set(id, record)
-        .zadd(pool, priority, id)
+        .zadd(pool, score, id)
         .exec();
     return id;
 }
@@ -73,9 +80,8 @@ async function main() {
         'to': account.address,
         'value': 1,
     };
-    const priority = 1;
+    const priority = 5;
     const tx_id = await send(tx, priority)
-    const wait_timeout = 100;
     const receipt = await wait(tx_id);
     console.log(receipt);
 }

@@ -21,5 +21,5 @@ def test_processor(tpool, eth, trs, w3wallet, rdp):
     assert tx['attempts'] == last_attempt['index']
     assert tx['gasPrice'] == last_attempt['gas_price']
     assert tx['data'] is None
-    assert tx['priority'] == 1
+    assert tx['score'] == 1
     assert tx_id == last_attempt['tx_id']

@@ -50,7 +50,7 @@ class TxStatus(Enum):
 class Tx:
     tx_id: str
     status: TxStatus
-    priority: int
+    score: int
     to: str
     value: int
     hashes: List = field(default_factory=list)
