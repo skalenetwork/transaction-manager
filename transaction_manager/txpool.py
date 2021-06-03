@@ -65,7 +65,17 @@ class TxPool:
             return None
         return self.rs.zrange(self.name, -1, -1)[0]
 
-    def clear(self) -> None:
+    def _add_record(
+        self, tx_id: bytes,
+        priority: int,
+        tx_record: bytes
+    ) -> None:
+        pipe = self.rs.pipeline()
+        pipe.zadd(self.name, {tx_id: priority})
+        pipe.set(tx_id, tx_record)
+        pipe.execute()
+
+    def _clear(self) -> None:
         for tx_id, _ in self.rs.zscan_iter(self.name):
             self.drop(tx_id)
 
@@ -81,8 +91,7 @@ class TxPool:
         tx = None
         while tx is None and self.size > 0:
             tx_id = self.get_next_id()
-            if tx_id is None:
-                break
+            logger.debug('Received %s from pool', tx_id)
             tx = self.get(tx_id)
             if tx is None:
                 logger.error('Received malformed tx %s. Going to remove ...')
