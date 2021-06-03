@@ -9,7 +9,7 @@ def test_tx():
     tx = Tx(
         tx_id='1232321332132131331321',
         status=TxStatus.PROPOSED,
-        priority=1,
+        score=1,
         to='0x1',
         value=1,
         gas_price=1000000000,
@@ -35,7 +35,8 @@ def test_tx():
     assert not tx.is_sent()
 
     dumped_tx = tx.to_bytes()
-    expected = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "priority": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "multiplier": 1.8, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    print(dumped_tx)
     assert dumped_tx == expected
 
     loaded_tx = Tx.from_bytes(tx.tx_id.encode('utf-8'), dumped_tx)
@@ -51,7 +52,7 @@ def test_tx():
     loaded_tx = Tx.from_bytes(tx.tx_id.encode('utf-8'), dumped_tx)
     assert loaded_tx == tx
 
-    tx.add_hash('0x1231231')
+    tx.set_as_sent('0x1231231')
     assert tx.hashes == ['0x1231231']
 
     dumped_tx = tx.to_bytes()
@@ -60,7 +61,7 @@ def test_tx():
     assert loaded_tx.tx_hash == '0x1231231'
     assert loaded_tx.hashes == ['0x1231231']
 
-    tx.add_hash('0x2231231')
+    tx.set_as_sent('0x2231231')
     assert tx.tx_hash == '0x2231231'
     assert tx.hashes == ['0x1231231', '0x2231231']
 
@@ -71,7 +72,7 @@ def test_tx_statuses():
     tx = Tx(
         tx_id='1232321332132131331321',
         status=TxStatus.PROPOSED,
-        priority=1,
+        score=1,
         to='0x1',
         value=1,
         gas_price=1000000000,
@@ -95,12 +96,12 @@ def test_tx_statuses():
     assert not tx.is_completed() and tx.is_mined()
 
     tx.status = TxStatus.SENT
-    tx.set_as_completed(1)
+    tx.set_as_completed('tx-hash', 1)
     tx.status == TxStatus.SUCCESS
-    tx.set_as_completed(0)
+    tx.set_as_completed('tx-hash', 0)
     tx.status == TxStatus.FAILED
-    tx.set_as_completed(-1)
-    tx.status == TxStatus.ERROR
+    tx.set_as_completed('tx-hash', -1)
+    tx.status == TxStatus.FAILED
 
 
 def test_from_bytes():
@@ -109,16 +110,16 @@ def test_from_bytes():
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, b'')
 
-    missing_field_status = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "priority": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_status = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
 
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, missing_field_status)
 
-    missing_field_to = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "priority": 1, "sent_ts": null, "status": "PROPOSED", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_to = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "tx_hash": null, "value": 1}'  # noqa
 
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, missing_field_to)
 
-    missing_field_hash = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "nonce": 3, "priority": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_hash = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, missing_field_hash)
     assert tx.hashes == []

@@ -1,6 +1,8 @@
 import json
+import pytest
 
 
+@pytest.mark.skip
 def test_processor(tpool, eth, trs, w3wallet, rdp):
     eth_tx_a = {
         'from': rdp.address,
