@@ -71,9 +71,12 @@ class Eth:
     def avg_gas_price(self) -> int:
         return self.w3.eth.gasPrice
 
-    def calculate_gas(self, tx: Dict) -> int:
+    def calculate_gas(
+        self, tx: Dict,
+        multiplier: float = GAS_MULTIPLIER
+    ) -> int:
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
-        gas = int(GAS_MULTIPLIER * estimated)
+        gas = int(multiplier * estimated)
         gas_limit = self.block_gas_limit
         if gas < gas_limit:
             logger.warning(

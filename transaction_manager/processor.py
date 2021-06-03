@@ -31,7 +31,7 @@ from .attempt import (
     get_last_attempt,
     grad_inc_gas_price
 )
-from .config import CONFIRMATION_BLOCKS
+from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import (
     Eth, is_replacement_underpriced, ReceiptTimeoutError
 )
@@ -39,8 +39,6 @@ from .transaction import Tx, TxStatus
 from .txpool import TxPool
 
 logger = logging.getLogger(__name__)
-
-REPLACEMENT_UNDERPRICED_RETRIES = 5
 
 
 class ConfirmationError(Exception):
@@ -62,39 +60,45 @@ class Processor:
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
 
-    def send(self, tx: Tx, nonce: int, gas_price: int) -> None:
+    def set_exec_params(
+        self,
+        tx: Tx,
+        gas_price: int,
+        nonce: int,
+        gas: int
+    ) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
         tx.gas_price = gas_price
         tx.nonce = nonce
+        tx.gas = gas
 
-        logger.info(f'Calculating gas for {tx} ...')
-        tx.gas = self.eth.calculate_gas(tx.eth_tx)
-        logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
-
-        for i in range(REPLACEMENT_UNDERPRICED_RETRIES):
-            logger.info('Retry %d', i)
+    def send(self, tx: Tx) -> None:
+        tx_hash, err = None, None
+        retry = 0
+        while tx_hash is None and retry < UNDERPRICED_RETRIES:
+            logger.info('Retry %d', retry)
             logger.info('Signing tx %s ...', tx.tx_id)
             signed = self.wallet.sign(tx.eth_tx)
+            logger.info(f'Sending transaction {tx}')
             try:
-                logger.info(f'Sending transaction {tx}')
-                h = self.eth.send_tx(signed)
-                tx.add_hash(h)
-            except Exception as err:
+                tx_hash = self.eth.send_tx(signed)
+            except Exception as e:
                 logger.info(f'Sending failed with error {err}')
+                err = e
                 if is_replacement_underpriced(err):
-                    logger.info(
-                        'Replacement gas price is too low. Trying to increase'
-                    )
-                    gas_price = grad_inc_gas_price(gas_price)
+                    logger.info('Replacement gas price is too low. Increasing')
+                    tx.gas_price = grad_inc_gas_price(tx.gas_price)
+                    retry += 1
                 else:
-                    raise SendingError(err)
-            else:
-                break
+                    break
 
+        if tx_hash is None:
+            tx.status = TxStatus.UNSENT
+            raise SendingError(err)
+
+        tx.set_as_sent(tx_hash)
         logger.info(f'Tx {tx.tx_id} was sent successfully')
-        tx.status = TxStatus.SENT
-        tx.sent_ts = int(time.time())
 
     def wait(self, tx: Tx, attempt: Attempt) -> Optional[int]:
         if not tx.tx_hash:
@@ -126,6 +130,7 @@ class Processor:
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
+            tx.status = TxStatus.UNCONFIRMED
             raise ConfirmationError('Tx is not confirmed')
         tx.set_as_completed(h, r)
         logger.info('Tx was confirmed %s', tx.tx_id)
@@ -148,10 +153,15 @@ class Processor:
             if rstatus is not None:
                 self.confirm(tx)
 
-        logger.info(f'Configuring attempt params for {tx.tx_id} ...')
         attempt = self.create_attempt(tx.tx_id, nonce, avg_gp)
         logger.info(f'Current attempt: {attempt}')
+
+        logger.info(f'Calculating gas for {tx} ...')
+        gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
+
+        logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
         with aquire_attempt(attempt, tx) as attempt:
+            self.set_exec_params(tx, attempt.gas_price, attempt.nonce, gas)
             self.send(tx, attempt.nonce, attempt.gas_price)
         logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
         self.pool.save(tx)

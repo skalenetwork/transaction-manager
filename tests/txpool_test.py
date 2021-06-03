@@ -46,7 +46,7 @@ def test_get_next_rdp(tpool, rdp):
 
     for i in range(5):
         # TODO: FIX !!
-        assert tpool.get_next_id() == did.encode('utf-8')
+        assert tpool.get_next_id() == aid.encode('utf-8')
 
     eth_tx_e = {'to': '0xe', 'value': 10}
     eid = rdp.sign_and_send(eth_tx_e, priority=3)

@@ -19,12 +19,13 @@
 
 import json
 import logging
+import time
 
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional
 
-from .config import MAX_RESUBMIT_AMOUNT
+from .config import MAX_RESUBMIT_AMOUNT, GAS_MULTIPLIER
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +37,13 @@ class InvalidFormatError(Exception):
 class TxStatus(Enum):
     PROPOSED = 1
     SENT = 2
-    TIMEOUT = 3
-    DROPPED = 4
+    UNSENT = 3
+    TIMEOUT = 4
     MINED = 5
-    SUCCESS = 6
-    FAILED = 7
-    ERROR = 8
+    UNCONFIRMED = 6
+    SUCCESS = 7
+    FAILED = 8
+    DROPPED = 9
 
 
 @dataclass
@@ -53,6 +55,7 @@ class Tx:
     value: int
     hashes: List = field(default_factory=list)
     attempts: int = 0
+    multiplier: float = GAS_MULTIPLIER
     source: Optional[str] = None
     gas: Optional[int] = None
     chain_id: Optional[int] = None
@@ -93,8 +96,10 @@ class Tx:
         else:
             self.status = TxStatus.FAILED
 
-    def add_hash(self, tx_hash: str) -> None:
+    def set_as_sent(self, tx_hash: str) -> None:
+        self.status = TxStatus.SENT
         self.tx_hash = tx_hash
+        self.sent_ts = int(time.time())
         self.hashes.append(tx_hash)
 
     @property

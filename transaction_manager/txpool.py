@@ -63,6 +63,7 @@ class TxPool:
     def get_next_id(self) -> Optional[bytes]:
         if self.size == 0:
             return None
+        # TODO: Fix
         return self.rs.zrange(self.name, -1, -1)[0]
 
     def _add_record(
