@@ -75,6 +75,7 @@ class Eth:
         self, tx: Dict,
         multiplier: float = GAS_MULTIPLIER
     ) -> int:
+        logger.info('Estimatiing gas for %s', tx)
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
         gas = int(multiplier * estimated)
         gas_limit = self.block_gas_limit

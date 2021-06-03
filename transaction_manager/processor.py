@@ -60,19 +60,6 @@ class Processor:
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
 
-    def set_exec_params(
-        self,
-        tx: Tx,
-        gas_price: int,
-        nonce: int,
-        gas: int
-    ) -> None:
-        tx.chain_id = self.eth.chain_id
-        tx.source = self.wallet.address
-        tx.gas_price = gas_price
-        tx.nonce = nonce
-        tx.gas = gas
-
     def send(self, tx: Tx) -> None:
         tx_hash, err = None, None
         retry = 0
@@ -143,6 +130,9 @@ class Processor:
         return None, None
 
     def handle(self, tx: Tx) -> None:
+        tx.chain_id = self.eth.chain_id
+        tx.source = self.wallet.address
+
         avg_gp = self.eth.avg_gas_price
         logger.info(f'Received avg gas price - {avg_gp}')
         nonce = self.eth.get_nonce(self.address)
@@ -156,18 +146,20 @@ class Processor:
         attempt = self.create_attempt(tx.tx_id, nonce, avg_gp)
         logger.info(f'Current attempt: {attempt}')
 
+        tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
         logger.info(f'Calculating gas for {tx} ...')
-        gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
-
+        tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
+
         with aquire_attempt(attempt, tx) as attempt:
-            self.set_exec_params(tx, attempt.gas_price, attempt.nonce, gas)
-            self.send(tx, attempt.nonce, attempt.gas_price)
+            self.send(tx)
+
         logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
         self.pool.save(tx)
         logger.info(
             f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...'
         )
+
         rstatus = self.wait(tx, attempt)
         if rstatus is not None:
             self.confirm(tx)
