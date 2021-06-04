@@ -52,9 +52,9 @@ class Tx:
     status: TxStatus
     score: int
     to: str
-    value: int
     hashes: List = field(default_factory=list)
     attempts: int = 0
+    value: int = 0
     multiplier: float = GAS_MULTIPLIER
     source: Optional[str] = None
     gas: Optional[int] = None

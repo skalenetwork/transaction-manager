@@ -33,11 +33,15 @@ shutdown_containers() {
 
 
 cleanup_skale_dir() {
-    rm -r --interactive=never $SKALE_DIR
+    if [ -d $SKALE_DIR ]; then
+        rm -r --interactive=never $SKALE_DIR
+    fi
 }
 
 cleanup_redis_dir() {
-    rm -r --interactive=never $REDIS_DIR
+    if [ -d $REDIS_DIR ]; then
+        rm -r --interactive=never $REDIS_DIR
+    fi
 }
 
 shutdown_containers
