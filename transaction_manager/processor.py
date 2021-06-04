@@ -175,7 +175,7 @@ class Processor:
         try:
             yield tx
         finally:
-            if tx.is_last_attempt():
+            if not tx.is_completed() and tx.is_last_attempt():
                 tx.status = TxStatus.DROPPED
             if tx.is_completed():
                 self.pool.release(tx)

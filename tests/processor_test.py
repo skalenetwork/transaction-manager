@@ -1,6 +1,7 @@
 import json
 import pytest
 
+from transaction_manager.config import MAX_RESUBMIT_AMOUNT
 from transaction_manager.processor import Processor
 from transaction_manager.transaction import TxStatus
 
@@ -40,6 +41,19 @@ def test_processor_aquire(proc, tpool, eth, trs, w3, w3wallet, rdp):
             raise ProcTestError('Test error')
     except ProcTestError:
         assert tpool.get(raw_id).status == TxStatus.SENT
+
+    tx = tpool.get(raw_id)
+    tx.attempts = MAX_RESUBMIT_AMOUNT
+
+    with proc.aquire_tx(tx):
+        tx.status = TxStatus.TIMEOUT
+    tx = tpool.get(raw_id)
+    assert tx.status == TxStatus.DROPPED
+
+    with proc.aquire_tx(tx):
+        tx.status = TxStatus.SUCCESS
+    tx = tpool.get(raw_id)
+    assert tx.status == TxStatus.SUCCESS
 
 
 @pytest.mark.skip
