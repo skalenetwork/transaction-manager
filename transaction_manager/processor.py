@@ -75,7 +75,8 @@ class Processor:
                 err = e
                 if is_replacement_underpriced(err):
                     logger.info('Replacement gas price is too low. Increasing')
-                    tx.gas_price = grad_inc_gas_price(tx.gas_price)
+                    gp = tx.gas_price
+                    tx.gas_price = grad_inc_gas_price(gp)  # type: ignore
                     retry += 1
                 else:
                     break
@@ -108,10 +109,13 @@ class Processor:
             max_time=max_time
         )
 
-    def create_attempt(self, tx_id: str, nonce: int, avg_gp: int) -> Attempt:
-        prev = get_last_attempt()
-        logger.info(f'Previous attempt: {prev}')
-        return create_next_attempt(nonce, avg_gp, tx_id, prev)
+    def create_attempt(
+        self, tx_id: str,
+        nonce: int,
+        avg_gp: int,
+        prev_attempt: Attempt
+    ) -> Attempt:
+        return create_next_attempt(nonce, avg_gp, tx_id, prev_attempt)
 
     def confirm(self, tx: Tx) -> None:
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
@@ -129,7 +133,7 @@ class Processor:
                 return h, r
         return None, None
 
-    def handle(self, tx: Tx) -> None:
+    def handle(self, tx: Tx, prev_attempt: Attempt) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
 
@@ -143,7 +147,7 @@ class Processor:
             if rstatus is not None:
                 self.confirm(tx)
 
-        attempt = self.create_attempt(tx.tx_id, nonce, avg_gp)
+        attempt = create_next_attempt(nonce, avg_gp, tx.tx_id, prev_attempt)
         logger.info(f'Current attempt: {attempt}')
 
         tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
@@ -182,7 +186,9 @@ class Processor:
         tx = self.pool.fetch_next()
         if tx is not None:
             with self.aquire_tx(tx) as tx:
-                self.handle(tx)
+                prev_attempt = get_last_attempt()
+                logger.info('Previous attempt %s', prev_attempt)
+                self.handle(tx, prev_attempt)
 
     def run(self) -> None:
         while True:

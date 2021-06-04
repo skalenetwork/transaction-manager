@@ -46,7 +46,7 @@ class TxPool:
     def size(self) -> int:
         return self.rs.zcard(self.name)
 
-    def get(self, tx_id: bytes) -> Optional[Tx]:
+    def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
             return None
         r = self.rs.get(tx_id)
@@ -96,7 +96,7 @@ class TxPool:
             tx = self.get(tx_id)
             if tx is None:
                 logger.error('Received malformed tx %s. Going to remove ...')
-                self.drop(tx_id)
+                self.drop(tx_id)  # type: ignore
         return tx
 
     def release(self, tx: Tx) -> None:

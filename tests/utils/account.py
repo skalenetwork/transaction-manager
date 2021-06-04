@@ -18,3 +18,7 @@ def send_eth(
     signed_txn = wallet.sign(tx)
     h = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
     w3.eth.waitForTransactionReceipt(h, timeout=60)
+
+
+def generate_address(w3: Web3) -> str:
+    return w3.eth.account.create().address
