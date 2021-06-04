@@ -28,8 +28,7 @@ jobs:
         remote: true
 
     - name: Update host dependencies
-      run: |
-        sudo apt-get update --fix-missing
+      run: sudo apt-get update --fix-missing
 
     - name: Install python dependencies
       run: |
@@ -38,14 +37,16 @@ jobs:
         pip install -r requirements-dev.txt
         pip install codecov 
     - name: Lint with flake8
-      run: |
-        flake8 .
+      run: flake8 .
+
     - name: Mypy check
-      run: |
-        mypy transaction_manager/main.py
+      run: mypy transaction_manager/main.py
+
     - name: Deploy manager 
-      run: |
-        bash ./helper-scripts/deploy_test_manager.sh
+      run: bash ./helper-scripts/deploy_test_manager.sh
+
+    - name: Run redis
+      run: bash scripts/run-redis.sh
+
     - name: Run tests
-      run: |
-        bash ./scripts/run-tests.sh
+      run: bash ./scripts/run-tests.sh
