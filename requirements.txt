@@ -1,2 +1,2 @@
-skale.py==git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3350-new-tx-pipeline#egg=skale.py
+git+git://github.com/skalenetwork/skale.py.git@enhancement/SKALE-3350-new-tx-pipeline#egg=skale.py
 redis==3.5.3
