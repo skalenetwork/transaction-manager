@@ -125,8 +125,11 @@ def create_next_attempt(
 
 
 @contextmanager
-def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[Attempt, None, None]:
-    logger.info(f'Aquiring attempt {attempt} ...')
+def acquire_attempt(
+    attempt: Attempt,
+    tx: Tx
+) -> Generator[Attempt, None, None]:
+    logger.info(f'Acquiring attempt {attempt} ...')
     try:
         yield attempt
     finally:

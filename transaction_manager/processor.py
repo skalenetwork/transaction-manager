@@ -25,7 +25,7 @@ from typing import Generator, Optional, Tuple
 from skale.wallets import BaseWallet  # type: ignore
 
 from .attempt import (
-    aquire_attempt,
+    acquire_attempt,
     Attempt,
     create_next_attempt,
     get_last_attempt,
@@ -155,7 +155,7 @@ class Processor:
         tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
-        with aquire_attempt(attempt, tx) as attempt:
+        with acquire_attempt(attempt, tx) as attempt:
             self.send(tx)
 
         logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
@@ -169,7 +169,7 @@ class Processor:
             self.confirm(tx)
 
     @contextmanager
-    def aquire_tx(self, tx: Tx) -> Generator[Tx, None, None]:
+    def acquire_tx(self, tx: Tx) -> Generator[Tx, None, None]:
         logger.info('Aquiring %s ...', tx.tx_id)
         tx.attempts += 1
         try:
@@ -185,7 +185,7 @@ class Processor:
     def process_next(self):
         tx = self.pool.fetch_next()
         if tx is not None:
-            with self.aquire_tx(tx) as tx:
+            with self.acquire_tx(tx) as tx:
                 prev_attempt = get_last_attempt()
                 logger.info('Previous attempt %s', prev_attempt)
                 self.handle(tx, prev_attempt)

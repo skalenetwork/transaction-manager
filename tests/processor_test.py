@@ -26,17 +26,17 @@ class ProcTestError(Exception):
     pass
 
 
-def test_processor_aquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
+def test_processor_acquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
     to_a = generate_address(w3)
     tx_id = make_tx(rdp, to_a)
     raw_id = tx_id.encode('utf-8')
     tx = tpool.get(raw_id)
-    with proc.aquire_tx(tx):
+    with proc.acquire_tx(tx):
         tx.status = TxStatus.SUCCESS
     assert tpool.get(raw_id).status == TxStatus.SUCCESS
 
     try:
-        with proc.aquire_tx(tx):
+        with proc.acquire_tx(tx):
             tx.status = TxStatus.SENT
             raise ProcTestError('Test error')
     except ProcTestError:
@@ -45,12 +45,12 @@ def test_processor_aquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
     tx = tpool.get(raw_id)
     tx.attempts = MAX_RESUBMIT_AMOUNT
 
-    with proc.aquire_tx(tx):
+    with proc.acquire_tx(tx):
         tx.status = TxStatus.TIMEOUT
     tx = tpool.get(raw_id)
     assert tx.status == TxStatus.DROPPED
 
-    with proc.aquire_tx(tx):
+    with proc.acquire_tx(tx):
         tx.status = TxStatus.SUCCESS
     tx = tpool.get(raw_id)
     assert tx.status == TxStatus.SUCCESS
