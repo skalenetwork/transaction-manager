@@ -26,7 +26,7 @@ def test_eth_blocks(w3, eth):
         eth.wait_for_blocks(amount=1)
     with in_time(seconds=2):
         with pytest.raises(BlockTimeoutError):
-            eth.wait_for_blocks(amount=10, max_time=1)
+            eth.wait_for_blocks(amount=10, max_time=0)
 
 
 def test_eth_tx(w3wallet, w3, eth):
