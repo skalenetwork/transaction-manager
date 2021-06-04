@@ -26,7 +26,7 @@ from typing import Generator, Optional
 import redis
 
 from .resources import rs as grs
-from .transaction import Tx
+from .transaction import Tx, TxStatus
 from .config import (
     BASE_WAITING_TIME,
     GAS_PRICE_INC_PERCENT,
@@ -130,7 +130,5 @@ def aquire_attempt(attempt: Attempt, tx: Tx) -> Generator[Attempt, None, None]:
     try:
         yield attempt
     finally:
-        # TODO: Will save attempt even it was not sent if it was sent
-        # previously
-        if tx.is_sent():
+        if tx.status == TxStatus.SENT:
             set_last_attempt(attempt)
