@@ -26,7 +26,7 @@ class ProcTestError(Exception):
     pass
 
 
-def test_processor_aquire(proc, tpool, eth, trs, w3, w3wallet, rdp):
+def test_processor_aquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
     to_a = generate_address(w3)
     tx_id = make_tx(rdp, to_a)
     raw_id = tx_id.encode('utf-8')

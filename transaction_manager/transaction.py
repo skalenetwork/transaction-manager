@@ -87,7 +87,7 @@ class Tx:
         return self.tx_hash is not None
 
     def is_last_attempt(self) -> bool:
-        return self.attempts == MAX_RESUBMIT_AMOUNT
+        return self.attempts > MAX_RESUBMIT_AMOUNT
 
     def set_as_completed(self, tx_hash: str, receipt_status: int) -> None:
         self.tx_hash = tx_hash
