@@ -1,3 +1,5 @@
+import time
+
 import pytest
 
 from transaction_manager.eth import (
@@ -11,15 +13,15 @@ from tests.utils.timing import in_time
 
 
 def test_eth_chain_id(eth):
-    assert 100 < eth.chain_id < 200
+    assert 100 < eth.chain_id < 2000
 
 
 def test_eth_avg_gas_price(eth):
-    assert eth.avg_gas_price == 10 ** 9
+    assert 10 ** 9 < eth.avg_gas_price < 25 * 10 ** 9
 
 
 def test_eth_blocks(w3, eth):
-    assert 800000 <= eth.block_gas_limit <= 10000000
+    assert 8000000 <= eth.block_gas_limit <= 100000000
     with in_time(seconds=MAX_WAITING_TIME):
         eth.wait_for_blocks(amount=1)
     with in_time(seconds=2):
@@ -41,20 +43,23 @@ def test_eth_tx(w3wallet, w3, eth):
         'value': 1,
         'gasPrice': 1,
         'gas': 22000,
-        'nonce': 0,
+        'nonce': w3.eth.getTransactionCount(addr),
         'chainId': w3.eth.chainId
     }
-    # TODO: WHY 8000000 ?
-    assert eth.calculate_gas(eth_tx_a) == 8000000
+    # TODO: Recheck for other networks
+    assert eth.calculate_gas(eth_tx_a) == 80000000
 
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)
     with pytest.raises(ReceiptTimeoutError):
-        eth.wait_for_receipt(h, max_time=1)
+        eth.wait_for_receipt(h, max_time=0)
 
+    time.sleep(1)
     eth_tx_a['gasPrice'] = 2 * eth.avg_gas_price
+    second_nonce = w3.eth.getTransactionCount(addr)
+    eth_tx_a['nonce'] = second_nonce
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)
-    receipt = eth.wait_for_receipt(h)
-    assert receipt['status'] == 1
-    assert eth.get_nonce(addr) == 1
+    status = eth.wait_for_receipt(h)
+    assert status == 1
+    assert eth.get_nonce(addr) == second_nonce + 1

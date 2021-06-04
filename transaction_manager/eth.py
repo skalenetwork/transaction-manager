@@ -138,7 +138,7 @@ class Eth:
     ) -> int:
         start_ts = time.time()
         rstatus = None
-        while time.time() - start_ts < max_time:
+        while rstatus is None and time.time() - start_ts < max_time:
             try:
                 rstatus = self.get_status(tx_hash, raise_err=True)
             except TransactionNotFound:
