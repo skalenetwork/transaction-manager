@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     strategy:
       matrix:
         python-version: [3.8]
@@ -16,13 +16,21 @@ jobs:
     - uses: actions/checkout@v2
       with:
         submodules: true
+
     - name: Set up Python ${{ matrix.python-version }}
       uses: actions/setup-python@v1
       with:
         python-version: ${{ matrix.python-version }}
+
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master
+      with:
+        remote: true
+
     - name: Update host dependencies
       run: |
         sudo apt-get update --fix-missing
+
     - name: Install python dependencies
       run: |
         python -m pip install --upgrade pip
