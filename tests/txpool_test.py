@@ -44,7 +44,6 @@ def test_get_next_rdp(tpool, trs, rdp):
     print(trs.zscore('test_pool', did.encode('utf-8')), did)
 
     for i in range(5):
-        # TODO: FIX !!
         assert tpool.get_next_id() == aid.encode('utf-8')
 
     eth_tx_e = {'to': '0xe', 'value': 10}
