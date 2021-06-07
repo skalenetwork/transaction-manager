@@ -129,7 +129,7 @@ def acquire_attempt(
     attempt: Attempt,
     tx: Tx
 ) -> Generator[Attempt, None, None]:
-    logger.info(f'Acquiring attempt {attempt} ...')
+    logger.info(f'Acquiring attempt {attempt}')
     try:
         yield attempt
     finally:

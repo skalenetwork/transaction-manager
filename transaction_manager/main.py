@@ -36,7 +36,7 @@ def main() -> None:
     pool = TxPool()
     wallet = init_wallet()
     proc = Processor(eth, pool, wallet)
-    logger.info('Starting transaction processor ...')
+    logger.info('Starting transaction processor')
     proc.run()
 
 

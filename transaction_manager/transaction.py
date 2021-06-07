@@ -55,7 +55,7 @@ class Tx:
     hashes: List = field(default_factory=list)
     attempts: int = 0
     value: int = 0
-    multiplier: float = GAS_MULTIPLIER
+    multiplier: Optional[float] = GAS_MULTIPLIER
     source: Optional[str] = None
     gas: Optional[int] = None
     chain_id: Optional[int] = None

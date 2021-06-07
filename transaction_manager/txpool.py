@@ -50,6 +50,7 @@ class TxPool:
         if tx_id is None:
             return None
         r = self.rs.get(tx_id)
+        logger.info('Received record %s', r)
         tx = None
         try:
             tx = Tx.from_bytes(tx_id, r)
@@ -80,11 +81,11 @@ class TxPool:
             self.drop(tx_id)
 
     def drop(self, tx_id: bytes) -> None:
-        logger.info('Removing %s from pool ...', tx_id)
+        logger.info('Removing %s from pool', tx_id)
         self.rs.zrem(self.name, tx_id)
 
     def save(self, tx: Tx) -> None:
-        logger.info('Updating record for tx %s ...', tx.tx_id)
+        logger.info('Updating record for tx %s', tx.tx_id)
         self.rs.set(tx.tx_id, tx.to_bytes())
 
     def fetch_next(self) -> Optional[Tx]:
@@ -94,12 +95,12 @@ class TxPool:
             logger.debug('Received %s from pool', tx_id)
             tx = self.get(tx_id)
             if tx is None:
-                logger.error('Received malformed tx %s. Going to remove ...')
+                logger.error('Received malformed tx %s. Going to remove')
                 self.drop(tx_id)  # type: ignore
         return tx
 
     def release(self, tx: Tx) -> None:
-        logger.info('Releasing tx %s ...', tx.tx_id)
+        logger.info('Releasing tx %s', tx.tx_id)
         pipe = self.rs.pipeline()
         pipe.set(tx.tx_id, tx.to_bytes())
         pipe.zrem(self.name, tx.tx_id)

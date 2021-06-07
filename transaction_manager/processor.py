@@ -65,7 +65,7 @@ class Processor:
         retry = 0
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Retry %d', retry)
-            logger.info('Signing tx %s ...', tx.tx_id)
+            logger.info('Signing tx %s', tx.tx_id)
             signed = self.wallet.sign(tx.eth_tx)
             logger.info(f'Sending transaction {tx}')
             try:
@@ -94,7 +94,7 @@ class Processor:
             return None
         max_time = attempt.wait_time
         try:
-            logger.info(f'Waiting for {tx.tx_id}, timeout {max_time} ...')
+            logger.info(f'Waiting for {tx.tx_id}, timeout {max_time}')
             self.eth.wait_for_receipt(
                 tx_hash=tx.tx_hash,
                 max_time=max_time
@@ -135,7 +135,7 @@ class Processor:
         logger.info(f'Received current nonce - {nonce}')
 
         if tx.is_sent():
-            tx_hash, rstatus = self.get_exec_data(tx)
+            _, rstatus = self.get_exec_data(tx)
             if rstatus is not None:
                 self.confirm(tx)
 
@@ -143,17 +143,17 @@ class Processor:
         logger.info(f'Current attempt: {attempt}')
 
         tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
-        logger.info(f'Calculating gas for {tx} ...')
+        logger.info(f'Calculating gas for {tx}')
         tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
         with acquire_attempt(attempt, tx) as attempt:
             self.send(tx)
 
-        logger.info(f'Saving tx: {tx.tx_id} record after sending ...')
+        logger.info(f'Saving tx: {tx.tx_id} record after sending')
         self.pool.save(tx)
         logger.info(
-            f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash} ...'
+            f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}'
         )
 
         rstatus = self.wait(tx, attempt)
@@ -162,7 +162,7 @@ class Processor:
 
     @contextmanager
     def acquire_tx(self, tx: Tx) -> Generator[Tx, None, None]:
-        logger.info('Aquiring %s ...', tx.tx_id)
+        logger.info('Aquiring %s. Attempt %s', tx.tx_id, tx.attempts)
         tx.attempts += 1
         try:
             yield tx
@@ -188,6 +188,6 @@ class Processor:
                 self.process_next()
             except Exception:
                 logger.exception('Failed to receive next tx')
-                logger.info('Waiting for next tx ...')
+                logger.info('Waiting for next tx')
             finally:
                 time.sleep(1)
