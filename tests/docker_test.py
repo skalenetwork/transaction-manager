@@ -4,7 +4,7 @@ from concurrent.futures import as_completed, ThreadPoolExecutor
 import pytest
 from skale.wallets import RedisWalletAdapter
 
-TX_NUMBER = 15
+TX_NUMBER = 100
 
 
 @pytest.fixture
@@ -45,7 +45,7 @@ def test_processor(tpool, eth, trs, w3wallet, rdp):
     assert tx['attempts'] == last_attempt['index']
     assert tx['gasPrice'] == last_attempt['gas_price']
     assert tx['data'] is None
-    assert tx['priority'] == 1
+    assert tx['score'] == 1
     assert tx_id == last_attempt['tx_id']
 
 
@@ -61,3 +61,4 @@ def test_processor_many_tx(tpool, eth, w3, trs, rdp):
         futures = [p.submit(wait_for_tx, rdp, tid) for tid in tids]
     txs = [f.result() for f in as_completed(futures)]
     assert any(tx['status'] == 'SUCCESS' for tx in txs)
+    assert tpool.size == 0
