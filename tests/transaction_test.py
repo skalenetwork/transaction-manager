@@ -35,7 +35,7 @@ def test_tx():
     assert not tx.is_sent()
 
     dumped_tx = tx.to_bytes()
-    expected = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "multiplier": 1.8, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chain_id": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     print(dumped_tx)
     assert dumped_tx == expected
 
