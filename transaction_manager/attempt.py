@@ -66,7 +66,6 @@ def set_last_attempt(attempt: Attempt, rs: redis.Redis = grs) -> None:
 
 
 def calculate_next_waiting_time(attempt_index: int) -> int:
-    # TODO: Better formula needed
     return BASE_WAITING_TIME + 10 * (attempt_index ** 2)
 
 
@@ -113,8 +112,8 @@ def create_next_attempt(
         next_index = 1
     else:
         next_gp = calculate_next_gas_price(last, avg_gas_price, nonce)
-        next_wait_time = calculate_next_waiting_time(last.index)
         next_index = last.index + 1
+        next_wait_time = calculate_next_waiting_time(next_index)
     return Attempt(
         tx_id=tx_id,
         nonce=nonce,

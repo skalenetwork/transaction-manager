@@ -51,7 +51,7 @@ def test_create_next_attempt():
     assert bb.gas_price == 1100000000
     assert bb.nonce == aa.nonce
     assert bb.index == aa.index + 1
-    assert bb.wait_time == 40
+    assert bb.wait_time == 110
 
     cc_tid = 'id-cccc'
     cc = create_next_attempt(
@@ -64,7 +64,7 @@ def test_create_next_attempt():
     assert cc.gas_price == 10 ** 9
     assert cc.nonce == bb.nonce + 1
     assert cc.index == 1
-    assert cc.wait_time == 10
+    assert cc.wait_time == 20
 
     dd_tid = 'id-dddd'
     dd = create_next_attempt(

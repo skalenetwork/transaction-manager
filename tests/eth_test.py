@@ -47,7 +47,7 @@ def test_eth_tx(w3wallet, w3, eth):
         'chainId': w3.eth.chainId
     }
     # TODO: Recheck for other networks
-    assert eth.calculate_gas(eth_tx_a) == 80000000
+    assert eth.calculate_gas(eth_tx_a, multiplier=1) == 80000000
 
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)
