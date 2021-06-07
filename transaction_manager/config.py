@@ -45,7 +45,7 @@ GAS_PRICE_INC_PERCENT: int = 10
 
 GRAD_GAS_PRICE_INC_PERCENT: int = 2
 
-MAX_WAITING_TIME: int = 600  # TODO: determine value
+MAX_WAITING_TIME: int = 650  # TODO: determine value
 
 UNDERPRICED_RETRIES = 5
 
