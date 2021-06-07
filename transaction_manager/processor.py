@@ -152,9 +152,7 @@ class Processor:
 
         logger.info(f'Saving tx: {tx.tx_id} record after sending')
         self.pool.save(tx)
-        logger.info(
-            f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}'
-        )
+        logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}')
 
         rstatus = self.wait(tx, attempt)
         if rstatus is not None:

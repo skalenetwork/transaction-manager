@@ -67,7 +67,7 @@ def set_last_attempt(attempt: Attempt, rs: redis.Redis = grs) -> None:
 
 def calculate_next_waiting_time(attempt_index: int) -> int:
     # TODO: Better formula needed
-    return BASE_WAITING_TIME + 15 * attempt_index
+    return BASE_WAITING_TIME + 20 * attempt_index
 
 
 def inc_gas_price(gas_price: int, inc: int = GAS_PRICE_INC_PERCENT) -> int:

@@ -28,7 +28,12 @@ from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
 
 from .resources import w3 as gw3
-from .config import CONFIRMATION_BLOCKS, GAS_MULTIPLIER, MAX_WAITING_TIME
+from .config import (
+    CONFIRMATION_BLOCKS,
+    GAS_MULTIPLIER,
+    GAS_PRICE_INC_PERCENT,
+    MAX_WAITING_TIME
+)
 
 logger = logging.getLogger(__name__)
 
@@ -69,7 +74,7 @@ class Eth:
 
     @property
     def avg_gas_price(self) -> int:
-        return self.w3.eth.gasPrice
+        return self.w3.eth.gasPrice * (100 + GAS_PRICE_INC_PERCENT) // 100
 
     def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
         multiplier = multiplier or GAS_MULTIPLIER

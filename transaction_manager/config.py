@@ -19,7 +19,7 @@
 
 import os
 import sys
-from typing import Optional
+from typing import List, Optional
 
 REDIS_URI: str = 'redis://@127.0.0.1:6379'
 
@@ -39,7 +39,7 @@ MAX_RESUBMIT_AMOUNT: int = 10
 
 MAX_GAS_PRICE: int = 3 * 10 ** 9
 
-BASE_WAITING_TIME: int = 10
+BASE_WAITING_TIME: int = 20
 
 GAS_PRICE_INC_PERCENT: int = 10
 
@@ -52,12 +52,14 @@ UNDERPRICED_RETRIES = 5
 ALLOWED_TS_DIFF = 300
 
 
-for v in list(
-    filter(
+def get_params() -> List[str]:
+    return list(filter(
         lambda v: not v.startswith('__') and v in os.environ,
         globals()
-    )
-):
+    ))
+
+
+for v in get_params():
     type_ = type(getattr(sys.modules[__name__], v))
     if not isinstance(None, type_):
         casted = type_(os.environ[v])
