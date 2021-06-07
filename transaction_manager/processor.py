@@ -67,7 +67,7 @@ class Processor:
             logger.info('Retry %d', retry)
             logger.info('Signing tx %s', tx.tx_id)
             signed = self.wallet.sign(tx.eth_tx)
-            logger.info(f'Sending transaction {tx}')
+            logger.info('Sending transaction %s', tx.eth_tx)
             try:
                 tx_hash = self.eth.send_tx(signed)
             except Exception as e:
