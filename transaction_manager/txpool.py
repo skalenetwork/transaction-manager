@@ -56,7 +56,7 @@ class TxPool:
             if tx is None:
                 logger.error('Tx %s has no record', tx_id)
         except InvalidFormatError:
-            logger.error('Invalid record for %s', tx_id)
+            logger.error('Invalid record for %s %s', tx_id, r)
             tx = None
         return tx
 

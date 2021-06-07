@@ -29,7 +29,7 @@ from .resources import w3 as gw3
 
 logger = logging.getLogger(__name__)
 
-PATH_TO_SGX_CERT = os.path.join(NODE_DATA_PATH, 'sgx_cert')
+PATH_TO_SGX_CERT = os.path.join(NODE_DATA_PATH, 'sgx_certs')
 
 
 class WalletInitializationError(Exception):
@@ -42,7 +42,7 @@ def init_wallet(w3: Web3 = gw3) -> BaseWallet:
         logger.info('Initializing web3 wallet ...')
         wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
     elif SGX_URL:
-        logger.info('Initializing sgx wallet ...')
+        logger.info(f'Initializing sgx wallet {SGX_URL} ...')
         keyname = wait_for_sgx_keyname()
         wallet = SgxWallet(
             SGX_URL,

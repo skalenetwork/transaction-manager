@@ -146,7 +146,10 @@ class Tx:
             raise InvalidFormatError(f'No such status {status_name}')
 
         plain_tx['gas_price'] = plain_tx.get('gasPrice')
+        plain_tx['chain_id'] = plain_tx.get('chainId')
         plain_tx['source'] = plain_tx.get('from')
+        if 'chainId' in plain_tx:
+            del plain_tx['chainId']
         if 'gasPrice' in plain_tx:
             del plain_tx['gasPrice']
         if 'from' in plain_tx:
@@ -156,6 +159,6 @@ class Tx:
         try:
             tx = Tx(**plain_tx)
         except TypeError:
-            logger.error('Tx creation for %s errored', tx_id)
+            logger.exception('Tx creation for %s errored', tx_id)
             raise InvalidFormatError(f'Missing fields for {str(tx_id)} record')
         return tx

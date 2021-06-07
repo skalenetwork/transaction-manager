@@ -29,7 +29,7 @@ ETH_PRIVATE_KEY: Optional[str] = None
 
 ENDPOINT: str = 'http://127.0.0.1:8545'
 
-GAS_MULTIPLIER: float = 1.8
+GAS_MULTIPLIER: float = 1.2
 
 NODE_DATA_PATH = '/skale_node_data'
 

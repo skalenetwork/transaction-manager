@@ -109,14 +109,6 @@ class Processor:
             max_time=max_time
         )
 
-    def create_attempt(
-        self, tx_id: str,
-        nonce: int,
-        avg_gp: int,
-        prev_attempt: Attempt
-    ) -> Attempt:
-        return create_next_attempt(nonce, avg_gp, tx_id, prev_attempt)
-
     def confirm(self, tx: Tx) -> None:
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
         h, r = self.get_exec_data(tx)
