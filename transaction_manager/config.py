@@ -49,6 +49,8 @@ MAX_WAITING_TIME: int = 600  # TODO: determine value
 
 UNDERPRICED_RETRIES = 5
 
+ALLOWED_TS_DIFF = 300
+
 
 for v in list(
     filter(
