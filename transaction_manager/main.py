@@ -19,11 +19,12 @@
 
 import logging
 
-from .config import ENDPOINT
+from . import config
 from .eth import Eth
 from .log import init_logger
 from .processor import Processor
 from .txpool import TxPool
+from .utils import config_string
 from .wallet import init_wallet
 
 logger = logging.getLogger(__name__)
@@ -31,8 +32,8 @@ logger = logging.getLogger(__name__)
 
 def main() -> None:
     init_logger()
-    logger.info(f'Starting. Endpoint: {ENDPOINT}')
     eth = Eth()
+    logger.info('Starting. Config:\n%s', config_string(vars(config)))
     pool = TxPool()
     wallet = init_wallet()
     proc = Processor(eth, pool, wallet)
