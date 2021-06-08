@@ -48,7 +48,8 @@ class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
 
 def is_replacement_underpriced(err: Exception) -> bool:
     return isinstance(err, ValueError) and \
-        err.args[0]['message'] == 'replacement transaction underpriced'
+        isinstance(err.args[0], dict) and \
+        err.args[0].get('message') == 'replacement transaction underpriced'
 
 
 def is_nonce_too_low(err: Exception) -> bool:
@@ -84,7 +85,7 @@ class Eth:
         gas = int(estimated * multiplier)
         logger.info('Multiplied gas: %s', gas)
         gas_limit = self.block_gas_limit
-        if gas < gas_limit:
+        if gas > gas_limit:
             logger.warning(
                 'Estimated gas is to high. Defaulting to %s',
                 gas_limit
