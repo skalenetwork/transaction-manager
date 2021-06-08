@@ -72,8 +72,7 @@ def init_logger() -> None:
     handlers: List[Handler] = []
 
     base_formatter = Formatter(LOG_FORMAT)
-    # formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
-    formatter = base_formatter
+    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
 
     f_handler = RotatingFileHandler(
         TM_LOG_PATH,
