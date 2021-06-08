@@ -17,7 +17,7 @@ def test_eth_chain_id(eth):
 
 
 def test_eth_avg_gas_price(eth):
-    assert 10 ** 9 < eth.avg_gas_price < 25 * 10 ** 9
+    assert 10 ** 9 < eth.avg_gas_price < 31 * 10 ** 9
 
 
 def test_eth_blocks(w3, eth):
@@ -46,8 +46,7 @@ def test_eth_tx(w3wallet, w3, eth):
         'nonce': w3.eth.getTransactionCount(addr),
         'chainId': w3.eth.chainId
     }
-    # TODO: Recheck for other networks
-    assert eth.calculate_gas(eth_tx_a, multiplier=1) == 80000000
+    assert eth.calculate_gas(eth_tx_a, multiplier=1) == 21000
 
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)
