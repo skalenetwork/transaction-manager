@@ -21,7 +21,7 @@ from typing import Dict
 
 
 def is_constant(var: str) -> bool:
-    return len(var) and var[0].isupper() and var[-1].isupper()
+    return len(var) > 0 and var[0].isupper() and var[-1].isupper()
 
 
 def config_string(config_vars: Dict) -> str:
