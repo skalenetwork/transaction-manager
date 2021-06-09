@@ -1,0 +1,52 @@
+name: Test
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        python-version: [3.8]
+    env:
+      ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
+      ENDPOINT: ${{ secrets.ENDPOINT }}
+      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
+      MANAGER_TAG: "1.8.0-stable.0"
+    steps:
+    - uses: actions/checkout@v2
+      with:
+        submodules: true
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Checkout submodules
+      uses: textbook/git-checkout-submodule-action@master
+      with:
+        remote: true
+
+    - name: Update host dependencies
+      run: sudo apt-get update --fix-missing
+
+    - name: Install python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        pip install codecov 
+    - name: Lint with flake8
+      run: flake8 .
+
+    - name: Mypy check
+      run: mypy transaction_manager/main.py
+
+    - name: Deploy manager 
+      run: bash ./helper-scripts/deploy_test_manager.sh
+
+    - name: Run redis
+      run: bash scripts/run-redis.sh
+
+    - name: Run tests
+      run: bash ./scripts/run-tests.sh
