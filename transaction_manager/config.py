@@ -53,6 +53,8 @@ UNDERPRICED_RETRIES = 5
 
 ALLOWED_TS_DIFF = 300
 
+DISABLE_GAS_ESTIMATION = False
+
 
 def get_params() -> List[str]:
     return list(filter(

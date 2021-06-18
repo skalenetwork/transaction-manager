@@ -30,6 +30,7 @@ from web3.types import TxParams
 from .resources import w3 as gw3
 from .config import (
     CONFIRMATION_BLOCKS,
+    DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
     AVG_GAS_PRICE_INC_PERCENT,
     MAX_WAITING_TIME
@@ -79,6 +80,9 @@ class Eth:
 
     def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
         multiplier = multiplier or GAS_MULTIPLIER
+        if DISABLE_GAS_ESTIMATION:
+            return tx['gas'] * multiplier
+
         logger.info('Estimating gas for %s', tx)
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
         logger.info('Estimated gas: %s', estimated)
