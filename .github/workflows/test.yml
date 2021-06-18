@@ -40,7 +40,7 @@ jobs:
       run: flake8 .
 
     - name: Deploy manager 
-      run: bash ./helper-scripts/run_ganache.sh
+      run: bash ./helper-scripts/run_ganache.sh && sleep 60
 
     - name: Run tests
       run: bash ./scripts/run_tests.sh
