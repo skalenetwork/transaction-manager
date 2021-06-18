@@ -32,7 +32,11 @@ from configs.web3 import ENDPOINT
 from nonce_manager import NonceManager
 from tools.logger import init_tm_logger
 from tools.str_formatters import arguments_list_string
-from tools.helper import construct_ok_response, construct_err_response, init_wallet
+from tools.helper import (
+    construct_ok_response,
+    construct_err_response,
+    init_wallet
+)
 
 
 thread_lock = threading.Lock()
