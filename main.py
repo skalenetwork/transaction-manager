@@ -67,7 +67,9 @@ def _sign_and_send():
             logger.warning(f'thread_id {thread_id} going to release the lock')
             return construct_ok_response({'transaction_hash': tx_hash})
         else:
-            logger.warning(f'thread_id {thread_id} going to release the lock due to an error')
+            logger.warning(
+                f'thread_id {thread_id} going to release the lock due to an error'
+            )
             return construct_err_response(HTTPStatus.BAD_REQUEST, error)
 
 
