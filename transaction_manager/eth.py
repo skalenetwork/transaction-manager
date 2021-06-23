@@ -81,7 +81,7 @@ class Eth:
     def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return tx['gas'] * multiplier
+            return int(tx['gas'] * multiplier)
 
         logger.info('Estimating gas for %s', tx)
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
