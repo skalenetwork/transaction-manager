@@ -144,7 +144,7 @@ class Processor:
 
         tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
         logger.info(f'Calculating gas for {tx}')
-        tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
+        tx.gas = int(self.eth.calculate_gas(tx.eth_tx, tx.multiplier))
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
         with acquire_attempt(attempt, tx) as attempt:

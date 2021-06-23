@@ -95,7 +95,7 @@ class Eth:
                 gas_limit
             )
             gas = gas_limit
-        return gas
+        return int(gas)
 
     def send_tx(self, signed_tx: Dict) -> str:
         tx_hash = self.w3.eth.sendRawTransaction(
