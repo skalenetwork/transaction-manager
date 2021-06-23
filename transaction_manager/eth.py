@@ -81,7 +81,7 @@ class Eth:
     def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return tx['gas'] * multiplier
+            return int(tx['gas'] * multiplier)
 
         logger.info('Estimating gas for %s', tx)
         estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
@@ -95,7 +95,7 @@ class Eth:
                 gas_limit
             )
             gas = gas_limit
-        return gas
+        return int(gas)
 
     def send_tx(self, signed_tx: Dict) -> str:
         tx_hash = self.w3.eth.sendRawTransaction(
