@@ -125,7 +125,7 @@ class Processor:
                 return h, r
         return None, None
 
-    def handle(self, tx: Tx, prev_attempt: Attempt) -> None:
+    def handle(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
 
@@ -175,8 +175,8 @@ class Processor:
                 self.pool.save(tx)
 
     def process_next(self) -> None:
-        tx = self.pool.fetch_next()
         logger.debug('Pool: %s', self.pool.to_list())
+        tx = self.pool.fetch_next()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
                 prev_attempt = get_last_attempt()
