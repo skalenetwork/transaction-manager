@@ -162,6 +162,8 @@ class Processor:
     def acquire_tx(self, tx: Tx) -> Generator[Tx, None, None]:
         logger.info('Aquiring %s. Attempt %s', tx.tx_id, tx.attempts)
         tx.attempts += 1
+        if tx.status == TxStatus.PROPOSED:
+            tx.status = TxStatus.SEEN
         try:
             yield tx
         finally:
@@ -172,8 +174,9 @@ class Processor:
             else:
                 self.pool.save(tx)
 
-    def process_next(self):
+    def process_next(self) -> None:
         tx = self.pool.fetch_next()
+        logger.debug('Pool: %s', self.pool.to_list())
         if tx is not None:
             with self.acquire_tx(tx) as tx:
                 prev_attempt = get_last_attempt()
@@ -185,7 +188,7 @@ class Processor:
             try:
                 self.process_next()
             except Exception:
-                logger.exception('Failed to receive next tx')
+                logger.exception('Failed to process tx')
                 logger.info('Waiting for next tx')
             finally:
                 time.sleep(1)

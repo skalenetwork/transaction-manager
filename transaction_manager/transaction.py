@@ -36,14 +36,15 @@ class InvalidFormatError(Exception):
 
 class TxStatus(Enum):
     PROPOSED = 1
-    SENT = 2
-    UNSENT = 3
-    TIMEOUT = 4
-    MINED = 5
-    UNCONFIRMED = 6
-    SUCCESS = 7
-    FAILED = 8
-    DROPPED = 9
+    SEEN = 2
+    SENT = 3
+    UNSENT = 4
+    TIMEOUT = 5
+    MINED = 6
+    UNCONFIRMED = 7
+    SUCCESS = 8
+    FAILED = 9
+    DROPPED = 10
 
 
 @dataclass
