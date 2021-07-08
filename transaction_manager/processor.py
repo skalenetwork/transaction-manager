@@ -175,7 +175,7 @@ class Processor:
                 self.pool.save(tx)
 
     def process_next(self) -> None:
-        logger.debug('Pool: %s', self.pool.to_list())
+        logger.info('Pool: %s', self.pool.to_list())
         tx = self.pool.fetch_next()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
