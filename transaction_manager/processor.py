@@ -125,7 +125,7 @@ class Processor:
                 return h, r
         return None, None
 
-    def handle(self, tx: Tx, prev_attempt: Attempt) -> None:
+    def handle(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
 
@@ -162,6 +162,8 @@ class Processor:
     def acquire_tx(self, tx: Tx) -> Generator[Tx, None, None]:
         logger.info('Aquiring %s. Attempt %s', tx.tx_id, tx.attempts)
         tx.attempts += 1
+        if tx.status == TxStatus.PROPOSED:
+            tx.status = TxStatus.SEEN
         try:
             yield tx
         finally:
@@ -172,7 +174,8 @@ class Processor:
             else:
                 self.pool.save(tx)
 
-    def process_next(self):
+    def process_next(self) -> None:
+        logger.info('Pool: %s', self.pool.to_list())
         tx = self.pool.fetch_next()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
@@ -185,7 +188,7 @@ class Processor:
             try:
                 self.process_next()
             except Exception:
-                logger.exception('Failed to receive next tx')
+                logger.exception('Failed to process tx')
                 logger.info('Waiting for next tx')
             finally:
                 time.sleep(1)

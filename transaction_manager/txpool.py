@@ -19,6 +19,7 @@
 
 import logging
 
+from typing import List
 from typing import Optional
 
 import redis
@@ -45,6 +46,9 @@ class TxPool:
     @property
     def size(self) -> int:
         return self.rs.zcard(self.name)
+
+    def to_list(self) -> List[bytes]:
+        return self.rs.zrange(self.name, 0, -1)
 
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
