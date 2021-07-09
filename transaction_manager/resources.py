@@ -1,8 +1,8 @@
 #   -*- coding: utf-8 -*-
 #
-#   This file is part of SKALE  Transaction Manager
+#   This file is part of SKALE Transaction Manager
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,6 +17,13 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import redis
 
-ENDPOINT = os.environ['ENDPOINT']
+from skale.utils.web3_utils import init_web3  # type: ignore
+from web3 import Web3
+
+from .config import ALLOWED_TS_DIFF, ENDPOINT, REDIS_URI
+
+cpool: redis.ConnectionPool = redis.ConnectionPool.from_url(REDIS_URI)
+rs: redis.Redis = redis.Redis(connection_pool=cpool)
+w3: Web3 = init_web3(ENDPOINT, ts_diff=ALLOWED_TS_DIFF)

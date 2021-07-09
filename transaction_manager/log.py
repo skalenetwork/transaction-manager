@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Transaction Manager
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -19,29 +19,42 @@
 
 import hashlib
 import logging
+import os
 import re
 import sys
-from logging import Formatter, StreamHandler
+from logging import Formatter, Handler, StreamHandler
 from logging.handlers import RotatingFileHandler
+from typing import List
 
-from configs.logs import (TM_LOG_PATH, TM_DEBUG_LOG_PATH, LOG_FILE_SIZE_BYTES, LOG_BACKUP_COUNT,
-                          LOG_FORMAT)
+from .config import NODE_DATA_PATH
+
+
+LOG_FOLDER = os.path.join(NODE_DATA_PATH, 'log')
+TM_LOG_PATH = os.path.join(LOG_FOLDER, 'tm.log')
+TM_DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, 'debug_tm.log')
+
+LOG_FILE_SIZE_MB = 100
+LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
+
+LOG_BACKUP_COUNT = 3
+
+LOG_FORMAT = '%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s'  # noqa
 
 
 HIDING_PATTERNS = [
     r'NEK\:\w+',
-    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',
-    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'
+    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',  # noqa
+    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'  # noqa
 ]
 
 
-class HidingFormatter:
-    def __init__(self, base_formatter, patterns):
-        self.base_formatter = base_formatter
-        self._patterns = patterns
+class HidingFormatter(Formatter):
+    def __init__(self, base_formatter: Formatter, patterns: List[str]) -> None:
+        self.base_formatter: Formatter = base_formatter
+        self._patterns: List[str] = patterns
 
     @classmethod
-    def convert_match_to_sha3(cls, match):
+    def convert_match_to_sha3(cls, match) -> str:
         return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
 
     def format(self, record):
@@ -55,14 +68,17 @@ class HidingFormatter:
         return getattr(self.base_formatter, attr)
 
 
-def init_logger(log_file_path, debug_file_path=None):
-    handlers = []
+def init_logger() -> None:
+    handlers: List[Handler] = []
 
     base_formatter = Formatter(LOG_FORMAT)
     formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
 
-    f_handler = RotatingFileHandler(log_file_path, maxBytes=LOG_FILE_SIZE_BYTES,
-                                    backupCount=LOG_BACKUP_COUNT)
+    f_handler = RotatingFileHandler(
+        TM_LOG_PATH,
+        maxBytes=LOG_FILE_SIZE_BYTES,
+        backupCount=LOG_BACKUP_COUNT
+    )
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
     handlers.append(f_handler)
@@ -72,16 +88,13 @@ def init_logger(log_file_path, debug_file_path=None):
     stream_handler.setLevel(logging.INFO)
     handlers.append(stream_handler)
 
-    if debug_file_path:
-        f_handler_debug = RotatingFileHandler(debug_file_path,
-                                              maxBytes=LOG_FILE_SIZE_BYTES,
-                                              backupCount=LOG_BACKUP_COUNT)
-        f_handler_debug.setFormatter(formatter)
-        f_handler_debug.setLevel(logging.DEBUG)
-        handlers.append(f_handler_debug)
+    f_handler_debug = RotatingFileHandler(
+        TM_DEBUG_LOG_PATH,
+        maxBytes=LOG_FILE_SIZE_BYTES,
+        backupCount=LOG_BACKUP_COUNT
+    )
+    f_handler_debug.setFormatter(formatter)
+    f_handler_debug.setLevel(logging.DEBUG)
+    handlers.append(f_handler_debug)
 
     logging.basicConfig(level=logging.DEBUG, handlers=handlers)
-
-
-def init_tm_logger():
-    init_logger(TM_LOG_PATH, TM_DEBUG_LOG_PATH)
