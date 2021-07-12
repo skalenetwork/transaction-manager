@@ -78,7 +78,7 @@ def test_create_next_attempt():
     assert dd.nonce == 0
     assert dd.index == 1
 
-    dd.gas_price = 3 * 10 ** 9 - 100
+    dd.gas_price = 1000 * 10 ** 9 - 100
 
     ee_tid = 'id-eeee'
     ee = create_next_attempt(
