@@ -33,11 +33,11 @@ GAS_MULTIPLIER: float = 1.2
 
 NODE_DATA_PATH = '/skale_node_data'
 
-CONFIRMATION_BLOCKS: int = 2
+CONFIRMATION_BLOCKS: int = 6
 
 MAX_RESUBMIT_AMOUNT: int = 10
 
-MAX_GAS_PRICE: int = 3 * 10 ** 9
+MAX_GAS_PRICE: int = 1000 * 10 ** 9
 
 BASE_WAITING_TIME: int = 20
 
