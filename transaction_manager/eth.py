@@ -84,7 +84,10 @@ class Eth:
             return int(tx['gas'] * multiplier)
 
         logger.info('Estimating gas for %s', tx)
-        estimated = self.w3.eth.estimateGas(cast(TxParams, tx))
+        estimated = self.w3.eth.estimateGas(
+            cast(TxParams, tx),
+            block_identifier='latest'
+        )
         logger.info('Estimated gas: %s', estimated)
         gas = int(estimated * multiplier)
         logger.info('Multiplied gas: %s', gas)
