@@ -1,11 +1,13 @@
 import json
 import time
 from concurrent.futures import as_completed, ThreadPoolExecutor
+from functools import wraps
 
 import pytest
 from skale.wallets import RedisWalletAdapter
 
 TX_NUMBER = 100
+RETRY_NUMBER = 10
 
 
 @pytest.fixture
@@ -14,11 +16,27 @@ def rdp(trs, w3wallet):
     return RedisWalletAdapter(trs, 'transactions', w3wallet)
 
 
+def retry_rdp(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        err = None
+        for i in range(RETRY_NUMBER):
+            try:
+                return func(*args, *kwargs)
+            except Exception as e:
+                err = e
+                time.sleep(2)
+        raise err
+    return wrapper
+
+
+@retry_rdp
 def make_simple_tx(rdp, address):
     etx = {'to': address, 'value': 10}
     return rdp.sign_and_send(etx)
 
 
+@retry_rdp
 def wait_for_tx(rdp, tx_id):
     rdp.wait(tx_id, timeout=300)
     return rdp.get_record(tx_id)
