@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Transaction Manager
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,21 +17,16 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
-from configs import NODE_DATA_PATH
+from typing import Dict
 
-LOG_FOLDER_NAME = 'log'
-LOG_FOLDER = os.path.join(NODE_DATA_PATH, LOG_FOLDER_NAME)
 
-TM_LOG_FILENAME = 'tm.log'
-TM_LOG_PATH = os.path.join(LOG_FOLDER, TM_LOG_FILENAME)
+def is_constant(var: str) -> bool:
+    return len(var) > 0 and var[0].isupper() and var[-1].isupper()
 
-TM_DEBUG_LOG_FILENAME = 'debug_tm.log'
-TM_DEBUG_LOG_PATH = os.path.join(LOG_FOLDER, TM_DEBUG_LOG_FILENAME)
 
-LOG_FILE_SIZE_MB = 100
-LOG_FILE_SIZE_BYTES = LOG_FILE_SIZE_MB * 1000000
-
-LOG_BACKUP_COUNT = 3
-
-LOG_FORMAT = '[%(asctime)s %(levelname)s] %(name)s:%(lineno)d - %(threadName)s - %(message)s'  # noqa
+def config_string(config_vars: Dict) -> str:
+    return '\n'.join(
+        f'{k}: {v}'
+        for k, v in config_vars.items()
+        if is_constant(k) and isinstance(v, (int, float, str, list))
+    )

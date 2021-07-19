@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Transaction Manager
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,10 +17,33 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import json
+import logging
 import os
+import time
 
-HERE = os.path.dirname(os.path.realpath(__file__))
+from .config import NODE_DATA_PATH
 
-FLASK_APP_HOST = os.environ['FLASK_APP_HOST']
-FLASK_APP_PORT = int(os.environ['FLASK_APP_PORT'])
-FLASK_DEBUG_MODE = os.environ['FLASK_DEBUG_MODE'] == 'True'
+logger = logging.getLogger(__name__)
+
+NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_config.json')
+
+
+def is_config_created() -> bool:
+    return os.path.isfile(NODE_CONFIG_FILEPATH)
+
+
+def get_sgx_keyname() -> str:
+    with open(NODE_CONFIG_FILEPATH, encoding='utf-8') as data_file:
+        config = json.loads(data_file.read())
+    return config['sgx_key_name']
+
+
+def wait_for_sgx_keyname() -> str:
+    cnt = 0
+    while not os.path.isfile(NODE_CONFIG_FILEPATH):
+        if cnt < 5:
+            logger.info('No such file %s. Waiting ...', NODE_CONFIG_FILEPATH)
+        time.sleep(3)
+        cnt += 1
+    return get_sgx_keyname()

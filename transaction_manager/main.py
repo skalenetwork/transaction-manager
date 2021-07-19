@@ -2,7 +2,7 @@
 #
 #   This file is part of SKALE Transaction Manager
 #
-#   Copyright (C) 2019 SKALE Labs
+#   Copyright (C) 2021 SKALE Labs
 #
 #   This program is free software: you can redistribute it and/or modify
 #   it under the terms of the GNU Affero General Public License as published by
@@ -17,7 +17,29 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import os
+import logging
 
-LONG_LINE = '=' * 100
-DISABLE_DRY_RUN = os.getenv('DISABLE_DRY_RUN', 'False') == 'True'
+from . import config
+from .eth import Eth
+from .log import init_logger
+from .processor import Processor
+from .txpool import TxPool
+from .utils import config_string
+from .wallet import init_wallet
+
+logger = logging.getLogger(__name__)
+
+
+def main() -> None:
+    init_logger()
+    eth = Eth()
+    logger.info('Starting. Config:\n%s', config_string(vars(config)))
+    pool = TxPool()
+    wallet = init_wallet()
+    proc = Processor(eth, pool, wallet)
+    logger.info('Starting transaction processor')
+    proc.run()
+
+
+if __name__ == '__main__':
+    main()
