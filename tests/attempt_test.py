@@ -3,18 +3,19 @@ from transaction_manager.attempt import (
     create_next_attempt,
     get_last_attempt,
     MAX_GAS_PRICE,
+    MIN_GAS_PRICE_INC,
     set_last_attempt
 )
 
 
-def create_attempt():
+def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
     tid = 'id-aaaa'
     return Attempt(
         tx_id=tid,
-        nonce=1,
-        index=2,
-        gas_price=10 ** 9,
-        wait_time=30
+        nonce=nonce,
+        index=index,
+        gas_price=gas_price,
+        wait_time=wait_time
     )
 
 
@@ -88,3 +89,16 @@ def test_create_next_attempt():
         last=dd
     )
     assert ee.gas_price == MAX_GAS_PRICE
+
+
+def test_create_next_attempt_smal_gas_price():
+    initial_gp = 1
+    aa = create_attempt(gas_price=initial_gp)
+    bb = create_next_attempt(
+        nonce=aa.nonce,
+        avg_gas_price=initial_gp,
+        tx_id=aa.tx_id,
+        last=aa
+    )
+    assert bb.tx_id == aa.tx_id
+    assert bb.gas_price == initial_gp + MIN_GAS_PRICE_INC

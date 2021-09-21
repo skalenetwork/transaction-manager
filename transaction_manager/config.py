@@ -47,6 +47,8 @@ GAS_PRICE_INC_PERCENT: int = 10
 
 GRAD_GAS_PRICE_INC_PERCENT: int = 2
 
+MIN_GAS_PRICE_INC: int = 5
+
 MAX_WAITING_TIME: int = 650  # TODO: determine value
 
 UNDERPRICED_RETRIES = 5
@@ -54,6 +56,8 @@ UNDERPRICED_RETRIES = 5
 ALLOWED_TS_DIFF = 300
 
 DISABLE_GAS_ESTIMATION = False
+
+TXRECORD_EXPIRATION = 24 * 60 * 60  # 1 day
 
 
 def get_params() -> List[str]:
