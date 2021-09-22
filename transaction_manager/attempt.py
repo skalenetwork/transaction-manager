@@ -31,7 +31,8 @@ from .config import (
     BASE_WAITING_TIME,
     GAS_PRICE_INC_PERCENT,
     GRAD_GAS_PRICE_INC_PERCENT,
-    MAX_GAS_PRICE
+    MAX_GAS_PRICE,
+    MIN_GAS_PRICE_INC
 )
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ def calculate_next_waiting_time(attempt_index: int) -> int:
 
 
 def inc_gas_price(gas_price: int, inc: int = GAS_PRICE_INC_PERCENT) -> int:
-    return gas_price * (100 + inc) // 100
+    return max(gas_price * (100 + inc) // 100, gas_price + MIN_GAS_PRICE_INC)
 
 
 def grad_inc_gas_price(gas_price: int) -> int:
