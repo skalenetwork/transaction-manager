@@ -62,19 +62,18 @@ async function getRecord(tx_id) {
     }
 }
 
-const sleep = ( milliseconds ) => { return new Promise( resolve => setTimeout( resolve, milliseconds ) ); };
+const sleep = (milliseconds) => { return new Promise( (resolve) => setTimeout( resolve, milliseconds ) ); };
 
 const currentTs = () => { return parseInt( parseInt( Date.now().valueOf() ) / 1000 ); };
 
-async function wait(tx_id, allowed_time = 30000) {
-    let start_ts = currentTs();
-    while (!isFinished( await getRecord( tx_id ) ) && currentTs() - start_ts < allowed_time) {
-        const r = await getRecord(tx_id);
+async function wait(txId, allowedTime = 30000) {
+    let startTs = currentTs();
+    while (!isFinished( await getRecord(tx_id) ) && currentTs() - startTs < allowedTime) {
+        const r = await getRecord(txId);
         await sleep(1);
     }
-    const r = await getRecord( tx_id );
-    console.log(r);
-    if( !isFinished( r ) ) {
+    const r = await getRecord(txId);
+    if (!isFinished(r)) {
         return null;
     }
     let rec = await web3.eth.getTransactionReceipt(r.tx_hash);
