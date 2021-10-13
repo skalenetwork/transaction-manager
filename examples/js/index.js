@@ -64,7 +64,7 @@ async function getRecord (txId) {
 
 const sleep = (milliseconds) => { return new Promise((resolve) => setTimeout(resolve, milliseconds)) }
 
-const currentTs = () => { return parseInt(parseInt(Date.now().valueOf()) / 1000) }
+const currentTs = () => { return parseInt(parseInt(Date.now().valueOf(), 10) / 1000, 10) }
 
 async function wait (txId, allowedTime = 30000) {
   const startTs = currentTs()
