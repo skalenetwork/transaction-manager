@@ -2,6 +2,7 @@
 
 const REDIS_URI = process.env.REDIS_URI;
 const ENDPOINT = process.env.ENDPOINT;
+const TX_RECORD_EXPIRATION = 24 * 60 * 60; // 1 day
 const Redis = require("ioredis");
 const redis = new Redis(REDIS_URI);
 var Web3 = require("web3");
@@ -38,7 +39,7 @@ async function send(tx, priority = 5) {
     var record = makeRecord(tx, score);
     console.log(`Sending score: ${score}, record: ${record}`);
     await redis.multi()
-        .set(id, record)
+        .set(id, record, "EX", TX_RECORD_EXPIRATION)
         .zadd(pool, score, id)
         .exec();
     return id;
@@ -61,17 +62,23 @@ async function getRecord(tx_id) {
     }
 }
 
-async function wait(tx_id) {
-    console.log(tx_id);
-    var hash;
-    while (hash === undefined) {
-        var r = await getRecord(tx_id);
-        if (isFinished(r)) {
-            hash = r["tx_hash"];
-        }
+const sleep = ( milliseconds ) => { return new Promise( resolve => setTimeout( resolve, milliseconds ) ); };
+
+const currentTs = () => { return parseInt( parseInt( Date.now().valueOf() ) / 1000 ); };
+
+async function wait(tx_id, allowed_time = 30000) {
+    let start_ts = currentTs();
+    while (!isFinished( await getRecord( tx_id ) ) && currentTs() - start_ts < allowed_time) {
+        const r = await getRecord(tx_id);
+        await sleep(1);
     }
-    console.log("Hash", hash);
-    return await web3.eth.getTransactionReceipt(hash);
+    const r = await getRecord( tx_id );
+    console.log(r);
+    if( !isFinished( r ) ) {
+        return null;
+    }
+    let rec = await web3.eth.getTransactionReceipt(r.tx_hash);
+    return rec;
 }
 
 async function main() {
