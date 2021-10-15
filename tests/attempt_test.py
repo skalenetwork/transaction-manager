@@ -91,7 +91,7 @@ def test_create_next_attempt():
     assert ee.gas_price == MAX_GAS_PRICE
 
 
-def test_create_next_attempt_smal_gas_price():
+def test_create_next_attempt_small_gas_price():
     initial_gp = 1
     aa = create_attempt(gas_price=initial_gp)
     bb = create_next_attempt(
