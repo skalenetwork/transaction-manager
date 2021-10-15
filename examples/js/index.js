@@ -12,6 +12,10 @@ const pool = 'transactions'
 
 const genRanHex = size => [...Array(size)].map(() => Math.floor(Math.random() * 16).toString(16)).join('')
 
+const sleep = (milliseconds) => { return new Promise((resolve) => setTimeout(resolve, milliseconds)) }
+
+const currentTs = () => { return parseInt(parseInt(Date.now().valueOf(), 10) / 1000, 10) }
+
 function makeId () {
   const prefix = 'tx-'
   const unique = genRanHex(16)
@@ -28,7 +32,7 @@ function makeRecord (tx = {}, score) {
 }
 
 function makeScore (priority) {
-  const ts = parseInt(Date.now() / 1000)
+  const ts = currentTs()
   return priority * Math.pow(10, ts.toString().length) + ts
 }
 
@@ -61,10 +65,6 @@ async function getRecord (txId) {
     return null
   }
 }
-
-const sleep = (milliseconds) => { return new Promise((resolve) => setTimeout(resolve, milliseconds)) }
-
-const currentTs = () => { return parseInt(parseInt(Date.now().valueOf(), 10) / 1000, 10) }
 
 async function wait (txId, allowedTime = 30000) {
   const startTs = currentTs()
