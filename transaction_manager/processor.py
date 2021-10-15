@@ -138,6 +138,7 @@ class Processor:
             _, rstatus = self.get_exec_data(tx)
             if rstatus is not None:
                 self.confirm(tx)
+                return
 
         attempt = create_next_attempt(nonce, avg_gp, tx.tx_id, prev_attempt)
         logger.info(f'Current attempt: {attempt}')
