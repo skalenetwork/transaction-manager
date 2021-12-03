@@ -110,13 +110,17 @@ class Processor:
         )
 
     def confirm(self, tx: Tx) -> None:
+        logger.info(
+            'Tx %s: confirming within %d blocks',
+            tx.tx_id, CONFIRMATION_BLOCKS
+        )
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED
             raise ConfirmationError('Tx is not confirmed')
         tx.set_as_completed(h, r)
-        logger.info('Tx was confirmed %s', tx.tx_id)
+        logger.info('Tx %s was confirmed', tx.tx_id)
 
     def get_exec_data(self, tx: Tx) -> Tuple[Optional[str], Optional[int]]:
         for h in reversed(tx.hashes):
