@@ -22,10 +22,10 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
 
-    - name: Checkout submodules
-      uses: textbook/git-checkout-submodule-action@master
-      with:
-        remote: true
+        # - name: Checkout submodules
+        #   uses: textbook/git-checkout-submodule-action@master
+        #   with:
+        #     remote: true
 
     - name: Update host dependencies
       run: sudo apt-get update --fix-missing
