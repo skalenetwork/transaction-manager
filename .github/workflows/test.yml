@@ -43,8 +43,11 @@ jobs:
     - name: Mypy check
       run: mypy transaction_manager/main.py
     
-    - name: Debug 
+    - name: Debug0
       run: ls -altr ./helper-scripts
+
+    - name: Debug1
+      run: cd ./helper-scripts && git status && cd -
 
     - name: Deploy manager 
       run: bash ./helper-scripts/deploy_test_manager.sh
