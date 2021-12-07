@@ -1,2 +1,2 @@
-redis==3.5.3
+redis==4.0.2
 skale.py==5.5dev1
