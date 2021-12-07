@@ -3,7 +3,7 @@ on: [push, pull_request]
 
 jobs:
   test:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: [3.8]
@@ -42,9 +42,12 @@ jobs:
 
     - name: Mypy check
       run: mypy transaction_manager/main.py
+    
+    - name: Debug 
+      run: ls -altr ./helper-scripts
 
     - name: Deploy manager 
-      run: bash ./helper-scripts/deploy_test_ima.sh
+      run: bash ./helper-scripts/deploy_test_manager.sh
 
     - name: Run redis
       run: bash scripts/run-redis.sh
