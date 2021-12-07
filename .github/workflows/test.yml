@@ -12,7 +12,6 @@ jobs:
       ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MANAGER_TAG: "1.8.2-develop.44"
-      GANACHE_VERSION: "v6.10.2"
     steps:
     - uses: actions/checkout@v2
       with:
