@@ -44,7 +44,7 @@ jobs:
       run: mypy transaction_manager/main.py
 
     - name: Deploy manager 
-      run: bash ./helper-scripts/deploy_test_manager.sh
+      run: bash ./helper-scripts/deploy_test_ima.sh
 
     - name: Run redis
       run: bash scripts/run-redis.sh
