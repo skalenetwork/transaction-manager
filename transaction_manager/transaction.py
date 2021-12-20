@@ -20,7 +20,6 @@
 import json
 import logging
 import time
-
 from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional
@@ -48,11 +47,19 @@ class TxStatus(Enum):
 
 
 @dataclass
+class Fee:
+    gas_price: Optional[int] = None
+    max_fee_per_gas: Optional[int] = None
+    max_priority_fee_per_gas: Optional[int] = None
+
+
+@dataclass
 class Tx:
     tx_id: str
     status: TxStatus
     score: int
     to: str
+    fee: Fee
     hashes: List = field(default_factory=list)
     attempts: int = 0
     value: int = 0
@@ -60,11 +67,22 @@ class Tx:
     source: Optional[str] = None
     gas: Optional[int] = None
     chain_id: Optional[int] = None
-    gas_price: Optional[int] = None
     nonce: Optional[int] = None
     data: Optional[Dict] = None
     tx_hash: Optional[str] = None
     sent_ts: Optional[int] = None
+
+    MAPPED_ATTR = {
+        'chainId': 'chain_id',
+        'gasPrice': 'gas_price',
+        'maxFeePerGas': 'max_fee_per_gas',
+        'maxPriorityFeePerGas': 'max_priority_fee_per_gas',
+        'from': 'source'
+    }
+
+    def __post_init__(self):
+        if isinstance(self.fee, dict):
+            self.fee = Fee(**self.fee)
 
     @property
     def raw_id(self) -> bytes:
@@ -104,61 +122,53 @@ class Tx:
         self.hashes.append(tx_hash)
 
     @property
-    def eth_tx(self) -> Dict:
-        etx: Dict = {
-            'from': self.source,
-            'to': self.to,
-            'value': self.value,
-            'gasPrice': self.gas_price,
-            'nonce': self.nonce,
-            'chainId': self.chain_id,
-        }
-        if self.gas:
-            etx.update({'gas': self.gas})
-        if self.data:
-            etx.update({'data': self.data})
-        return etx
+    def raw_tx(self) -> Dict:
+        raw_tx = asdict(self)
+        raw_tx['status'] = self.status.name
+        raw_tx.update(asdict(self.fee))
+        del raw_tx['fee']
+        for original, mapped in self.MAPPED_ATTR.items():
+            if mapped in raw_tx:
+                raw_tx[original] = raw_tx[mapped]
+                del raw_tx[mapped]
+        return raw_tx
 
     def to_bytes(self) -> bytes:
-        plain_tx = asdict(self)
-        del plain_tx['tx_id']
-        del plain_tx['gas_price']
-        del plain_tx['source']
-        plain_tx['status'] = self.status.name
-        plain_tx['gasPrice'] = self.gas_price
-        plain_tx['from'] = self.source
-        return json.dumps(plain_tx, sort_keys=True).encode('utf-8')
+        return json.dumps(self.raw_tx, sort_keys=True).encode('utf-8')
+
+    @classmethod
+    def _extract_fee(self, raw_tx: Dict) -> Fee:
+        gas_price = raw_tx.pop('gas_price', None)
+        max_fee_per_gas = raw_tx.pop('max_fee_per_gas', None)
+        max_priority_fee_per_gas = raw_tx.pop('max_priority_fee_per_gas', None)
+        return Fee(gas_price, max_fee_per_gas, max_priority_fee_per_gas)
 
     @classmethod
     def from_bytes(cls, tx_id: bytes, tx_bytes: bytes) -> 'Tx':
         logger.debug('Tx %s bytes %s', tx_id, tx_bytes)
         try:
-            plain_tx = json.loads(tx_bytes.decode('utf-8'))
-            plain_tx['tx_id'] = tx_id.decode('utf-8')
+            raw_tx = json.loads(tx_bytes.decode('utf-8'))
+            raw_tx['tx_id'] = tx_id.decode('utf-8')
         except (json.decoder.JSONDecodeError, UnicodeError, TypeError):
             logger.error('Failed to make tx %s from bytes', tx_id)
             raise InvalidFormatError(f'Invalid record for {str(tx_id)}')
 
         try:
-            status_name = plain_tx.get('status')
-            plain_tx['status'] = TxStatus[status_name]
+            status_name = raw_tx.get('status')
+            raw_tx['status'] = TxStatus[status_name]
         except KeyError:
             logger.error('Tx %s has wrong status %s', tx_id, status_name)
             raise InvalidFormatError(f'No such status {status_name}')
 
-        plain_tx['gas_price'] = plain_tx.get('gasPrice')
-        plain_tx['chain_id'] = plain_tx.get('chainId')
-        plain_tx['source'] = plain_tx.get('from')
-        if 'chainId' in plain_tx:
-            del plain_tx['chainId']
-        if 'gasPrice' in plain_tx:
-            del plain_tx['gasPrice']
-        if 'from' in plain_tx:
-            del plain_tx['from']
-        if 'hashes' not in plain_tx:
-            plain_tx['hashes'] = []
+        for original, mapped in cls.MAPPED_ATTR.items():
+            if original in raw_tx:
+                raw_tx[mapped] = raw_tx[original]
+                del raw_tx[original]
+
+        raw_tx['fee'] = cls._extract_fee(raw_tx)
+        raw_tx['hashes'] = raw_tx.get('hashes') or []
         try:
-            tx = Tx(**plain_tx)
+            tx = Tx(**raw_tx)
         except TypeError:
             logger.exception('Tx creation for %s errored', tx_id)
             raise InvalidFormatError(f'Missing fields for {str(tx_id)} record')
