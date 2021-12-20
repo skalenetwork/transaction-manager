@@ -1,5 +1,5 @@
-#   -*- coding: utf-8 -*-
 #
+#   -*- coding: utf-8 -*-
 #   This file is part of SKALE Transaction Manager
 #
 #   Copyright (C) 2021 SKALE Labs
@@ -35,6 +35,7 @@ from .config import (
     AVG_GAS_PRICE_INC_PERCENT,
     MAX_WAITING_TIME
 )
+from .transaction import Tx
 
 logger = logging.getLogger(__name__)
 
@@ -74,18 +75,54 @@ class Eth:
     def get_balance(self, address: ChecksumAddress) -> int:
         return self.w3.eth.getBalance(address)
 
+    TX_ATTRS = [
+        'from',
+        'to',
+        'value',
+        'nonce',
+        'chainId',
+        'gas',
+        'data',
+        'gasPrice',
+        'maxFeePerGas',
+        'maxPriorityFeePerGas'
+    ]
+
+    @classmethod
+    def convert_tx(cls, tx: Tx) -> Dict:
+        # TODO: convert using classes
+        raw_tx = tx.raw_tx
+        etx = {attr: raw_tx[attr] for attr in cls.TX_ATTRS}
+        if etx.get('maxPriorityFeePerGas') is not None or \
+                etx.get('maxFeePerGas') is not None:
+            etx['type'] = 2
+            etx.pop('gasPrice', None)
+        else:
+            etx['type'] = 1
+            etx.pop('maxPriorityFeePerGas', None)
+            etx.pop('maxFeePerGas', None)
+
+        if etx.get('gas') is None:
+            etx.pop('gas')
+        if etx.get('data') is None:
+            etx.pop('data')
+        return etx
+
     @property
     def avg_gas_price(self) -> int:
         return self.w3.eth.gasPrice * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
 
-    def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
+    def calculate_gas(self, tx: Tx) -> int:
+        etx = self.convert_tx(tx)
+        multiplier = tx.multiplier
+        logger.info('IVD tx %s', etx)
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return int(tx['gas'] * multiplier)
+            return int(etx['gas'] * multiplier)
 
-        logger.info('Estimating gas for %s', tx)
+        logger.info('Estimating gas for %s', etx)
         estimated = self.w3.eth.estimateGas(
-            cast(TxParams, tx),
+            cast(TxParams, etx),
             block_identifier='latest'
         )
         logger.info('Estimated gas: %s', estimated)
