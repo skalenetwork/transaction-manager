@@ -19,14 +19,16 @@
 
 import json
 import logging
+from abc import ABCMeta, abstractmethod
 from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from typing import Generator, Optional
 
 import redis
 
+from .eth import Eth
 from .resources import rs as grs
-from .transaction import Tx, TxStatus
+from .transaction import Fee, Tx, TxStatus
 from .config import (
     BASE_WAITING_TIME,
     GAS_PRICE_INC_PERCENT,
@@ -43,8 +45,12 @@ class Attempt:
     tx_id: str
     nonce: int
     index: int
-    gas_price: int
+    fee: Fee
     wait_time: int
+
+    def __post_init__(self):
+        if isinstance(self.fee, dict):
+            self.fee = Fee(**self.fee)
 
     def to_bytes(self) -> bytes:
         return json.dumps(asdict(self), sort_keys=True).encode('utf-8')
@@ -52,6 +58,9 @@ class Attempt:
     @classmethod
     def from_bytes(cls, attempt_bytes: bytes) -> 'Attempt':
         raw = json.loads(attempt_bytes.decode('utf-8'))
+        if gas_price := raw.get('gas_price') or None:
+            raw.update({'fee': asdict(Fee(gas_price=gas_price))})
+            del raw['gas_price']
         return Attempt(**raw)
 
 
@@ -86,42 +95,98 @@ def grad_inc_gas_price(gas_price: int) -> int:
         return MAX_GAS_PRICE
 
 
-def calculate_next_gas_price(
-    last_attempt: Attempt,
-    avg_gp: int,
-    nonce: int
-) -> int:
-    ngp = inc_gas_price(last_attempt.gas_price, inc=GAS_PRICE_INC_PERCENT)
-    if ngp > MAX_GAS_PRICE:
-        logger.warning(
-            f'Next gas {ngp} price is not allowed. '
-            f'Defaulting to {MAX_GAS_PRICE}'
+class BaseAttemptManager(metaclass=ABCMeta):
+    @abstractmethod
+    def create_next(
+        self,
+        tx_id: str,
+        nonce: int,
+        last: Optional[Attempt]
+    ) -> Attempt:
+        pass
+
+
+class AttemptManagerV1(BaseAttemptManager):
+    def __init__(
+        self,
+        eth: Eth,
+        max_gas_price: int = MAX_GAS_PRICE,
+        base_waiting_time: int = BASE_WAITING_TIME,
+        min_gas_price_inc: int = MIN_GAS_PRICE_INC,
+        gas_price_inc_percent: int = GAS_PRICE_INC_PERCENT,
+        grad_gas_price_inc_percent: int = GRAD_GAS_PRICE_INC_PERCENT
+    ) -> None:
+        self.eth = eth
+        self.max_gas_price = max_gas_price
+        self.base_waiting_time = base_waiting_time
+        self.min_gas_price_inc = min_gas_price_inc
+        self.gas_price_inc_percent = gas_price_inc_percent
+        self.grad_gas_price_inc_percent = GRAD_GAS_PRICE_INC_PERCENT
+
+    def next_waiting_time(self, attempt_index: int) -> int:
+        return self.base_waiting_time + 10 * (attempt_index ** 2)
+
+    @classmethod
+    def inc_gas_price(
+        self,
+        gas_price: int,
+        inc: Optional[int] = None
+    ) -> int:
+        inc = inc or self.gas_price_inc_percent
+        return max(
+            gas_price * (100 + inc) // 100,
+            gas_price + self.min_gas_price_inc
         )
-        ngp = MAX_GAS_PRICE
-    return max(avg_gp, ngp)
 
+    def grad_inc_gas_price(self, gas_price: int) -> int:
+        ngp = self.inc_gas_price(
+            gas_price=gas_price,
+            inc=self.grad_gas_price_inc_percent)
+        if ngp < self.max_gas_price:
+            logger.warning(
+                f'Next gas {ngp} price is not allowed. '
+                f'Defaulting to {MAX_GAS_PRICE}'
+            )
+            return ngp
+        else:
+            return self.max_gas_price
 
-def create_next_attempt(
-    nonce: int,
-    avg_gas_price: int,
-    tx_id: str,
-    last: Optional[Attempt] = None
-) -> Attempt:
-    if last is None or nonce > last.nonce:
-        next_gp = avg_gas_price
-        next_wait_time = BASE_WAITING_TIME
-        next_index = 1
-    else:
-        next_gp = calculate_next_gas_price(last, avg_gas_price, nonce)
-        next_index = last.index + 1
-        next_wait_time = calculate_next_waiting_time(next_index)
-    return Attempt(
-        tx_id=tx_id,
-        nonce=nonce,
-        index=next_index,
-        gas_price=next_gp,
-        wait_time=next_wait_time
-    )
+    def next_gas_price(
+        self,
+        last_gas_price: int,
+        average_gas_price: int
+    ) -> int:
+        next_gas_price = self.inc_gas_price(last_gas_price)
+        if next_gas_price > self.max_gas_price:
+            logger.warning(
+                f'Next gas {next_gas_price} price is not allowed. '
+                f'Defaulting to {MAX_GAS_PRICE}'
+            )
+            ngp = self.max_gas_price
+        return max(average_gas_price, ngp)
+
+    def create_next(
+        self,
+        tx_id: str,
+        nonce: int,
+        last: Optional[Attempt]
+    ) -> Attempt:
+        avg_gas_price = self.eth.avg_gas_price
+        if last is None or last.fee.gas_price is None or nonce > last.nonce:
+            next_gp = avg_gas_price
+            next_wait_time = self.base_waiting_time
+            next_index = 1
+        else:
+            next_gp = self.next_gas_price(last.fee.gas_price, avg_gas_price)
+            next_index = last.index + 1
+            next_wait_time = self.next_waiting_time(next_index)
+        return Attempt(
+            tx_id=tx_id,
+            nonce=nonce,
+            index=next_index,
+            fee=Fee(gas_price=next_gp),
+            wait_time=next_wait_time
+        )
 
 
 @contextmanager

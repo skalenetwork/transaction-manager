@@ -20,6 +20,7 @@
 import logging
 
 from . import config
+from .attempt import AttemptManagerV1
 from .eth import Eth
 from .log import init_logger
 from .processor import Processor
@@ -36,7 +37,8 @@ def main() -> None:
     logger.info('Starting. Config:\n%s', config_string(vars(config)))
     pool = TxPool()
     wallet = init_wallet()
-    proc = Processor(eth, pool, wallet)
+    attempt_manager = AttemptManagerV1(eth)
+    proc = Processor(eth, pool, attempt_manager, wallet)
     logger.info('Starting transaction processor')
     proc.run()
 

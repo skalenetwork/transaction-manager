@@ -27,7 +27,7 @@ from skale.wallets import BaseWallet  # type: ignore
 from .attempt import (
     acquire_attempt,
     Attempt,
-    create_next_attempt,
+    BaseAttemptManager,
     get_last_attempt,
     grad_inc_gas_price
 )
@@ -54,8 +54,15 @@ class WaitTimeoutError(Exception):
 
 
 class Processor:
-    def __init__(self, eth: Eth, pool: TxPool, wallet: BaseWallet) -> None:
+    def __init__(
+        self,
+        eth: Eth,
+        pool: TxPool,
+        attempt_manager: BaseAttemptManager,
+        wallet: BaseWallet
+    ) -> None:
         self.eth: Eth = eth
+        self.attempt_manager = attempt_manager
         self.pool: TxPool = pool
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
@@ -66,8 +73,10 @@ class Processor:
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Retry %d', retry)
             logger.info('Signing tx %s', tx.tx_id)
-            signed = self.wallet.sign(tx.eth_tx)
-            logger.info('Sending transaction %s', tx.eth_tx)
+            etx = self.eth.convert_tx(tx)
+            logger.info('IVD %s', etx)
+            signed = self.wallet.sign(etx)
+            logger.info('Sending transaction %s', tx)
             try:
                 tx_hash = self.eth.send_tx(signed)
             except Exception as e:
@@ -75,8 +84,8 @@ class Processor:
                 err = e
                 if is_replacement_underpriced(err):
                     logger.info('Replacement gas price is too low. Increasing')
-                    gp = tx.gas_price
-                    tx.gas_price = grad_inc_gas_price(gp)  # type: ignore
+                    gp = tx.fee.gas_price
+                    tx.fee.gas_price = grad_inc_gas_price(gp)  # type: ignore
                     retry += 1
                 else:
                     break
@@ -129,12 +138,10 @@ class Processor:
                 return h, r
         return None, None
 
-    def handle(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
+    def process(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
 
-        avg_gp = self.eth.avg_gas_price
-        logger.info(f'Received avg gas price - {avg_gp}')
         nonce = self.eth.get_nonce(self.address)
         logger.info(f'Received current nonce - {nonce}')
 
@@ -144,12 +151,17 @@ class Processor:
                 self.confirm(tx)
                 return
 
-        attempt = create_next_attempt(nonce, avg_gp, tx.tx_id, prev_attempt)
+        attempt = self.attempt_manager.create_next(
+            tx.tx_id,
+            nonce,
+            prev_attempt
+        )
         logger.info(f'Current attempt: {attempt}')
 
-        tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
+        tx.fee, tx.nonce = attempt.fee, attempt.nonce
+
         logger.info(f'Calculating gas for {tx}')
-        tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
+        tx.gas = self.eth.calculate_gas(tx)
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
         with acquire_attempt(attempt, tx) as attempt:
@@ -188,7 +200,7 @@ class Processor:
             with self.acquire_tx(tx) as tx:
                 prev_attempt = get_last_attempt()
                 logger.info('Previous attempt %s', prev_attempt)
-                self.handle(tx, prev_attempt)
+                self.process(tx, prev_attempt)
 
     def run(self) -> None:
         while True:
