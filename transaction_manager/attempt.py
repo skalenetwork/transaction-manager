@@ -30,11 +30,16 @@ from .eth import Eth
 from .resources import rs as grs
 from .transaction import Fee, Tx, TxStatus
 from .config import (
+    BASE_PRIORITY_FEE,
     BASE_WAITING_TIME,
     GAS_PRICE_INC_PERCENT,
     GRAD_GAS_PRICE_INC_PERCENT,
+    GRAD_INC_PERCENT,
+    INC_PERCENT,
+    MAX_FEE_VALUE,
     MAX_GAS_PRICE,
-    MIN_GAS_PRICE_INC
+    MIN_GAS_PRICE_INC,
+    MIN_INC_PERCENT
 )
 
 logger = logging.getLogger(__name__)
@@ -105,6 +110,79 @@ class BaseAttemptManager(metaclass=ABCMeta):
     ) -> Attempt:
         pass
 
+    @abstractmethod
+    def make_replacement_fee(self, attempt) -> Fee:
+        pass
+
+
+class AttemptManagerV2(BaseAttemptManager):
+    def __init__(
+        self,
+        eth: Eth,
+        base_waiting_time: int = BASE_WAITING_TIME,
+        base_priority_fee: int = BASE_PRIORITY_FEE,
+        inc_percent: int = INC_PERCENT,
+        min_inc_percent: int = MIN_INC_PERCENT,
+        grad_inc_percent: int = GRAD_INC_PERCENT,
+        max_fee: int = MAX_FEE_VALUE
+    ) -> None:
+        self.eth = eth
+        self.base_waiting_time = base_waiting_time
+        self.base_priority_fee = base_priority_fee
+        self.inc_percent = inc_percent
+        self.min_inc_percent = min_inc_percent
+        self.grad_inc_percent = grad_inc_percent
+        self.max_fee = max_fee
+
+    def inc_priority_fee(
+        self,
+        fee_value: int,
+        inc: Optional[int] = None
+    ) -> int:
+        inc = inc or self.inc_percent
+        return max(
+            fee_value * (100 + inc) // 100,
+            fee_value + self.min_inc_percent,
+            self.max_fee
+        )
+
+    def make_replacement_fee(self, attempt: Attempt) -> Fee:
+        next_pf = self.inc_priority_fee(
+            attempt.fee.max_priority_fee_per_gas,
+            inc=self.grad_inc_percent
+        )
+        if next_pf == self.max_fee:
+            logger.warning(
+                f'Next priority fee {next_pf} is not allowed. '
+                f'Defaulting to {self.max_fee}'
+            )
+        return Fee(gas_price=next_pf)
+
+    def next_fee(self, fee: Fee) -> Fee:
+        priority_fee_value = fee.max_priority_fee_per_gas
+        next_priority_fee_value = self.inc_priority_fee(priority_fee_value)
+        return Fee(
+            max_fee_per_gas=fee.max_fee_per_gas,
+            max_priority_fee_per_gas=next_priority_fee_value
+        )
+
+    def next_waiting_time(self, attempt_index: int) -> int:
+        return self.base_waiting_time + 10 * (attempt_index ** 2)
+
+    def create_next(self, tx_id, nonce, last: Optional[Attempt]) -> Attempt:
+        if last is None or nonce > last.nonce or last.fee is None:
+            next_index = 1
+            next_fee = Fee(
+                max_fee_per_gas=self.max_fee,
+                max_priority_fee_per_gas=self.base_priority_fee
+            )
+            next_waiting_time = self.base_waiting_time
+        else:
+            next_index = last.index + 1
+            next_fee = self.next_fee(last.fee)
+            next_waiting_time = self.next_waiting_time(next_index)
+        return Attempt(tx_id, nonce, next_index, next_fee, next_waiting_time)
+
 
 class AttemptManagerV1(BaseAttemptManager):
     def __init__(
@@ -121,7 +199,7 @@ class AttemptManagerV1(BaseAttemptManager):
         self.base_waiting_time = base_waiting_time
         self.min_gas_price_inc = min_gas_price_inc
         self.gas_price_inc_percent = gas_price_inc_percent
-        self.grad_gas_price_inc_percent = GRAD_GAS_PRICE_INC_PERCENT
+        self.grad_gas_price_inc_percent = grad_gas_price_inc_percent
 
     def next_waiting_time(self, attempt_index: int) -> int:
         return self.base_waiting_time + 10 * (attempt_index ** 2)
@@ -129,7 +207,7 @@ class AttemptManagerV1(BaseAttemptManager):
     @classmethod
     def inc_gas_price(
         self,
-        gas_price: int,
+        gas_price,
         inc: Optional[int] = None
     ) -> int:
         inc = inc or self.gas_price_inc_percent
@@ -138,18 +216,17 @@ class AttemptManagerV1(BaseAttemptManager):
             gas_price + self.min_gas_price_inc
         )
 
-    def grad_inc_gas_price(self, gas_price: int) -> int:
+    def make_replacement_fee(self, attempt: Attempt) -> Fee:
         ngp = self.inc_gas_price(
-            gas_price=gas_price,
+            attempt,
             inc=self.grad_gas_price_inc_percent)
-        if ngp < self.max_gas_price:
+        if ngp > self.max_gas_price:
             logger.warning(
                 f'Next gas {ngp} price is not allowed. '
                 f'Defaulting to {MAX_GAS_PRICE}'
             )
-            return ngp
-        else:
-            return self.max_gas_price
+            ngp = self.max_gas_price
+        return Fee(gas_price=ngp)
 
     def next_gas_price(
         self,

@@ -49,6 +49,7 @@ class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
 
 
 def is_replacement_underpriced(err: Exception) -> bool:
+    # TODO: IVD make sure it is still correct
     return isinstance(err, ValueError) and \
         isinstance(err.args[0], dict) and \
         err.args[0].get('message') == 'replacement transaction underpriced'

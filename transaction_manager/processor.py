@@ -28,8 +28,7 @@ from .attempt import (
     acquire_attempt,
     Attempt,
     BaseAttemptManager,
-    get_last_attempt,
-    grad_inc_gas_price
+    get_last_attempt
 )
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import (
@@ -67,7 +66,7 @@ class Processor:
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
 
-    def send(self, tx: Tx) -> None:
+    def send(self, tx: Tx, attempt: Attempt) -> None:
         tx_hash, err = None, None
         retry = 0
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
@@ -83,9 +82,9 @@ class Processor:
                 logger.info(f'Sending failed with error {err}')
                 err = e
                 if is_replacement_underpriced(err):
-                    logger.info('Replacement gas price is too low. Increasing')
-                    gp = tx.fee.gas_price
-                    tx.fee.gas_price = grad_inc_gas_price(gp)  # type: ignore
+                    logger.info('Replacement fee is too low. Increasing')
+                    rfee = self.attempt_manager.make_replacement_fee(attempt)
+                    attempt.fee = tx.fee = rfee
                     retry += 1
                 else:
                     break
@@ -165,7 +164,7 @@ class Processor:
         logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
 
         with acquire_attempt(attempt, tx) as attempt:
-            self.send(tx)
+            self.send(tx, attempt)
 
         logger.info(f'Saving tx: {tx.tx_id} record after sending')
         self.pool.save(tx)
