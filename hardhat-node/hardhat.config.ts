@@ -56,6 +56,7 @@ const config: HardhatUserConfig = {
     hardhat: {
       accounts: getAccounts(),
       blockGasLimit: 12000000,
+      gasPrice: 1000000000,
       mining: {
           auto: true,
           interval: 1000
