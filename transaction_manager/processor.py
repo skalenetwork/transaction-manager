@@ -24,17 +24,12 @@ from typing import Generator, Optional, Tuple
 
 from skale.wallets import BaseWallet  # type: ignore
 
-from .attempt import (
-    acquire_attempt,
-    Attempt,
-    BaseAttemptManager,
-    get_last_attempt
-)
+from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import (
     Eth, is_replacement_underpriced, ReceiptTimeoutError
 )
-from .transaction import Tx, TxStatus
+from .structures import Tx, TxStatus
 from .txpool import TxPool
 
 logger = logging.getLogger(__name__)
@@ -66,7 +61,7 @@ class Processor:
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
 
-    def send(self, tx: Tx, attempt: Attempt) -> None:
+    def send(self, tx: Tx) -> None:
         tx_hash, err = None, None
         retry = 0
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
@@ -83,8 +78,7 @@ class Processor:
                 err = e
                 if is_replacement_underpriced(err):
                     logger.info('Replacement fee is too low. Increasing')
-                    rfee = self.attempt_manager.make_replacement_fee(attempt)
-                    attempt.fee = tx.fee = rfee
+                    self.attempt_manager.replace(tx)
                     retry += 1
                 else:
                     break
@@ -96,11 +90,10 @@ class Processor:
         tx.set_as_sent(tx_hash)
         logger.info(f'Tx {tx.tx_id} was sent successfully')
 
-    def wait(self, tx: Tx, attempt: Attempt) -> Optional[int]:
+    def wait(self, tx: Tx, max_time: int) -> Optional[int]:
         if not tx.tx_hash:
             logger.warning(f'Tx {tx.tx_id} has not any receipt')
             return None
-        max_time = attempt.wait_time
         try:
             logger.info(f'Waiting for {tx.tx_id}, timeout {max_time}')
             self.eth.wait_for_receipt(
@@ -137,12 +130,9 @@ class Processor:
                 return h, r
         return None, None
 
-    def process(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
+    def process(self, tx: Tx) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
-
-        nonce = self.eth.get_nonce(self.address)
-        logger.info(f'Received current nonce - {nonce}')
 
         if tx.is_sent():
             _, rstatus = self.get_exec_data(tx)
@@ -150,27 +140,23 @@ class Processor:
                 self.confirm(tx)
                 return
 
-        attempt = self.attempt_manager.create_next(
-            tx.tx_id,
-            nonce,
-            prev_attempt
-        )
-        logger.info(f'Current attempt: {attempt}')
+        nonce = self.eth.get_nonce(self.address)
+        logger.info(f'Received current nonce - {nonce}')
+        tx.nonce = nonce
 
-        tx.fee, tx.nonce = attempt.fee, attempt.nonce
+        self.attempt_manager.make(tx)
+        logger.info(f'Current attempt: {self.attempt_manager.current}')
 
-        logger.info(f'Calculating gas for {tx}')
-        tx.gas = self.eth.calculate_gas(tx)
-        logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
-
-        with acquire_attempt(attempt, tx) as attempt:
-            self.send(tx, attempt)
+        self.send(tx)
 
         logger.info(f'Saving tx: {tx.tx_id} record after sending')
         self.pool.save(tx)
         logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}')
 
-        rstatus = self.wait(tx, attempt)
+        rstatus = self.wait(
+            tx,
+            self.attempt_manager.current.wait_time  # type: ignore
+        )
         if rstatus is not None:
             self.confirm(tx)
 
@@ -183,6 +169,8 @@ class Processor:
         try:
             yield tx
         finally:
+            if tx.is_sent():
+                self.attempt_manager.save()
             if not tx.is_completed() and tx.is_last_attempt():
                 tx.status = TxStatus.DROPPED
             if tx.is_completed():
@@ -197,9 +185,9 @@ class Processor:
         tx = self.pool.fetch_next()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
-                prev_attempt = get_last_attempt()
-                logger.info('Previous attempt %s', prev_attempt)
-                self.process(tx, prev_attempt)
+                logger.info(
+                    'Previous attempt %s', self.attempt_manager.last)
+                self.process(tx)
 
     def run(self) -> None:
         while True:

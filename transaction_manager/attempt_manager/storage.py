@@ -17,31 +17,32 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import logging
 
-from . import config
-from .attempt_manager import AttemptManagerV1, RedisAttemptStorage
-from .eth import Eth
-from .log import init_logger
-from .processor import Processor
-from .txpool import TxPool
-from .utils import config_string
-from .wallet import init_wallet
+from abc import ABCMeta, abstractmethod
+from typing import Optional
 
-logger = logging.getLogger(__name__)
+from ..structures import Attempt
+from ..resources import rs as grs, redis
 
 
-def main() -> None:
-    init_logger()
-    eth = Eth()
-    logger.info('Starting. Config:\n%s', config_string(vars(config)))
-    pool = TxPool()
-    wallet = init_wallet()
-    attempt_manager = AttemptManagerV1(eth, RedisAttemptStorage())
-    proc = Processor(eth, pool, attempt_manager, wallet)
-    logger.info('Starting transaction processor')
-    proc.run()
+class BaseAttemptStorage(metaclass=ABCMeta):
+    @abstractmethod
+    def get(self) -> Optional[Attempt]:
+        pass
+
+    def save(self, attempt: Attempt) -> None:
+        pass
 
 
-if __name__ == '__main__':
-    main()
+class RedisAttemptStorage(BaseAttemptStorage):
+    def __init__(self, rs: redis.Redis = grs) -> None:
+        self.rs = rs
+
+    def get(self) -> Optional[Attempt]:
+        attempt_bytes = self.rs.get(b'last_attempt')
+        if not attempt_bytes:
+            return None
+        return Attempt.from_bytes(attempt_bytes)
+
+    def save(self, attempt: Attempt) -> None:
+        self.rs.set(b'last_attempt', attempt.to_bytes())

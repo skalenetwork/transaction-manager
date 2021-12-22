@@ -25,8 +25,8 @@ from typing import Optional
 import redis
 
 from .config import TXRECORD_EXPIRATION
-from .transaction import InvalidFormatError, Tx
 from .resources import rs as grs
+from .structures import InvalidFormatError, Tx
 
 
 logger = logging.getLogger(__name__)

@@ -132,7 +132,7 @@ def test_processor(tpool, eth, trs, w3wallet, rdp):
     last_attempt = json.loads(trs.get(b'last_attempt').decode('utf-8'))
     assert tx['nonce'] == last_attempt['nonce']
     assert tx['attempts'] == last_attempt['index']
-    assert tx['gasPrice'] == last_attempt['gas_price']
+    assert tx['gasPrice'] == last_attempt['fee']['gas_price']
     assert tx['data'] is None
     assert tx['score'] == 1
     assert tx_id == last_attempt['tx_id']

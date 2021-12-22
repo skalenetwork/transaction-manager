@@ -173,3 +173,28 @@ class Tx:
             logger.exception('Tx creation for %s errored', tx_id)
             raise InvalidFormatError(f'Missing fields for {str(tx_id)} record')
         return tx
+
+
+@dataclass
+class Attempt:
+    tx_id: str
+    nonce: int
+    index: int
+    fee: Fee
+    wait_time: int
+    gas: Optional[int]
+
+    def __post_init__(self):
+        if isinstance(self.fee, dict):
+            self.fee = Fee(**self.fee)
+
+    def to_bytes(self) -> bytes:
+        return json.dumps(asdict(self), sort_keys=True).encode('utf-8')
+
+    @classmethod
+    def from_bytes(cls, attempt_bytes: bytes) -> 'Attempt':
+        raw = json.loads(attempt_bytes.decode('utf-8'))
+        if gas_price := raw.get('gas_price') or None:
+            raw.update({'fee': asdict(Fee(gas_price=gas_price))})
+            del raw['gas_price']
+        return Attempt(**raw)

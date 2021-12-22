@@ -1,6 +1,6 @@
 from transaction_manager.attempt import (
     Attempt,
-    AttemptManager,
+    AttemptManagerV1,
     get_last_attempt,
     MAX_GAS_PRICE,
     MIN_GAS_PRICE_INC,
@@ -30,8 +30,6 @@ def test_attempt():
 
     aa_raw = aa.to_bytes()
     expected = b'{"fee": {"gas_price": 1000000000, "max_fee_per_gas": null, "max_priority_fee_per_gas": null}, "index": 2, "nonce": 1, "tx_id": "id-aaaa", "wait_time": 30}'  # noqa
-    print(aa_raw)
-    print(expected)
     assert aa_raw == expected
     assert Attempt.from_bytes(aa_raw) == aa
 
@@ -48,7 +46,7 @@ def test_get_set_last_attempt(trs):
 
 
 def attempt_manager_next_attempt(eth):
-    attempt_manager = AttemptManager(eth)
+    attempt_manager = AttemptManagerV1(eth)
     aa = create_attempt()
     # Basic test
     bb = attempt_manager.next_attempt(
@@ -101,7 +99,7 @@ def attempt_manager_next_attempt(eth):
 
 
 def test_create_next_attempt_small_gas_price(eth):
-    attempt_manager = AttemptManager(eth)
+    attempt_manager = AttemptManagerV1(eth)
     initial_gp = 1
     aa = create_attempt(gas_price=initial_gp)
     bb = attempt_manager.next_attempt(

@@ -27,7 +27,6 @@ from web3 import Web3
 from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
 
-from .resources import w3 as gw3
 from .config import (
     CONFIRMATION_BLOCKS,
     DISABLE_GAS_ESTIMATION,
@@ -35,7 +34,8 @@ from .config import (
     AVG_GAS_PRICE_INC_PERCENT,
     MAX_WAITING_TIME
 )
-from .transaction import Tx
+from .resources import w3 as gw3
+from .structures import Tx
 
 logger = logging.getLogger(__name__)
 
