@@ -1,6 +1,6 @@
 import time
 
-from transaction_manager.transaction import TxStatus
+from transaction_manager.structures import TxStatus
 
 
 def test_get_next_rdp(tpool, trs, rdp):
@@ -20,7 +20,7 @@ def test_get_next_rdp(tpool, trs, rdp):
     assert next_tx is not None
     assert next_tx.to == eth_tx_a['to']
     assert next_tx.value == eth_tx_a['value']
-    assert next_tx.gas_price == eth_tx_a['gasPrice']
+    assert next_tx.fee.gas_price == eth_tx_a['gasPrice']
     assert next_tx.gas == eth_tx_a['gas']
     assert str(next_tx.score)[0] == '2'
     assert next_tx.hashes == []
