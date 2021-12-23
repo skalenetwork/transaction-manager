@@ -40,7 +40,6 @@ class AttemptManagerV1(BaseAttemptManager):
         self,
         eth: Eth,
         storage: BaseAttemptStorage,
-        last: Optional[Attempt] = None,
         current: Optional[Attempt] = None,
         max_gas_price: int = MAX_GAS_PRICE,
         base_waiting_time: int = BASE_WAITING_TIME,
@@ -50,7 +49,6 @@ class AttemptManagerV1(BaseAttemptManager):
     ) -> None:
         self.eth = eth
         self.storage = storage
-        self._last = last or self.storage.get()
         self._current = current
         self.max_gas_price = max_gas_price
         self.base_waiting_time = base_waiting_time
@@ -58,26 +56,19 @@ class AttemptManagerV1(BaseAttemptManager):
         self.gas_price_inc_percent = gas_price_inc_percent
         self.grad_gas_price_inc_percent = grad_gas_price_inc_percent
 
-    def next_waiting_time(self, attempt_index: int) -> int:
-        return self.base_waiting_time + 10 * (attempt_index ** 2)
-
-    def get_last(self) -> Optional[Attempt]:
-        return self.storage.get()
-
-    def fetch_last(self) -> None:
-        self._last = self.get_last()
+    def fetch(self) -> None:
+        self._current = self.storage.get()
 
     @property
     def current(self) -> Optional[Attempt]:
         return self._current
 
-    @property
-    def last(self) -> Optional[Attempt]:
-        return self._last
-
     @made
     def save(self) -> None:
         self.storage.save(self.current)  # type: ignore
+
+    def next_waiting_time(self, attempt_index: int) -> int:
+        return self.base_waiting_time + 10 * (attempt_index ** 2)
 
     def inc_gas_price(
         self,

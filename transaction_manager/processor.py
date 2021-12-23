@@ -88,6 +88,7 @@ class Processor:
             raise SendingError(err)
 
         tx.set_as_sent(tx_hash)
+        self.pool.save(tx)
         logger.info(f'Tx {tx.tx_id} was sent successfully')
 
     def wait(self, tx: Tx, max_time: int) -> Optional[int]:
@@ -95,7 +96,10 @@ class Processor:
             logger.warning(f'Tx {tx.tx_id} has not any receipt')
             return None
         try:
-            logger.info(f'Waiting for {tx.tx_id}, timeout {max_time}')
+            logger.info(
+                'Waiting for %s, with hash %s, timeout %d',
+                tx.tx_id, tx.tx_hash, max_time
+            )
             self.eth.wait_for_receipt(
                 tx_hash=tx.tx_hash,
                 max_time=max_time
@@ -105,10 +109,15 @@ class Processor:
             tx.status = TxStatus.TIMEOUT
             raise WaitTimeoutError(err)
 
-        return self.eth.wait_for_receipt(
+        rstatus = self.eth.wait_for_receipt(
             tx_hash=tx.tx_hash,
             max_time=max_time
         )
+        if rstatus is not None:
+            logger.info('Setting tx %s as mined', tx.tx_id)
+            tx.set_as_mined()
+            self.pool.save(tx)
+        return rstatus
 
     def confirm(self, tx: Tx) -> None:
         logger.info(
@@ -120,7 +129,9 @@ class Processor:
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED
             raise ConfirmationError('Tx is not confirmed')
+        logger.info('Setting tx %s as completed, result %d', tx.tx_id, r)
         tx.set_as_completed(h, r)
+        self.pool.save(tx)
         logger.info('Tx %s was confirmed', tx.tx_id)
 
     def get_exec_data(self, tx: Tx) -> Tuple[Optional[str], Optional[int]]:
@@ -148,10 +159,6 @@ class Processor:
         logger.info(f'Current attempt: {self.attempt_manager.current}')
 
         self.send(tx)
-
-        logger.info(f'Saving tx: {tx.tx_id} record after sending')
-        self.pool.save(tx)
-        logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}')
 
         rstatus = self.wait(
             tx,
@@ -183,10 +190,11 @@ class Processor:
         if txs:
             logger.info('Pool: %s', txs)
         tx = self.pool.fetch_next()
+        self.attempt_manager.fetch()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
                 logger.info(
-                    'Previous attempt %s', self.attempt_manager.last)
+                    'Previous attempt %s', self.attempt_manager.current)
                 self.process(tx)
 
     def run(self) -> None:

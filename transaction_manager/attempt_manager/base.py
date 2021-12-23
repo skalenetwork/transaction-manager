@@ -49,13 +49,8 @@ class BaseAttemptManager(metaclass=ABCMeta):
     def current(self) -> Optional[Attempt]:
         pass
 
-    @property
     @abstractmethod
-    def last(self) -> Optional[Attempt]:
-        pass
-
-    @abstractmethod
-    def fetch_last(self) -> None:
+    def fetch(self) -> None:
         pass
 
     @abstractmethod

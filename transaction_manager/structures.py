@@ -115,6 +115,9 @@ class Tx:
         else:
             self.status = TxStatus.FAILED
 
+    def set_as_mined(self) -> None:
+        self.status = TxStatus.MINED
+
     def set_as_sent(self, tx_hash: str) -> None:
         self.status = TxStatus.SENT
         self.tx_hash = tx_hash
