@@ -84,7 +84,7 @@ class AttemptManagerV1(BaseAttemptManager):
     @made
     def replace(self, tx) -> None:
         ngp = self.inc_gas_price(
-            self.current,
+            self.current.fee.gas_price,
             inc=self.grad_gas_price_inc_percent)
         if ngp > self.max_gas_price:
             logger.warning(
@@ -115,12 +115,10 @@ class AttemptManagerV1(BaseAttemptManager):
         last = self.current
         nonce = tx.nonce or 0
         if last is None or last.fee.gas_price is None or nonce > last.nonce:
-            logger.info('IVD Last is None')
             next_gp = avg_gas_price
             next_wait_time = self.base_waiting_time
             next_index = 1
         else:
-            logger.info('IVD Last is None')
             next_gp = self.next_gas_price(last.fee.gas_price, avg_gas_price)
             next_index = last.index + 1
             next_wait_time = self.next_waiting_time(next_index)

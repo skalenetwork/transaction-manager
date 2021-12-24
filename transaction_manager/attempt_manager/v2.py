@@ -26,10 +26,10 @@ from .storage import BaseAttemptStorage
 from ..config import (
     BASE_PRIORITY_FEE,
     BASE_WAITING_TIME,
-    GAS_PRICE_INC_PERCENT,
-    GRAD_GAS_PRICE_INC_PERCENT,
+    FEE_INC_PERCENT,
     MAX_FEE_VALUE,
-    MIN_GAS_PRICE_INC_PERCENT
+    MAX_PRIORITY_FEE_VALUE,
+    MIN_FEE_INC_PERCENT
 )
 from ..eth import Eth
 from ..structures import Attempt, Fee, Tx
@@ -45,10 +45,10 @@ class AttemptManagerV2(BaseAttemptManager):
         current: Optional[Attempt] = None,
         base_waiting_time: int = BASE_WAITING_TIME,
         base_priority_fee: int = BASE_PRIORITY_FEE,
-        inc_percent: int = GAS_PRICE_INC_PERCENT,
-        min_inc_percent: int = MIN_GAS_PRICE_INC_PERCENT,
-        grad_inc_percent: int = GRAD_GAS_PRICE_INC_PERCENT,
-        max_fee: int = MAX_FEE_VALUE
+        inc_percent: int = FEE_INC_PERCENT,
+        min_inc_percent: int = MIN_FEE_INC_PERCENT,
+        max_priority_fee: int = MAX_PRIORITY_FEE_VALUE,
+        max_fee: int = MAX_FEE_VALUE,
     ) -> None:
         self.eth = eth
         self._current = current
@@ -57,8 +57,8 @@ class AttemptManagerV2(BaseAttemptManager):
         self.base_priority_fee = base_priority_fee
         self.inc_percent = inc_percent
         self.min_inc_percent = min_inc_percent
-        self.grad_inc_percent = grad_inc_percent
         self.max_fee = max_fee
+        self.max_priority_fee = max_priority_fee
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -77,19 +77,21 @@ class AttemptManagerV2(BaseAttemptManager):
         inc: Optional[int] = None
     ) -> int:
         inc = inc or self.inc_percent
-        return max(
-            fee_value * (100 + inc) // 100,
-            fee_value + self.min_inc_percent,
-            self.max_fee
+        return min(
+            max(
+                fee_value * (100 + inc) // 100,
+                fee_value + self.min_inc_percent
+            ),
+            self.max_priority_fee
         )
 
     @made
     def replace(self, tx: Tx) -> None:
         next_pf = self.inc_priority_fee(
             self.current.fee.max_priority_fee_per_gas,  # type: ignore
-            inc=self.grad_inc_percent
+            inc=self.min_inc_percent
         )
-        if next_pf == self.max_fee:
+        if next_pf == self.max_priority_fee:
             logger.warning(
                 f'Next priority fee {next_pf} is not allowed. '
                 f'Defaulting to {self.max_fee}'

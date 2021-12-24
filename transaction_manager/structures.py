@@ -185,7 +185,7 @@ class Attempt:
     index: int
     fee: Fee
     wait_time: int
-    gas: Optional[int]
+    gas: Optional[int] = None
 
     def __post_init__(self):
         if isinstance(self.fee, dict):

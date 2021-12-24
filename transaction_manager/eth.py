@@ -116,7 +116,6 @@ class Eth:
     def calculate_gas(self, tx: Tx) -> int:
         etx = self.convert_tx(tx)
         multiplier = tx.multiplier
-        logger.info('IVD tx %s', etx)
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
             return int(etx['gas'] * multiplier)

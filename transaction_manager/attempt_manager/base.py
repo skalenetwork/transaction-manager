@@ -46,21 +46,21 @@ def made(func: F) -> F:
 class BaseAttemptManager(metaclass=ABCMeta):
     @property
     @abstractmethod
-    def current(self) -> Optional[Attempt]:
+    def current(self) -> Optional[Attempt]:  # pragma: no cover
         pass
 
     @abstractmethod
-    def fetch(self) -> None:
+    def fetch(self) -> None:  # pragma: no cover
         pass
 
     @abstractmethod
-    def save(self) -> None:
+    def save(self) -> None:  # pragma: no cover
         pass
 
     @abstractmethod
-    def make(self, tx: Tx) -> None:
+    def make(self, tx: Tx) -> None:  # pragma: no cover
         pass
 
     @abstractmethod
-    def replace(self, tx: Tx) -> None:
+    def replace(self, tx: Tx) -> None:  # pragma: no cover
         pass

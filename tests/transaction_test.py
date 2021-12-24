@@ -1,11 +1,11 @@
 import pytest
 
-from transaction_manager.transaction import InvalidFormatError, Tx, TxStatus
+from transaction_manager.structures import InvalidFormatError, Tx, TxStatus
 
 # TODO: add converting from eth tx test
 
 
-def test_tx1():
+def test_sample_tx():
     tx = Tx(
         tx_id='1232321332132131331321',
         status=TxStatus.PROPOSED,
@@ -20,18 +20,6 @@ def test_tx1():
         data={'test': 1}
     )
 
-    assert tx.eth_tx == {
-        'from': None,
-        'to': '0x1',
-        'value': 1,
-        'gasPrice': 1000000000,
-        'gas': 22000,
-        'nonce': 3,
-        'chainId': None,
-        'maxFeePerGas': None,
-        'maxPriorityFeePerGas': None,
-        'data': {'test': 1}
-    }
     assert tx.hashes == []
     assert tx.raw_id == b'1232321332132131331321'
     assert not tx.is_sent()

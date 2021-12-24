@@ -27,10 +27,10 @@ from ..resources import rs as grs, redis
 
 class BaseAttemptStorage(metaclass=ABCMeta):
     @abstractmethod
-    def get(self) -> Optional[Attempt]:
+    def get(self) -> Optional[Attempt]:  # pragma: no cover
         pass
 
-    def save(self, attempt: Attempt) -> None:
+    def save(self, attempt: Attempt) -> None:  # pragma: no cover
         pass
 
 

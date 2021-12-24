@@ -5,7 +5,7 @@ import pytest
 
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
 from transaction_manager.processor import Processor, SendingError
-from transaction_manager.transaction import TxStatus
+from transaction_manager.structures import TxStatus
 
 from tests.utils.account import generate_address
 
