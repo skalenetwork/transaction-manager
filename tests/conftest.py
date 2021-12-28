@@ -3,6 +3,10 @@ import redis
 
 from skale.wallets import RedisWalletAdapter, Web3Wallet
 
+from transaction_manager.attempt_manager import (
+    AttemptManagerV2,
+    RedisAttemptStorage
+)
 from transaction_manager.config import ETH_PRIVATE_KEY
 from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
@@ -21,6 +25,16 @@ def tpool(trs):
     tp = TxPool('test_pool', trs)
     yield tp
     tp._clear()
+
+
+@pytest.fixture
+def attempt_storage(trs):
+    return RedisAttemptStorage(trs)
+
+
+@pytest.fixture
+def attempt_manager(eth, attempt_storage):
+    return AttemptManagerV2(eth, attempt_storage)
 
 
 @pytest.fixture

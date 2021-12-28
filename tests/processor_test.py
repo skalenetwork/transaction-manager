@@ -11,8 +11,8 @@ from tests.utils.account import generate_address
 
 
 @pytest.fixture
-def proc(tpool, eth, trs, w3wallet):
-    return Processor(eth, tpool, w3wallet)
+def proc(tpool, eth, trs, attempt_manager, w3wallet):
+    return Processor(eth, tpool, attempt_manager, w3wallet)
 
 
 def make_tx(rdp, tpool, to: str, value: int = 10):
@@ -80,6 +80,9 @@ def test_get_exec_data(proc, w3, rdp, eth, tpool):
 def test_send(proc, w3, rdp, eth, tpool):
     to_a = generate_address(w3)
     tx = make_tx(rdp, tpool, to_a)
+    tx.chain_id = eth.chain_id
+    tx.nonce = 0
+    proc.attempt_manager.make(tx)
     tx.gas = 22000
     tx.gas_price = 10 ** 9
 

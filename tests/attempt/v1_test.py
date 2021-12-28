@@ -1,10 +1,7 @@
 import pytest
 
 from transaction_manager.attempt_manager.base import NoCurrentAttemptError
-from transaction_manager.attempt_manager import (
-    AttemptManagerV1,
-    RedisAttemptStorage
-)
+from transaction_manager.attempt_manager import AttemptManagerV1
 from transaction_manager.config import (
     GAS_PRICE_INC_PERCENT, GRAD_GAS_PRICE_INC_PERCENT
 )
@@ -20,11 +17,6 @@ def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
         fee=Fee(gas_price=gas_price),
         wait_time=wait_time
     )
-
-
-@pytest.fixture
-def attempt_storage(trs):
-    return RedisAttemptStorage(trs)
 
 
 @pytest.fixture

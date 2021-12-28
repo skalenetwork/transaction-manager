@@ -7,8 +7,12 @@ WORKDIR /app
 
 COPY transaction_manager transaction_manager
 
+RUN apt install libssl-dev swig
+RUN git config --global http.postBuffer 2147483648
+
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
+
 
 ENV PYTHONPATH="/app"
 CMD ["python3", "-m", "transaction_manager.main"]

@@ -37,13 +37,13 @@ jobs:
       run: flake8 .
 
     - name: Mypy check
-      run: mypy transaction_manager/main.py
+      run: mypy transaction_manager
     
     - name: Deploy manager 
-      run: bash ./helper-scripts/deploy_test_manager.sh
+      run: ./scripts/run-hardhat-node.sh
 
     - name: Run redis
-      run: bash scripts/run-redis.sh
+      run: ./scripts/run-redis.sh
 
     - name: Run tests
-      run: bash ./scripts/run-tests.sh
+      run: ./scripts/run-tests.sh

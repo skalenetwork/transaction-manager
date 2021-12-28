@@ -68,7 +68,6 @@ class Processor:
             logger.info('Retry %d', retry)
             logger.info('Signing tx %s', tx.tx_id)
             etx = self.eth.convert_tx(tx)
-            logger.info('IVD %s', etx)
             signed = self.wallet.sign(etx)
             logger.info('Sending transaction %s', tx)
             try:

@@ -96,7 +96,10 @@ class AttemptManagerV2(BaseAttemptManager):
                 f'Next priority fee {next_pf} is not allowed. '
                 f'Defaulting to {self.max_fee}'
             )
-        fee = Fee(max_priority_fee_per_gas=next_pf)
+        fee = Fee(
+            max_priority_fee_per_gas=next_pf,
+            max_fee_per_gas=self.max_fee
+        )
         tx.fee = self._current.fee = fee  # type: ignore
 
     def next_fee(self, fee: Fee) -> Fee:

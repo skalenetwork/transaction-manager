@@ -40,7 +40,7 @@ cleanup_skale_dir() {
 
 cleanup_redis_dir() {
     if [ -d $REDIS_DIR ]; then
-        rm -r --interactive=never $REDIS_DIR
+        sudo rm -r --interactive=never $REDIS_DIR
     fi
 }
 

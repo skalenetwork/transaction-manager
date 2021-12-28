@@ -1,9 +1,5 @@
 import pytest
 
-from transaction_manager.attempt_manager import (
-    AttemptManagerV2,
-    RedisAttemptStorage
-)
 from transaction_manager.attempt_manager.base import NoCurrentAttemptError
 from transaction_manager.config import (
     BASE_PRIORITY_FEE,
@@ -22,16 +18,6 @@ def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
         fee=Fee(gas_price=gas_price),
         wait_time=wait_time
     )
-
-
-@pytest.fixture
-def attempt_storage(trs):
-    return RedisAttemptStorage(trs)
-
-
-@pytest.fixture
-def attempt_manager(eth, attempt_storage):
-    return AttemptManagerV2(eth, attempt_storage)
 
 
 @pytest.fixture
@@ -195,6 +181,7 @@ def test_v2_replace(w3, eth, attempt_manager, account):
     assert attempt_manager.current.fee.max_priority_fee_per_gas == expected_pf
 
     tx.fee.max_priority_fee_per_gas = MAX_PRIORITY_FEE_VALUE
+    assert tx.fee.max_fee_per_gas == MAX_FEE_VALUE
     attempt_manager.current.fee.max_priority_fee_per_gas = MAX_FEE_VALUE  # noqa
     attempt_manager.replace(tx)
-    attempt_manager.current.fee.max_priority_fee_per_gas = MAX_PRIORITY_FEE_VALUE  # noqa
+    assert attempt_manager.current.fee.max_priority_fee_per_gas == MAX_PRIORITY_FEE_VALUE  # noqa

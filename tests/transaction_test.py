@@ -85,14 +85,15 @@ def test_tx_statuses():
     assert tx.is_completed() and tx.is_mined()
     tx.status = TxStatus.MINED
     assert not tx.is_completed() and tx.is_mined()
-
+    tx.set_as_mined()
+    assert tx.status == TxStatus.MINED
     tx.status = TxStatus.SENT
     tx.set_as_completed('tx-hash', 1)
-    tx.status == TxStatus.SUCCESS
+    assert tx.status == TxStatus.SUCCESS
     tx.set_as_completed('tx-hash', 0)
-    tx.status == TxStatus.FAILED
+    assert tx.status == TxStatus.FAILED
     tx.set_as_completed('tx-hash', -1)
-    tx.status == TxStatus.FAILED
+    assert tx.status == TxStatus.FAILED
 
 
 def test_tx_from_bytes():
