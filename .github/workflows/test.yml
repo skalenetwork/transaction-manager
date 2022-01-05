@@ -13,6 +13,7 @@ jobs:
       ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MANAGER_TAG: "1.8.2-develop.44"
+      SGX_URL: ""
 
     steps:
     - uses: actions/checkout@v2
@@ -40,10 +41,10 @@ jobs:
       run: mypy transaction_manager
     
     - name: Deploy manager 
-      run: ./scripts/run-hardhat-node.sh
-
-    - name: Run redis
-      run: ./scripts/run-redis.sh
+      run: ./scripts/run-test-containers.sh
 
     - name: Run tests
       run: ./scripts/run-tests.sh
+
+    - name: Run tests
+      run: ./scripts/run-docker-tests.sh

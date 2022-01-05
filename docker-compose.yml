@@ -1,7 +1,7 @@
 version: '3'
 
 services:
-  sgx-server:
+  sgx:
     image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
     container_name: sgx
     restart: unless-stopped
@@ -41,7 +41,7 @@ services:
       - ${REDIS_DIR}/redis-data:/data/db
       - ${REDIS_DIR}/redis-config:/config
 
-  transaction-manager:
+  tm:
     container_name: tm
     image: "transaction-manager:${TAG:-latest}"
     network_mode: host

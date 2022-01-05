@@ -25,8 +25,12 @@ create_redis_dir() {
     cp tests/utils/redis.conf $REDIS_DIR/redis-config
 }
 
+build() {
+    docker-compose build --force-rm $@
+}
+
 run_containers() {
-    docker-compose up --build --force-recreate -d
+    docker-compose up -d $@
 }
 
 shutdown_containers() {
@@ -54,5 +58,11 @@ cleanup_skale_dir
 cleanup_redis_dir
 create_skale_dir
 create_redis_dir
-run_containers
-gen_sgx_key
+build tm hardhat-node
+
+if [ -n ${SGX_URL}  ]; then
+    run_containers tm hardhat-node redis
+else
+    run_containers sgx tm hardhat-node redis
+    gen_sgx_key
+fi

@@ -8,7 +8,7 @@ from transaction_manager.attempt_manager import (
     AttemptManagerV2,
     RedisAttemptStorage
 )
-from transaction_manager.config import ETH_PRIVATE_KEY
+from transaction_manager.config import ETH_PRIVATE_KEY, SGX_URL
 from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
@@ -62,11 +62,14 @@ def w3wallet(w3):
 
 @pytest.fixture
 def wallet(w3, w3wallet):
-    w = init_wallet(
-        w3,
-        config_filepath=HOST_CONFIG_PATH,
-        path_to_cert=CERT_DIR
-    )
+    if SGX_URL:
+        w = init_wallet(
+            w3,
+            config_filepath=HOST_CONFIG_PATH,
+            path_to_cert=CERT_DIR
+        )
+    else:
+        return w3wallet
     if isinstance(w, SgxWallet):
         send_ether(w3, w3wallet, w.address, ETH_AMOUNT_FOR_TESTS)
     return w

@@ -122,7 +122,7 @@ class Eth:
             return int(etx['gas'] * multiplier)
 
         logger.info('Estimating gas for %s', etx)
-        estimated = self.w3.eth.estimateGas(
+        estimated = self.w3.eth.estimate_gas(
             cast(TxParams, etx),
             block_identifier='latest'
         )
@@ -156,7 +156,8 @@ class Eth:
         raise_err: bool = False
     ) -> int:
         try:
-            receipt = self.w3.eth.getTransactionReceipt(cast(HexStr, tx_hash))
+            casted_hash = cast(HexStr, tx_hash)
+            receipt = self.w3.eth.get_transaction_receipt(casted_hash)
         except TransactionNotFound as e:
             if raise_err:
                 raise e
