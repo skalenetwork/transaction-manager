@@ -20,11 +20,11 @@ def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
 
 
 @pytest.fixture
-def attempt_manager(eth, attempt_storage):
-    return AttemptManagerV1(eth, attempt_storage)
+def attempt_manager(eth, attempt_storage, wallet):
+    return AttemptManagerV1(eth, attempt_storage, wallet.address)
 
 
-def test_v1_make(w3, eth, attempt_manager):
+def test_v1_make(w3, eth, attempt_manager, wallet):
     acc = w3.eth.account.create()
     addr, _ = acc.address, acc.key.hex()
     initial_gas = 21000
@@ -61,12 +61,12 @@ def test_v1_make(w3, eth, attempt_manager):
         value=1,
         fee={'gas_price': 1000000000},
         gas=initial_gas,
-        nonce=0,
         source=addr,
         tx_hash=None,
         data=None,
         multiplier=1.2
     )
+    attempt_manager.current.nonce = eth.get_nonce(wallet.address)
     attempt_manager.make(tx)
     assert attempt_manager.current.tx_id == tx.tx_id
     new_gp = initial_gp * (100 + GAS_PRICE_INC_PERCENT) // 100

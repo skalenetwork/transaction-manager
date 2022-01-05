@@ -132,6 +132,7 @@ class AttemptManagerV2(BaseAttemptManager):
             next_fee = self.next_fee(last.fee)
             next_wait_time = self.next_waiting_time(next_index)
 
+        tx.fee = next_fee
         logger.info(f'Calculated new fee {next_fee}')
         tx.nonce = nonce
         gas = tx.gas or self.eth.calculate_gas(tx)

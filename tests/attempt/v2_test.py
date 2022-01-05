@@ -26,7 +26,7 @@ def account(w3):
     return acc.address, acc.key.hex()
 
 
-def test_v2_make(w3, eth, attempt_manager, account):
+def test_v2_make(w3, eth, attempt_manager, account, wallet):
     chain_id = 31337
     initial_gas = 21000
     addr, _ = account
@@ -42,7 +42,6 @@ def test_v2_make(w3, eth, attempt_manager, account):
         value=1,
         fee=None,
         gas=initial_gas,
-        nonce=0,
         source=addr,
         tx_hash=None,
         data=None,
@@ -51,8 +50,9 @@ def test_v2_make(w3, eth, attempt_manager, account):
     attempt_manager.make(tx)
     assert attempt_manager.current.tx_id == a_id
     assert attempt_manager.current.fee.max_priority_fee_per_gas == BASE_PRIORITY_FEE   # noqa
-    assert attempt_manager.current.gas > initial_gas
+    assert attempt_manager.current.gas == initial_gas
     assert attempt_manager.current.index == 1
+    attempt_manager.current.nonce == eth.get_nonce(wallet.address)
 
     a_sent_fee = tx.fee
 
@@ -66,8 +66,7 @@ def test_v2_make(w3, eth, attempt_manager, account):
         to=addr,
         value=1,
         fee=None,
-        gas=initial_gas,
-        nonce=0,
+        gas=None,
         source=addr,
         tx_hash=None,
         data=None,
@@ -78,10 +77,11 @@ def test_v2_make(w3, eth, attempt_manager, account):
 
     assert attempt_manager.current.tx_id == tx.tx_id
     assert attempt_manager.current.fee.max_priority_fee_per_gas == new_fee_val
-    assert attempt_manager.current.gas > initial_gas
     assert tx.gas == attempt_manager.current.gas
+    assert tx.gas != initial_gas
     assert attempt_manager.current.tx_id == b_id
     assert attempt_manager.current.index == 2
+    attempt_manager.current.nonce == eth.get_nonce(wallet.address)
 
     # Test next attempt with transaction that was already sent
     tx = Tx(
@@ -93,16 +93,16 @@ def test_v2_make(w3, eth, attempt_manager, account):
         value=1,
         fee=a_sent_fee,
         gas=initial_gas,
-        nonce=1,
         source=addr,
         tx_hash=None,
         data=None,
         multiplier=1.2
     )
+    attempt_manager.current.nonce -= 1
     attempt_manager.make(tx)
     attempt_manager.current.fee.max_priority_fee_per_gas == BASE_PRIORITY_FEE
     attempt_manager.current.tx_id == a_id
-    attempt_manager.current.nonce == 1
+    attempt_manager.current.nonce == eth.get_nonce(wallet.address)
     assert attempt_manager.current.index == 1
 
     # Test next attempt with fee that is more than max
@@ -110,7 +110,7 @@ def test_v2_make(w3, eth, attempt_manager, account):
     attempt_manager.make(tx)
     assert attempt_manager.current.fee.max_priority_fee_per_gas == MAX_PRIORITY_FEE_VALUE  # noqa
     assert attempt_manager.current.tx_id == a_id
-    assert attempt_manager.current.nonce == 1
+    attempt_manager.current.nonce == eth.get_nonce(wallet.address)
     assert attempt_manager.current.index == 2
 
 
@@ -177,7 +177,7 @@ def test_v2_replace(w3, eth, attempt_manager, account):
 
     attempt_manager.make(tx)
     attempt_manager.replace(tx)
-    expected_pf = BASE_PRIORITY_FEE * 105 // 100
+    expected_pf = BASE_PRIORITY_FEE * 110 // 100
     assert attempt_manager.current.fee.max_priority_fee_per_gas == expected_pf
 
     tx.fee.max_priority_fee_per_gas = MAX_PRIORITY_FEE_VALUE

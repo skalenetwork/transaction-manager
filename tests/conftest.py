@@ -39,8 +39,8 @@ def attempt_storage(trs):
 
 
 @pytest.fixture
-def attempt_manager(eth, attempt_storage):
-    return AttemptManagerV2(eth, attempt_storage)
+def attempt_manager(eth, attempt_storage, wallet):
+    return AttemptManagerV2(eth, attempt_storage, wallet.address)
 
 
 @pytest.fixture
