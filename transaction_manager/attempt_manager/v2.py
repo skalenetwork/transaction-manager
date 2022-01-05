@@ -138,7 +138,7 @@ class AttemptManagerV2(BaseAttemptManager):
         gas = tx.gas or self.eth.calculate_gas(tx)
         logger.info(f'Transaction gas {gas}')
         balance = self.eth.get_balance(self.source)
-        max_fee = balance // gas
+        max_fee = (balance - tx.value) // gas
         next_fee.max_fee_per_gas = max_fee
         tx.gas = gas
         tx.fee = next_fee

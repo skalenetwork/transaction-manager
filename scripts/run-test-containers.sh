@@ -2,7 +2,7 @@
 set -ae
 
 : "${ENDPOINT?Need to set ENDPOINT}"
-# : "${ETH_PRIVATE_KEY?Need to set ETH_PRIVATE_KEY}"
+: "${ETH_PRIVATE_KEY?Need to set ETH_PRIVATE_KEY}"
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"

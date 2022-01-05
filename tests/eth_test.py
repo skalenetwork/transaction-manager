@@ -68,7 +68,7 @@ def test_eth_tx(w3wallet, w3, eth):
 
     time.sleep(1)
     eth_tx_a['gasPrice'] = 2 * eth.avg_gas_price
-    second_nonce = w3.eth.get_transaction_receipt(addr)
+    second_nonce = w3.eth.get_transaction_count(addr)
     eth_tx_a['nonce'] = second_nonce
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)

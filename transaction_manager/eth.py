@@ -65,17 +65,17 @@ class Eth:
 
     @property
     def block_gas_limit(self) -> int:
-        latest_block_number = self.w3.eth.blockNumber
-        block = self.w3.eth.getBlock(latest_block_number)
+        latest_block_number = self.w3.eth.block_number
+        block = self.w3.eth.get_block(latest_block_number)
         return block['gasLimit']
 
     @cached_property
     def chain_id(self) -> int:
-        return self.w3.eth.chainId
+        return self.w3.eth.chain_id
 
     def get_balance(self, address: str) -> int:
         checksum_addres = self.w3.toChecksumAddress(address)
-        return self.w3.eth.getBalance(checksum_addres)
+        return self.w3.eth.get_balance(checksum_addres)
 
     TX_ATTRS = [
         'from',
@@ -112,7 +112,7 @@ class Eth:
 
     @property
     def avg_gas_price(self) -> int:
-        return self.w3.eth.gasPrice * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
+        return self.w3.eth.gas_price * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
 
     def calculate_gas(self, tx: Tx) -> int:
         etx = self.convert_tx(tx)
@@ -141,14 +141,14 @@ class Eth:
         return gas
 
     def send_tx(self, signed_tx: Dict) -> str:
-        tx_hash = self.w3.eth.sendRawTransaction(
+        tx_hash = self.w3.eth.send_raw_transaction(
             signed_tx['rawTransaction']
         ).hex()
         return tx_hash
 
     def get_nonce(self, address: str) -> int:
         checksum_addres = self.w3.toChecksumAddress(address)
-        return self.w3.eth.getTransactionCount(checksum_addres)
+        return self.w3.eth.get_transaction_count(checksum_addres)
 
     def get_status(
         self,
@@ -175,12 +175,12 @@ class Eth:
         amount: int = CONFIRMATION_BLOCKS,
         max_time: int = MAX_WAITING_TIME
     ) -> None:
-        current_block = start_block = self.w3.eth.blockNumber
+        current_block = start_block = self.w3.eth.block_number
         current_ts = start_ts = time.time()
         while current_block - start_block < amount and \
                 current_ts - start_ts < max_time:
             time.sleep(1)
-            current_block = self.w3.eth.blockNumber
+            current_block = self.w3.eth.block_number
             current_ts = time.time()
         if current_block - start_block < amount:
             raise BlockTimeoutError(
