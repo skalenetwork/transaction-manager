@@ -41,7 +41,7 @@ jobs:
       run: mypy transaction_manager
     
     - name: Run test containers
-      run: ./scripts/run-test-containers.sh
+      run: ./scripts/run-test-containers.sh && sleep 60
 
     - name: Debug info
       run: docker ps -a && docker logs hnode --tail 500 && docker inspect hnode
