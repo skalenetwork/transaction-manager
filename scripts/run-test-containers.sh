@@ -2,7 +2,7 @@
 set -ae
 
 : "${ENDPOINT?Need to set ENDPOINT}"
-: "${ETH_PRIVATE_KEY?Need to set ETH_PRIVATE_KEY}"
+# : "${ETH_PRIVATE_KEY?Need to set ETH_PRIVATE_KEY}"
 
 
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
@@ -12,6 +12,8 @@ cd $PROJECT_DIR
 
 export SKALE_DIR=./tests/data-volumes/skale-dir
 export REDIS_DIR=./tests/data-volumes/redis-dir
+export SGX_DIR=./tests/data-volumes/skale-dir/node_data/sgx-dir
+export PYTHONPATH=${PYTHONPATH}:${PROJECT_DIR}
 
 create_skale_dir() {
     mkdir -p $SKALE_DIR/node_data/log
@@ -31,10 +33,9 @@ shutdown_containers() {
     docker-compose down --rmi local
 }
 
-
 cleanup_skale_dir() {
     if [ -d $SKALE_DIR ]; then
-        rm -r --interactive=never $SKALE_DIR
+        sudo rm -r --interactive=never $SKALE_DIR
     fi
 }
 
@@ -44,9 +45,14 @@ cleanup_redis_dir() {
     fi
 }
 
+gen_sgx_key() {
+    python3 tests/gen_sgx.py
+}
+
 shutdown_containers
 cleanup_skale_dir
 cleanup_redis_dir
 create_skale_dir
 create_redis_dir
 run_containers
+gen_sgx_key

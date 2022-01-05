@@ -1,21 +1,20 @@
 version: '3'
 
 services:
-  # sgx-server:
-  #   image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
-  #   container_name: sgx-server
-  #   restart: unless-stopped
-  #   network_mode: host
-  #   volumes:
-  #     - ${SGX_DIR}:/usr/src/sdk/sgx_data
-  #     -  /dev/urandom:/dev/random
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "4"
-  #   command: -s -y
-  #
+  sgx-server:
+    image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
+    container_name: sgx
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${SGX_DIR}:/usr/src/sdk/sgx_data
+      -  /dev/urandom:/dev/random
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "4"
+    command: -s -y
 
   hardhat-node:
     container_name: hnode
@@ -51,7 +50,7 @@ services:
       dockerfile: Dockerfile
     tty: true
     environment:
-      SGX_SERVER_URL: ${SGX_SERVER_URL}
+      SGX_URL: ${SGX_URL}
       ETH_PRIVATE_KEY: ${ETH_PRIVATE_KEY}
       ENDPOINT: ${ENDPOINT}
       NODE_DATA_PATH: /skale_node_data

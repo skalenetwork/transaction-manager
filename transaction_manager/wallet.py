@@ -19,6 +19,7 @@
 
 import logging
 import os
+from typing import Optional
 
 from skale.wallets import BaseWallet, SgxWallet, Web3Wallet  # type: ignore
 from web3 import Web3
@@ -36,16 +37,21 @@ class WalletInitializationError(Exception):
     pass
 
 
-def init_wallet(w3: Web3 = gw3) -> BaseWallet:
+def init_wallet(
+    w3: Web3 = gw3,
+    config_filepath: Optional[str] = None,
+    path_to_cert: Optional[str] = None
+) -> BaseWallet:
     wallet = None
     if SGX_URL:
+        path_to_cert = path_to_cert or PATH_TO_SGX_CERT
         logger.info(f'Initializing sgx wallet {SGX_URL}')
-        keyname = wait_for_sgx_keyname()
+        keyname = wait_for_sgx_keyname(config_filepath=config_filepath)
         wallet = SgxWallet(
             SGX_URL,
             w3,
             key_name=keyname,
-            path_to_cert=PATH_TO_SGX_CERT
+            path_to_cert=path_to_cert
         )
     elif ETH_PRIVATE_KEY:
         logger.info('Initializing web3 wallet')
