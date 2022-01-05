@@ -40,6 +40,7 @@ class AttemptManagerV1(BaseAttemptManager):
         self,
         eth: Eth,
         storage: BaseAttemptStorage,
+        source: str,
         current: Optional[Attempt] = None,
         max_gas_price: int = MAX_GAS_PRICE,
         base_waiting_time: int = BASE_WAITING_TIME,
@@ -49,6 +50,7 @@ class AttemptManagerV1(BaseAttemptManager):
     ) -> None:
         self.eth = eth
         self.storage = storage
+        self.source = source
         self._current = current
         self.max_gas_price = max_gas_price
         self.base_waiting_time = base_waiting_time
@@ -84,7 +86,7 @@ class AttemptManagerV1(BaseAttemptManager):
     @made
     def replace(self, tx) -> None:
         ngp = self.inc_gas_price(
-            self.current.fee.gas_price,
+            self.current.fee.gas_price,  # type: ignore
             inc=self.grad_gas_price_inc_percent)
         if ngp > self.max_gas_price:
             logger.warning(
@@ -110,10 +112,13 @@ class AttemptManagerV1(BaseAttemptManager):
         return max(average_gas_price, next_gas_price)
 
     def make(self, tx: Tx) -> None:
+        last = self.current
+
+        nonce = self.eth.get_nonce(self.source)
+        logger.info(f'Received current nonce - {nonce}')
         avg_gas_price = self.eth.avg_gas_price
         logger.info(f'Received average gas price {avg_gas_price}')
-        last = self.current
-        nonce = tx.nonce or 0
+
         if last is None or last.fee.gas_price is None or nonce > last.nonce:
             next_gp = avg_gas_price
             next_wait_time = self.base_waiting_time
@@ -125,11 +130,11 @@ class AttemptManagerV1(BaseAttemptManager):
 
         logger.info(f'Calculated new gas price {next_gp}')
         fee = Fee(gas_price=next_gp)
-        tx.fee = fee
-
+        tx.nonce = nonce
         gas = self.eth.calculate_gas(tx)
         logger.info(f'Estimated gas {gas}')
         tx.gas = gas
+        tx.fee = fee
 
         self._current = Attempt(
             tx_id=tx.tx_id,

@@ -42,6 +42,7 @@ class AttemptManagerV2(BaseAttemptManager):
         self,
         eth: Eth,
         storage: BaseAttemptStorage,
+        source: str,
         current: Optional[Attempt] = None,
         base_waiting_time: int = BASE_WAITING_TIME,
         base_priority_fee: int = BASE_PRIORITY_FEE,
@@ -53,6 +54,7 @@ class AttemptManagerV2(BaseAttemptManager):
         self.eth = eth
         self._current = current
         self.storage = storage
+        self.source = source
         self.base_waiting_time = base_waiting_time
         self.base_priority_fee = base_priority_fee
         self.inc_percent = inc_percent
@@ -116,7 +118,8 @@ class AttemptManagerV2(BaseAttemptManager):
 
     def make(self, tx: Tx) -> None:
         last = self.current
-        nonce = tx.nonce or 0
+        nonce = self.eth.get_nonce(self.source)
+        logger.info(f'Received current nonce - {nonce}')
         if last is None or nonce > last.nonce or last.fee is None:
             next_index = 1
             next_fee = Fee(
@@ -130,10 +133,14 @@ class AttemptManagerV2(BaseAttemptManager):
             next_wait_time = self.next_waiting_time(next_index)
 
         logger.info(f'Calculated new fee {next_fee}')
-        tx.fee = next_fee
-        gas = self.eth.calculate_gas(tx)
-        logger.info(f'Estimated gas {gas}')
+        tx.nonce = nonce
+        gas = tx.gas or self.eth.calculate_gas(tx)
+        logger.info(f'Transaction gas {gas}')
+        balance = self.eth.get_balance(self.source)
+        max_fee = balance // gas
+        next_fee.max_fee_per_gas = max_fee
         tx.gas = gas
+        tx.fee = next_fee
 
         self._current = Attempt(
             tx_id=tx.tx_id,

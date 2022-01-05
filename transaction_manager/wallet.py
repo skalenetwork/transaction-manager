@@ -38,10 +38,7 @@ class WalletInitializationError(Exception):
 
 def init_wallet(w3: Web3 = gw3) -> BaseWallet:
     wallet = None
-    if ETH_PRIVATE_KEY:
-        logger.info('Initializing web3 wallet')
-        wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
-    elif SGX_URL:
+    if SGX_URL:
         logger.info(f'Initializing sgx wallet {SGX_URL}')
         keyname = wait_for_sgx_keyname()
         wallet = SgxWallet(
@@ -50,6 +47,9 @@ def init_wallet(w3: Web3 = gw3) -> BaseWallet:
             key_name=keyname,
             path_to_cert=PATH_TO_SGX_CERT
         )
+    elif ETH_PRIVATE_KEY:
+        logger.info('Initializing web3 wallet')
+        wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
     if not wallet:
         logger.warning('Both SGX_URL and ETH_PRIVATE_KEY was not provided')
         raise WalletInitializationError('Failed to initialize wallet')
