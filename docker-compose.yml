@@ -16,7 +16,7 @@ services:
         max-file: "4"
     command: -s -y
 
-  hardhat-node:
+  hnode:
     container_name: hnode
     image: "hnode:${TAG:-latest}"
     network_mode: host

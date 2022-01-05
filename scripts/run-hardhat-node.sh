@@ -2,7 +2,7 @@
 set -ae
 
 run_container() {
-    docker-compose up --build --force-recreate -d hardhat-node
+    docker-compose up --build --force-recreate -d hnode
 }
 
 shutdown_container() {
