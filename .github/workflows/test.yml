@@ -40,11 +40,14 @@ jobs:
     - name: Mypy check
       run: mypy transaction_manager
     
-    - name: Deploy manager 
+    - name: Run test containers
       run: ./scripts/run-test-containers.sh
 
-    - name: Run tests
+    - name: Debug info
+      run: docker logs hnode --tail 500
+
+    - name: Run unit tests
       run: ./scripts/run-tests.sh
 
-    - name: Run tests
+    - name: Run functionality tests
       run: ./scripts/run-docker-tests.sh
