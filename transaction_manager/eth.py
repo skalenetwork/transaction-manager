@@ -22,7 +22,7 @@ import time
 from functools import cached_property
 from typing import cast, Dict, Optional
 
-from eth_typing.evm import ChecksumAddress, HexStr
+from eth_typing.evm import HexStr
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
@@ -73,8 +73,9 @@ class Eth:
     def chain_id(self) -> int:
         return self.w3.eth.chainId
 
-    def get_balance(self, address: ChecksumAddress) -> int:
-        return self.w3.eth.getBalance(address)
+    def get_balance(self, address: str) -> int:
+        checksum_addres = self.w3.toChecksumAddress(address)
+        return self.w3.eth.getBalance(checksum_addres)
 
     TX_ATTRS = [
         'from',
@@ -125,7 +126,7 @@ class Eth:
             cast(TxParams, etx),
             block_identifier='latest'
         )
-        logger.info('Estimated gas: %s', estimated)
+        logger.info('eth_estimateGas returned: %s of gas', estimated)
         gas = int(estimated * multiplier)
         logger.info('Multiplied gas: %s', gas)
         gas_limit = self.block_gas_limit
@@ -135,7 +136,9 @@ class Eth:
                 gas_limit
             )
             gas = gas_limit
-        return int(gas)
+        gas = int(gas)
+        logger.info('Estimation result %s of gas', gas)
+        return gas
 
     def send_tx(self, signed_tx: Dict) -> str:
         tx_hash = self.w3.eth.sendRawTransaction(
@@ -143,8 +146,9 @@ class Eth:
         ).hex()
         return tx_hash
 
-    def get_nonce(self, address: ChecksumAddress) -> int:
-        return self.w3.eth.getTransactionCount(address)
+    def get_nonce(self, address: str) -> int:
+        checksum_addres = self.w3.toChecksumAddress(address)
+        return self.w3.eth.getTransactionCount(checksum_addres)
 
     def get_status(
         self,

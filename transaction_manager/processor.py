@@ -65,8 +65,7 @@ class Processor:
         tx_hash, err = None, None
         retry = 0
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
-            logger.info('Retry %d', retry)
-            logger.info('Signing tx %s', tx.tx_id)
+            logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
             etx = self.eth.convert_tx(tx)
             signed = self.wallet.sign(etx)
             logger.info('Sending transaction %s', tx)
@@ -147,12 +146,9 @@ class Processor:
         if tx.is_sent():
             _, rstatus = self.get_exec_data(tx)
             if rstatus is not None:
+                logger.info('Tx %s has been already mined', tx.tx_id)
                 self.confirm(tx)
                 return
-
-        nonce = self.eth.get_nonce(self.address)
-        logger.info(f'Received current nonce - {nonce}')
-        tx.nonce = nonce
 
         self.attempt_manager.make(tx)
         logger.info(f'Current attempt: {self.attempt_manager.current}')

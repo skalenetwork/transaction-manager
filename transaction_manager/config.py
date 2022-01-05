@@ -56,9 +56,9 @@ MIN_GAS_PRICE_INC_PERCENT: int = 5
 
 BASE_PRIORITY_FEE: int = 10 ** 9
 FEE_INC_PERCENT: int = 10
-MAX_FEE_VALUE: int = 1000 * 10 ** 9
-MAX_PRIORITY_FEE_VALUE: int = 500 * 10 ** 9
-MIN_FEE_INC_PERCENT: int = 5
+MAX_FEE_VALUE: int = 100 * 10 ** 9
+MAX_PRIORITY_FEE_VALUE: int = 50 * 10 ** 9
+MIN_FEE_INC_PERCENT: int = 10
 
 
 def get_params() -> List[str]:

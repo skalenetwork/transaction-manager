@@ -37,7 +37,11 @@ def main() -> None:
     logger.info('Starting. Config:\n%s', config_string(vars(config)))
     pool = TxPool()
     wallet = init_wallet()
-    attempt_manager = AttemptManagerV2(eth, RedisAttemptStorage())
+    attempt_manager = AttemptManagerV2(
+        eth,
+        RedisAttemptStorage(),
+        wallet.address
+    )
     proc = Processor(eth, pool, attempt_manager, wallet)
     logger.info('Starting transaction processor')
     proc.run()
