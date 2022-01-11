@@ -104,14 +104,13 @@ class AttemptManagerV2(BaseAttemptManager):
         )
         tx.fee = self._current.fee = fee  # type: ignore
 
-    def next_fee(self, fee: Fee) -> Fee:
-        priority_fee_value = fee.max_priority_fee_per_gas or \
-            self.base_priority_fee
-        next_priority_fee_value = self.inc_priority_fee(priority_fee_value)
-        return Fee(
-            max_fee_per_gas=fee.max_fee_per_gas,
-            max_priority_fee_per_gas=next_priority_fee_value
-        )
+    def next_priority_fee(
+        self,
+        priority_fee_value: Optional[int] = None
+    ) -> int:
+        if not priority_fee_value:
+            return self.base_priority_fee
+        return self.inc_priority_fee(priority_fee_value)
 
     def next_waiting_time(self, attempt_index: int) -> int:
         return self.base_waiting_time + 10 * (attempt_index ** 2)
@@ -122,26 +121,31 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info(f'Received current nonce - {nonce}')
         if last is None or nonce > last.nonce or last.fee is None:
             next_index = 1
-            next_fee = Fee(
-                max_fee_per_gas=self.max_fee,
-                max_priority_fee_per_gas=self.base_priority_fee
-            )
+            next_pf = self.base_priority_fee
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
-            next_fee = self.next_fee(last.fee)
+            next_pf = self.next_priority_fee(last.fee.max_priority_fee_per_gas)
             next_wait_time = self.next_waiting_time(next_index)
 
+        logger.info('Next max priority fee %d', next_pf)
+        next_fee = Fee(
+            max_priority_fee_per_gas=next_pf,
+            max_fee_per_gas=self.max_fee
+        )
         tx.fee = next_fee
-        logger.info(f'Calculated new fee {next_fee}')
         tx.nonce = nonce
-        gas = tx.gas or self.eth.calculate_gas(tx)
-        logger.info(f'Transaction gas {gas}')
+        estimated_gas = self.eth.calculate_gas(tx)
+        logger.info('Estimated gas %d', estimated_gas)
+        if tx.gas:
+            logger.info('Estimated gas will be ignored in favor of %d', tx.gas)
+        else:
+            tx.gas = estimated_gas
+
+        # Adjust max fee considering balance, value and gas limit
         balance = self.eth.get_balance(self.source)
-        max_fee = (balance - tx.value) // gas
-        next_fee.max_fee_per_gas = max_fee
-        tx.gas = gas
-        tx.fee = next_fee
+        allowed_max_fee = (balance - tx.value) // tx.gas
+        next_fee.max_fee_per_gas = allowed_max_fee
 
         self._current = Attempt(
             tx_id=tx.tx_id,
@@ -149,5 +153,5 @@ class AttemptManagerV2(BaseAttemptManager):
             index=next_index,
             fee=next_fee,
             wait_time=next_wait_time,
-            gas=gas
+            gas=tx.gas
         )
