@@ -90,12 +90,12 @@ class Eth:
         'maxPriorityFeePerGas'
     ]
 
-    def fee_history(self) -> Dict:   # type: ignore
+    def fee_history(self) -> Dict:
         return self.w3.eth.fee_history(
             1,
             'latest',
             [50, TARGET_REWARD_PERCENTILE]
-        )
+        )  # type: ignore
 
     @classmethod
     def convert_tx(cls, tx: Tx) -> Dict:

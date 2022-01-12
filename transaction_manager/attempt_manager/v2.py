@@ -102,7 +102,7 @@ class AttemptManagerV2(BaseAttemptManager):
         fee = Fee(max_priority_fee_per_gas=next_pf, max_fee_per_gas=next_mf)
         tx.fee = self._current.fee = fee  # type: ignore
 
-    def next_fee_value(self, fee_value: Optional[int] = None) -> int:
+    def next_fee_value(self, fee_value: int) -> int:
         return self.inc_fee_value(fee_value)
 
     def next_waiting_time(self, attempt_index: int) -> int:
@@ -131,8 +131,12 @@ class AttemptManagerV2(BaseAttemptManager):
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
-            next_pf = self.next_fee_value(last.fee.max_priority_fee_per_gas)
-            next_mf = self.next_fee_value(last.fee.max_fee_per_gas)
+            next_pf = self.next_fee_value(
+                last.fee.max_priority_fee_per_gas  # type: ignore
+            )
+            next_mf = self.next_fee_value(
+                last.fee.max_fee_per_gas  # type: ignore
+            )
             next_fee = Fee(
                 max_priority_fee_per_gas=next_pf,
                 max_fee_per_gas=next_mf
