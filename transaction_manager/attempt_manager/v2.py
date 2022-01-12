@@ -119,7 +119,8 @@ class AttemptManagerV2(BaseAttemptManager):
         history = self.eth.fee_history()
         estimated_base_fee = history['baseFeePerGas'][-1]
         tip = max(self.min_priority_fee, history['reward'][0][-1])
-        gap = self.base_fee_inc_percent * max(tip, estimated_base_fee)
+        raw_gap = max(tip, estimated_base_fee)
+        gap = (100 + self.base_fee_inc_percent) * raw_gap // 100
         return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
 
     def make(self, tx: Tx) -> None:
