@@ -1,4 +1,5 @@
 import pytest
+from mock import Mock
 from skale.utils.account_tools import send_ether
 
 from transaction_manager.attempt_manager.base import NoCurrentAttemptError
@@ -117,6 +118,29 @@ def test_v2_make(w3, eth, attempt_manager, account, wallet):
     assert attempt_manager.current.tx_id == a_id
     attempt_manager.current.nonce == eth.get_nonce(wallet.address)
     assert attempt_manager.current.index == 2
+
+    # Test next attempt with transaction that was already sent
+    eth.fee_history = Mock(
+        return_value={'baseFeePerGas': [10, base_fee], 'reward': [[5 * 10 ** 9, 6 * 10 ** 9]]}  # noqa
+    )
+    tx = Tx(
+        tx_id=a_id,
+        chain_id=chain_id,
+        status=TxStatus.PROPOSED,
+        score=1,
+        to=addr,
+        value=1,
+        fee=None,
+        gas=initial_gas,
+        source=addr,
+        tx_hash=None,
+        data=None,
+        multiplier=1.2
+    )
+    attempt_manager._current.nonce = eth.get_nonce(wallet.address) - 1
+    attempt_manager.make(tx)
+    assert attempt_manager.current.fee.max_priority_fee_per_gas == 6 * 10 ** 9
+    assert attempt_manager.current.fee.max_fee_per_gas == base_fee + 12 * 10 ** 9  # noqa
 
 
 def test_v2_fetch_save(w3, eth, attempt_manager, account):

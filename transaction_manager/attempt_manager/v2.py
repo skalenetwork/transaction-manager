@@ -112,7 +112,7 @@ class AttemptManagerV2(BaseAttemptManager):
         balance = self.eth.get_balance(self.source)
         return balance - value // gas
 
-    def calculate_inital_fee(self):
+    def calculate_initial_fee(self):
         history = self.eth.fee_history()
         estimated_base_fee = history['baseFeePerGas'][-1]
         tip = max(self.min_prioriry_fee, history['reward'][0][-1])
@@ -127,7 +127,7 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info(f'Received current nonce - {nonce}')
         if last is None or nonce > last.nonce or last.fee is None:
             next_index = 1
-            next_fee = self.calculate_inital_fee()
+            next_fee = self.calculate_initial_fee()
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
