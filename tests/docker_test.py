@@ -68,7 +68,6 @@ def test_processor(tpool, eth, trs, rdp, wallet):
     assert tx_id == last_attempt['tx_id']
 
 
-@pytest.mark.skip
 def test_processor_many_tx(tpool, eth, w3, trs, rdp):
     addrs = [w3.eth.account.create().address for i in range(TX_NUMBER)]
     futures = []

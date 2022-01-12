@@ -24,14 +24,14 @@ from .base import BaseAttemptManager, made
 from .storage import BaseAttemptStorage
 
 from ..config import (
+    BASE_FEE_INC_PERCENT,
     BASE_WAITING_TIME,
     CAP_TIP_RATIO,
     FEE_INC_PERCENT,
     MAX_FEE_VALUE,
     MAX_TX_CAP,
     MIN_FEE_INC_PERCENT,
-    MIN_PRIORITY_FEE,
-    TIP_GAP_COEFF
+    MIN_PRIORITY_FEE
 )
 from ..eth import Eth
 from ..structures import Attempt, Fee, Tx
@@ -47,24 +47,24 @@ class AttemptManagerV2(BaseAttemptManager):
         source: str,
         current: Optional[Attempt] = None,
         base_waiting_time: int = BASE_WAITING_TIME,
-        min_prioriry_fee: int = MIN_PRIORITY_FEE,
+        min_priority_fee: int = MIN_PRIORITY_FEE,
         inc_percent: int = FEE_INC_PERCENT,
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
         cap_tip_ratio: int = CAP_TIP_RATIO,
         max_tx_cap: int = MAX_TX_CAP,
-        tip_gap_coeff: int = TIP_GAP_COEFF
+        base_fee_inc_percent: int = BASE_FEE_INC_PERCENT
     ) -> None:
         self.eth = eth
         self._current = current
         self.storage = storage
         self.source = source
         self.base_waiting_time = base_waiting_time
-        self.min_prioriry_fee = min_prioriry_fee
+        self.min_priority_fee = min_priority_fee
         self.inc_percent = inc_percent
         self.min_inc_percent = min_inc_percent
         self.max_fee = max_fee
-        self.tip_gap_coeff = tip_gap_coeff
+        self.base_fee_inc_percent = base_fee_inc_percent
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -118,11 +118,9 @@ class AttemptManagerV2(BaseAttemptManager):
     def calculate_initial_fee(self):
         history = self.eth.fee_history()
         estimated_base_fee = history['baseFeePerGas'][-1]
-        tip = max(self.min_prioriry_fee, history['reward'][0][-1])
-        return Fee(
-            max_priority_fee_per_gas=tip,
-            max_fee_per_gas=self.tip_gap_coeff * tip + estimated_base_fee
-        )
+        tip = max(self.min_priority_fee, history['reward'][0][-1])
+        gap = self.base_fee_inc_percent * max(tip, estimated_base_fee)
+        return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
 
     def make(self, tx: Tx) -> None:
         last = self.current
