@@ -141,8 +141,8 @@ def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
     proc.send(tx)
     tx.fee.max_priority_fee_per_gas += 1
     proc.send(tx)
-    eth.wait_for_receipt(tx.tx_hash)
-    assert False
+    r = eth.wait_for_receipt(tx.tx_hash)
+    assert r
 
 
 @pytest.mark.skip
