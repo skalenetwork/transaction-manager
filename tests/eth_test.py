@@ -13,6 +13,12 @@ from tests.utils.account import send_eth
 from tests.utils.timing import in_time
 
 
+def test_eth_fee_history(eth):
+    h = eth.fee_history()
+    assert len(h['baseFeePerGas']) == 2
+    assert len(h['reward'][0]) == 2
+
+
 def test_eth_chain_id(eth):
     assert eth.chain_id == 31337
 

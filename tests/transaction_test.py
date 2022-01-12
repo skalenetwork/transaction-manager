@@ -2,8 +2,6 @@ import pytest
 
 from transaction_manager.structures import InvalidFormatError, Tx, TxStatus
 
-# TODO: add converting from eth tx test
-
 
 def test_sample_tx():
     tx = Tx(

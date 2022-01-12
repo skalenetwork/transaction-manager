@@ -24,12 +24,13 @@ from .base import BaseAttemptManager, made
 from .storage import BaseAttemptStorage
 
 from ..config import (
-    BASE_PRIORITY_FEE,
     BASE_WAITING_TIME,
+    CAP_TIP_RATIO,
     FEE_INC_PERCENT,
     MAX_FEE_VALUE,
-    MAX_PRIORITY_FEE_VALUE,
-    MIN_FEE_INC_PERCENT
+    MAX_TX_CAP,
+    MIN_FEE_INC_PERCENT,
+    MIN_PRIORITY_FEE
 )
 from ..eth import Eth
 from ..structures import Attempt, Fee, Tx
@@ -45,22 +46,22 @@ class AttemptManagerV2(BaseAttemptManager):
         source: str,
         current: Optional[Attempt] = None,
         base_waiting_time: int = BASE_WAITING_TIME,
-        base_priority_fee: int = BASE_PRIORITY_FEE,
+        min_prioriry_fee: int = MIN_PRIORITY_FEE,
         inc_percent: int = FEE_INC_PERCENT,
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
-        max_priority_fee: int = MAX_PRIORITY_FEE_VALUE,
         max_fee: int = MAX_FEE_VALUE,
+        cap_tip_ratio: int = CAP_TIP_RATIO,
+        max_tx_cap: int = MAX_TX_CAP
     ) -> None:
         self.eth = eth
         self._current = current
         self.storage = storage
         self.source = source
         self.base_waiting_time = base_waiting_time
-        self.base_priority_fee = base_priority_fee
+        self.min_prioriry_fee = min_prioriry_fee
         self.inc_percent = inc_percent
         self.min_inc_percent = min_inc_percent
         self.max_fee = max_fee
-        self.max_priority_fee = max_priority_fee
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -73,47 +74,52 @@ class AttemptManagerV2(BaseAttemptManager):
     def save(self) -> None:
         self.storage.save(self.current)  # type: ignore
 
-    def inc_priority_fee(
-        self,
-        fee_value: int,
-        inc: Optional[int] = None
-    ) -> int:
+    def inc_fee_value(self, fee_value: int, inc: Optional[int] = None) -> int:
         inc = inc or self.inc_percent
         return min(
             max(
                 fee_value * (100 + inc) // 100,
                 fee_value + self.min_inc_percent
             ),
-            self.max_priority_fee
+            self.max_fee
         )
 
     @made
     def replace(self, tx: Tx) -> None:
-        next_pf = self.inc_priority_fee(
+        next_pf = self.inc_fee_value(
             self.current.fee.max_priority_fee_per_gas,  # type: ignore
             inc=self.min_inc_percent
         )
-        if next_pf == self.max_priority_fee:
+        next_mf = self.inc_fee_value(
+            self.current.fee.max_fee_per_gas,  # type: ignore
+            inc=self.min_inc_percent
+        )
+        if next_mf == self.max_fee:
             logger.warning(
                 f'Next priority fee {next_pf} is not allowed. '
                 f'Defaulting to {self.max_fee}'
             )
-        fee = Fee(
-            max_priority_fee_per_gas=next_pf,
-            max_fee_per_gas=self.max_fee
-        )
+        fee = Fee(max_priority_fee_per_gas=next_pf, max_fee_per_gas=next_mf)
         tx.fee = self._current.fee = fee  # type: ignore
 
-    def next_priority_fee(
-        self,
-        priority_fee_value: Optional[int] = None
-    ) -> int:
-        if not priority_fee_value:
-            return self.base_priority_fee
-        return self.inc_priority_fee(priority_fee_value)
+    def next_fee_value(self, fee_value: Optional[int] = None) -> int:
+        return self.inc_fee_value(fee_value)
 
     def next_waiting_time(self, attempt_index: int) -> int:
         return self.base_waiting_time + 10 * (attempt_index ** 2)
+
+    def max_allowed_fee(self, gas: int, value: int) -> int:
+        balance = self.eth.get_balance(self.source)
+        return balance - value // gas
+
+    def calculate_inital_fee(self):
+        history = self.eth.fee_history()
+        estimated_base_fee = history['baseFeePerGas'][-1]
+        tip = max(self.min_prioriry_fee, history['reward'][0][-1])
+        return Fee(
+            max_priority_fee_per_gas=tip,
+            max_fee_per_gas=2 * tip + estimated_base_fee
+        )
 
     def make(self, tx: Tx) -> None:
         last = self.current
@@ -121,31 +127,37 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info(f'Received current nonce - {nonce}')
         if last is None or nonce > last.nonce or last.fee is None:
             next_index = 1
-            next_pf = self.base_priority_fee
+            next_fee = self.calculate_inital_fee()
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
-            next_pf = self.next_priority_fee(last.fee.max_priority_fee_per_gas)
+            next_pf = self.next_fee_value(last.fee.max_priority_fee_per_gas)
+            next_mf = self.next_fee_value(last.fee.max_fee_per_gas)
+            next_fee = Fee(
+                max_priority_fee_per_gas=next_pf,
+                max_fee_per_gas=next_mf
+            )
             next_wait_time = self.next_waiting_time(next_index)
 
-        logger.info('Next max priority fee %d', next_pf)
-        next_fee = Fee(
-            max_priority_fee_per_gas=next_pf,
-            max_fee_per_gas=self.max_fee
-        )
-        tx.fee = next_fee
-        tx.nonce = nonce
+        logger.info('Next fee %s', next_fee)
+        tx.fee, tx.nonce = next_fee, nonce
         estimated_gas = self.eth.calculate_gas(tx)
         logger.info('Estimated gas %d', estimated_gas)
         if tx.gas:
-            logger.info('Estimated gas will be ignored in favor of %d', tx.gas)
+            allowed_fee = self.max_allowed_fee(tx.gas, tx.value)
+            if allowed_fee < next_fee.max_fee_per_gas:
+                logger.warning(
+                    'Suggested fee exceeds allowance. Defaulting to %d',
+                    estimated_gas
+                )
+                tx.gas = estimated_gas
+            else:
+                logger.info(
+                    'Estimated gas will be ignored in favor of %d',
+                    tx.gas
+                )
         else:
             tx.gas = estimated_gas
-
-        # Adjust max fee considering balance, value and gas limit
-        balance = self.eth.get_balance(self.source)
-        allowed_max_fee = (balance - tx.value) // tx.gas
-        next_fee.max_fee_per_gas = allowed_max_fee
 
         self._current = Attempt(
             tx_id=tx.tx_id,

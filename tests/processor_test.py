@@ -116,13 +116,41 @@ def test_send(proc, w3, rdp, eth, tpool):
     assert tx.hashes == ['0x12323213213321321', '0x213812903813123']
 
 
+def test_process_tx(proc, w3, tpool, eth, trs, w3wallet, rdp):
+    to_a = generate_address(w3)
+    tx = make_tx(rdp, tpool, to_a)
+    proc.process(tx)
+    assert tx.tx_hash is not None
+    assert tx.hashes == [tx.tx_hash]
+    assert tx.status == TxStatus.SUCCESS
+
+    tx = make_tx(rdp, tpool, to_a)
+    tx.to = 'bad-address'
+    with pytest.raises(Exception):
+        proc.process(tx)
+
+
+@pytest.mark.skip('Geth only test')
+def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
+    to_a = generate_address(w3)
+    tx = make_tx(rdp, tpool, to_a)
+    tx.chain_id = eth.chain_id
+    tx.nonce = 0
+    proc.attempt_manager.make(tx)
+
+    proc.send(tx)
+    tx.fee.max_priority_fee_per_gas += 1
+    proc.send(tx)
+    eth.wait_for_receipt(tx.tx_hash)
+    assert False
+
+
 @pytest.mark.skip
 def test_processor(tpool, eth, trs, w3wallet, rdp):
     eth_tx_a = {
         'from': rdp.address,
         'to': rdp.address,
         'value': 10,
-        'gasPrice': 1,
         'gas': 22000,
         'nonce': 0
     }

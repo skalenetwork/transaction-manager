@@ -67,6 +67,7 @@ class Processor:
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
             etx = self.eth.convert_tx(tx)
+            print(etx)
             signed = self.wallet.sign(etx)
             logger.info('Sending transaction %s', tx)
             try:

@@ -28,11 +28,12 @@ from web3.exceptions import TransactionNotFound
 from web3.types import TxParams
 
 from .config import (
+    AVG_GAS_PRICE_INC_PERCENT,
     CONFIRMATION_BLOCKS,
     DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
-    AVG_GAS_PRICE_INC_PERCENT,
-    MAX_WAITING_TIME
+    MAX_WAITING_TIME,
+    TARGET_REWARD_PERCENTILE
 )
 from .resources import w3 as gw3
 from .structures import Tx
@@ -49,7 +50,6 @@ class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
 
 
 def is_replacement_underpriced(err: Exception) -> bool:
-    # TODO: IVD make sure it is still correct
     return isinstance(err, ValueError) and \
         isinstance(err.args[0], dict) and \
         err.args[0].get('message') == 'replacement transaction underpriced'
@@ -90,9 +90,15 @@ class Eth:
         'maxPriorityFeePerGas'
     ]
 
+    def fee_history(self) -> Dict:   # type: ignore
+        return self.w3.eth.fee_history(
+            1,
+            'latest',
+            [50, TARGET_REWARD_PERCENTILE]
+        )
+
     @classmethod
     def convert_tx(cls, tx: Tx) -> Dict:
-        # TODO: convert using classes
         raw_tx = tx.raw_tx
         etx = {attr: raw_tx[attr] for attr in cls.TX_ATTRS}
         if etx.get('maxPriorityFeePerGas') is not None or \

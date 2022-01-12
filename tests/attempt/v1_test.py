@@ -31,7 +31,7 @@ def test_v1_make(w3, eth, attempt_manager, wallet):
 
     tx = Tx(
         tx_id='1232321332132131331321',
-        chain_id=31337,
+        chain_id=eth.chain_id,
         status=TxStatus.PROPOSED,
         score=1,
         to=addr,
