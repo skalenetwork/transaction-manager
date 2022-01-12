@@ -30,7 +30,8 @@ from ..config import (
     MAX_FEE_VALUE,
     MAX_TX_CAP,
     MIN_FEE_INC_PERCENT,
-    MIN_PRIORITY_FEE
+    MIN_PRIORITY_FEE,
+    TIP_GAP_COEFF
 )
 from ..eth import Eth
 from ..structures import Attempt, Fee, Tx
@@ -51,7 +52,8 @@ class AttemptManagerV2(BaseAttemptManager):
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
         cap_tip_ratio: int = CAP_TIP_RATIO,
-        max_tx_cap: int = MAX_TX_CAP
+        max_tx_cap: int = MAX_TX_CAP,
+        tip_gap_coeff: int = TIP_GAP_COEFF
     ) -> None:
         self.eth = eth
         self._current = current
@@ -62,6 +64,7 @@ class AttemptManagerV2(BaseAttemptManager):
         self.inc_percent = inc_percent
         self.min_inc_percent = min_inc_percent
         self.max_fee = max_fee
+        self.tip_gap_coeff = tip_gap_coeff
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -118,7 +121,7 @@ class AttemptManagerV2(BaseAttemptManager):
         tip = max(self.min_prioriry_fee, history['reward'][0][-1])
         return Fee(
             max_priority_fee_per_gas=tip,
-            max_fee_per_gas=2 * tip + estimated_base_fee
+            max_fee_per_gas=self.tip_gap_coeff * tip + estimated_base_fee
         )
 
     def make(self, tx: Tx) -> None:
