@@ -205,7 +205,7 @@ def test_v2_replace(w3, eth, attempt_manager, account):
 
     attempt_manager.make(tx)
     attempt_manager.replace(tx)
-    expected_pf = MIN_PRIORITY_FEE * 110 // 100
+    expected_pf = MIN_PRIORITY_FEE * 112 // 100
     assert attempt_manager.current.fee.max_priority_fee_per_gas == expected_pf
 
     tx.fee.max_priority_fee_per_gas = MAX_FEE_VALUE

@@ -78,12 +78,9 @@ class AttemptManagerV2(BaseAttemptManager):
         self.storage.save(self.current)  # type: ignore
 
     def inc_fee_value(self, fee_value: int, inc: Optional[int] = None) -> int:
-        inc = inc or self.inc_percent
+        inc = max(self.min_inc_percent, inc or self.inc_percent)
         return min(
-            max(
-                fee_value * (100 + inc) // 100,
-                fee_value + self.min_inc_percent
-            ),
+            fee_value * (100 + inc) // 100,
             self.max_fee
         )
 
@@ -99,7 +96,7 @@ class AttemptManagerV2(BaseAttemptManager):
         )
         if mf == self.max_fee:
             logger.warning(
-                'Next fee {pf} is not allowed. Defaulting to %d',
+                'Next fee %d is not allowed. Defaulting to %d',
                 mf, self.max_fee
             )
         fee = Fee(max_priority_fee_per_gas=pf, max_fee_per_gas=mf)
