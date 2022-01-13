@@ -24,9 +24,9 @@ from .base import BaseAttemptManager, made
 from .storage import BaseAttemptStorage
 
 from ..config import (
-    BASE_FEE_INC_PERCENT,
     BASE_WAITING_TIME,
     CAP_TIP_RATIO,
+    GAP_INC_PERCENT,
     FEE_INC_PERCENT,
     MAX_FEE_VALUE,
     MAX_TX_CAP,
@@ -53,7 +53,7 @@ class AttemptManagerV2(BaseAttemptManager):
         max_fee: int = MAX_FEE_VALUE,
         cap_tip_ratio: int = CAP_TIP_RATIO,
         max_tx_cap: int = MAX_TX_CAP,
-        base_fee_inc_percent: int = BASE_FEE_INC_PERCENT
+        gap_inc_percent: int = GAP_INC_PERCENT
     ) -> None:
         self.eth = eth
         self._current = current
@@ -64,7 +64,7 @@ class AttemptManagerV2(BaseAttemptManager):
         self.inc_percent = inc_percent
         self.min_inc_percent = min_inc_percent
         self.max_fee = max_fee
-        self.base_fee_inc_percent = base_fee_inc_percent
+        self.gap_inc_percent = gap_inc_percent
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -120,7 +120,7 @@ class AttemptManagerV2(BaseAttemptManager):
         estimated_base_fee = history['baseFeePerGas'][-1]
         tip = max(self.min_priority_fee, history['reward'][0][-1])
         raw_gap = max(tip, estimated_base_fee)
-        gap = (100 + self.base_fee_inc_percent) * raw_gap // 100
+        gap = (100 + self.gap_inc_percent) * raw_gap // 100
         return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
 
     def make(self, tx: Tx) -> None:
