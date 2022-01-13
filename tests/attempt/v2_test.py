@@ -7,6 +7,8 @@ from transaction_manager.attempt_manager.v2 import AttemptManagerV2
 from transaction_manager.config import MAX_FEE_VALUE, MIN_PRIORITY_FEE
 from transaction_manager.structures import Attempt, Fee, Tx, TxStatus
 
+TEST_ETH_VALUE = 2
+
 
 def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
     tid = 'id-aaaa'
@@ -22,8 +24,17 @@ def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
 @pytest.fixture
 def account(w3, wallet):
     acc = w3.eth.account.create()
-    send_ether(w3, wallet, acc.address, 2)
+    send_ether(w3, wallet, acc.address, TEST_ETH_VALUE)
     return acc.address, acc.key.hex()
+
+
+def test_v2_max_allowed_fee(w3, eth, attempt_manager, wallet, account):
+    attempt_manager.source, _ = account
+    gas = 1000000
+    value = TEST_ETH_VALUE // 2 * 10 ** 18
+    assert attempt_manager.max_allowed_fee(gas, value) == 1000000000000
+    value = TEST_ETH_VALUE * 10 ** 18
+    assert attempt_manager.max_allowed_fee(gas, value) == 0
 
 
 def test_v2_make(w3, eth, attempt_manager, account, wallet):

@@ -86,20 +86,20 @@ class AttemptManagerV2(BaseAttemptManager):
 
     @made
     def replace(self, tx: Tx) -> None:
-        pf = self.inc_fee_value(
+        tip = self.inc_fee_value(
             self.current.fee.max_priority_fee_per_gas,  # type: ignore
             inc=self.min_inc_percent
         )
-        mf = self.inc_fee_value(
+        gap = self.inc_fee_value(
             self.current.fee.max_fee_per_gas,  # type: ignore
             inc=self.min_inc_percent
         )
-        if mf == self.max_fee:
+        if gap == self.max_fee:
             logger.warning(
                 'Next fee %d is not allowed. Defaulting to %d',
-                mf, self.max_fee
+                gap, self.max_fee
             )
-        fee = Fee(max_priority_fee_per_gas=pf, max_fee_per_gas=mf)
+        fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
         tx.fee = self._current.fee = fee  # type: ignore
 
     def next_fee_value(self, fee_value: int) -> int:
@@ -110,7 +110,7 @@ class AttemptManagerV2(BaseAttemptManager):
 
     def max_allowed_fee(self, gas: int, value: int) -> int:
         balance = self.eth.get_balance(self.source)
-        return balance - value // gas
+        return max(0, (balance - value)) // gas
 
     def calculate_initial_fee(self):
         history = self.eth.fee_history()
@@ -130,11 +130,11 @@ class AttemptManagerV2(BaseAttemptManager):
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
-            pf = self.next_fee_value(
+            tip = self.next_fee_value(
                 last.fee.max_priority_fee_per_gas  # type: ignore
             )
-            mf = self.next_fee_value(last.fee.max_fee_per_gas)  # type: ignore
-            next_fee = Fee(max_priority_fee_per_gas=pf, max_fee_per_gas=mf)
+            gap = self.next_fee_value(last.fee.max_fee_per_gas)  # type: ignore
+            next_fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
             next_wait_time = self.next_waiting_time(next_index)
 
         logger.info('Next fee %s', next_fee)
