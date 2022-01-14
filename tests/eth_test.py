@@ -14,7 +14,12 @@ from tests.utils.timing import in_time
 
 
 def test_eth_fee_history(eth):
-    h = eth.fee_history()
+    h = eth.get_fee_history()
+    base_fee = eth.get_estimated_base_fee()
+    tip = eth.get_p60_tip()
+    assert isinstance(base_fee, int)
+    assert isinstance(tip, int)
+    assert base_fee > tip
     assert len(h['baseFeePerGas']) == 2
     assert len(h['reward'][0]) == 2
 

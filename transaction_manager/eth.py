@@ -25,7 +25,7 @@ from typing import cast, Dict, Optional
 from eth_typing.evm import HexStr
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
-from web3.types import TxParams
+from web3.types import FeeHistory, TxParams
 
 from .config import (
     AVG_GAS_PRICE_INC_PERCENT,
@@ -90,12 +90,23 @@ class Eth:
         'maxPriorityFeePerGas'
     ]
 
-    def fee_history(self) -> Dict:
+    def get_fee_history(self) -> FeeHistory:
         return self.w3.eth.fee_history(
             1,
             'latest',
             [50, TARGET_REWARD_PERCENTILE]
-        )  # type: ignore
+        )
+
+    def get_estimated_base_fee(
+        self,
+        history: Optional[FeeHistory] = None
+    ) -> int:
+        history = history or self.get_fee_history()
+        return history['baseFeePerGas'][-1]
+
+    def get_p60_tip(self, history: Optional[FeeHistory] = None) -> int:
+        history = history or self.get_fee_history()
+        return history['reward'][0][-1]
 
     @classmethod
     def convert_tx(cls, tx: Tx) -> Dict:

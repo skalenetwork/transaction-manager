@@ -25,7 +25,6 @@ from .storage import BaseAttemptStorage
 
 from ..config import (
     BASE_WAITING_TIME,
-    CAP_TIP_RATIO,
     GAP_INC_PERCENT,
     FEE_INC_PERCENT,
     MAX_FEE_VALUE,
@@ -51,7 +50,6 @@ class AttemptManagerV2(BaseAttemptManager):
         inc_percent: int = FEE_INC_PERCENT,
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
-        cap_tip_ratio: int = CAP_TIP_RATIO,
         max_tx_cap: int = MAX_TX_CAP,
         gap_inc_percent: int = GAP_INC_PERCENT
     ) -> None:
@@ -77,11 +75,19 @@ class AttemptManagerV2(BaseAttemptManager):
     def save(self) -> None:
         self.storage.save(self.current)  # type: ignore
 
-    def inc_fee_value(self, fee_value: int, inc: Optional[int] = None) -> int:
+    def inc_fee_value(
+        self,
+        fee_value: int,
+        inc: Optional[int] = None,
+        min_fee: Optional[int] = None,
+        max_fee: Optional[int] = None
+    ) -> int:
+        max_fee = max_fee or self.max_fee
+        min_fee = min_fee or 0
         inc = max(self.min_inc_percent, inc or self.inc_percent)
-        return min(
-            fee_value * (100 + inc) // 100,
-            self.max_fee
+        return max(
+            min_fee,
+            min(fee_value * (100 + inc) // 100, max_fee)
         )
 
     @made
@@ -102,8 +108,13 @@ class AttemptManagerV2(BaseAttemptManager):
         fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
         tx.fee = self._current.fee = fee  # type: ignore
 
-    def next_fee_value(self, fee_value: int) -> int:
-        return self.inc_fee_value(fee_value)
+    def next_fee_value(
+        self,
+        fee_value: int,
+        min_fee: Optional[int] = None,
+        max_fee: Optional[int] = None
+    ) -> int:
+        return self.inc_fee_value(fee_value, min_fee=min_fee, max_fee=max_fee)
 
     def next_waiting_time(self, attempt_index: int) -> int:
         return self.base_waiting_time + 10 * (attempt_index ** 2)
@@ -112,10 +123,12 @@ class AttemptManagerV2(BaseAttemptManager):
         balance = self.eth.get_balance(self.source)
         return max(0, (balance - value)) // gas
 
-    def calculate_initial_fee(self):
-        history = self.eth.fee_history()
-        estimated_base_fee = history['baseFeePerGas'][-1]
-        tip = max(self.min_priority_fee, history['reward'][0][-1])
+    def calculate_initial_fee(
+        self,
+        estimated_base_fee: int,
+        good_tip: int
+    ) -> Fee:
+        tip = max(self.min_priority_fee, good_tip)
         raw_gap = max(tip, estimated_base_fee)
         gap = (100 + self.gap_inc_percent) * raw_gap // 100
         return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
@@ -124,16 +137,25 @@ class AttemptManagerV2(BaseAttemptManager):
         last = self.current
         nonce = self.eth.get_nonce(self.source)
         logger.info(f'Received current nonce - {nonce}')
+
+        history = self.eth.get_fee_history()
+        estimated_base_fee = self.eth.get_estimated_base_fee(history)
+        good_tip = self.eth.get_p60_tip(history)
+
         if last is None or nonce > last.nonce or last.fee is None:
             next_index = 1
-            next_fee = self.calculate_initial_fee()
+            next_fee = self.calculate_initial_fee(estimated_base_fee, good_tip)
             next_wait_time = self.base_waiting_time
         else:
             next_index = last.index + 1
             tip = self.next_fee_value(
-                last.fee.max_priority_fee_per_gas  # type: ignore
+                last.fee.max_priority_fee_per_gas,  # type: ignore
+                min_fee=good_tip
             )
-            gap = self.next_fee_value(last.fee.max_fee_per_gas)  # type: ignore
+            gap = self.next_fee_value(
+                last.fee.max_fee_per_gas,  # type: ignore
+                min_fee=estimated_base_fee
+            )
             next_fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
             next_wait_time = self.next_waiting_time(next_index)
 
@@ -143,7 +165,7 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info('Estimated gas %d', estimated_gas)
         if tx.gas:
             allowed_fee = self.max_allowed_fee(tx.gas, tx.value)
-            if allowed_fee < next_fee.max_fee_per_gas:
+            if allowed_fee < next_fee.max_fee_per_gas:   # type: ignore
                 logger.warning(
                     'Suggested fee exceeds allowance. Defaulting to %d',
                     estimated_gas

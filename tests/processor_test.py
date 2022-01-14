@@ -139,7 +139,8 @@ def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
     proc.attempt_manager.make(tx)
 
     proc.send(tx)
-    tx.fee.max_priority_fee_per_gas += 1
+    tx.fee.max_priority_fee_per_gas += 1000
+    tx.fee.max_fee_per_gas -= 1000
     proc.send(tx)
     r = eth.wait_for_receipt(tx.tx_hash)
     assert r
