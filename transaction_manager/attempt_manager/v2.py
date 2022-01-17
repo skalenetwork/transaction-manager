@@ -24,8 +24,8 @@ from .base import BaseAttemptManager, made
 from .storage import BaseAttemptStorage
 
 from ..config import (
+    BASE_FEE_ADJUSMENT_PERCENT,
     BASE_WAITING_TIME,
-    GAP_INC_PERCENT,
     FEE_INC_PERCENT,
     MAX_FEE_VALUE,
     MAX_TX_CAP,
@@ -51,18 +51,18 @@ class AttemptManagerV2(BaseAttemptManager):
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
         max_tx_cap: int = MAX_TX_CAP,
-        gap_inc_percent: int = GAP_INC_PERCENT
+        base_fee_adjustment_percent: int = BASE_FEE_ADJUSMENT_PERCENT
     ) -> None:
         self.eth = eth
         self._current = current
         self.storage = storage
         self.source = source
         self.base_waiting_time = base_waiting_time
-        self.min_priority_fee = min_priority_fee
         self.inc_percent = inc_percent
+        self.min_priority_fee = min_priority_fee
+        self.base_fee_adjustment_percent = base_fee_adjustment_percent
         self.min_inc_percent = min_inc_percent
         self.max_fee = max_fee
-        self.gap_inc_percent = gap_inc_percent
 
     def fetch(self) -> None:
         self._current = self.storage.get()
@@ -73,7 +73,8 @@ class AttemptManagerV2(BaseAttemptManager):
 
     @made
     def save(self) -> None:
-        self.storage.save(self.current)  # type: ignore
+        if self.current:
+            self.storage.save(self.current)
 
     def inc_fee_value(
         self,
@@ -130,7 +131,7 @@ class AttemptManagerV2(BaseAttemptManager):
     ) -> Fee:
         tip = max(self.min_priority_fee, good_tip)
         raw_gap = max(tip, estimated_base_fee)
-        gap = (100 + self.gap_inc_percent) * raw_gap // 100
+        gap = (100 + self.base_fee_adjustment_percent) * raw_gap // 100
         return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
 
     def make(self, tx: Tx) -> None:

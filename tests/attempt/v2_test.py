@@ -211,6 +211,44 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
 
 
+def test_v2_make_iterative(w3, history_eth, attempt_manager, account, wallet):
+    attempt_manager.eth = history_eth
+    eth = history_eth
+    chain_id = eth.chain_id
+    addr, _ = account
+    a_id = 'A_ID'
+    # Attempt with no last
+    attempt_manager._current = None
+    attempt_manager.max_fee = 280000000000
+    tx = Tx(
+        tx_id=a_id,
+        chain_id=chain_id,
+        status=TxStatus.PROPOSED,
+        score=1,
+        to=addr,
+        value=1,
+        fee=None,
+        gas=None,
+        source=addr,
+        tx_hash=None,
+        data=None,
+        multiplier=1.2
+    )
+    expected_tip = P60_REWARD
+    expected_gap = (BASE_FEE_VALUE * 150) // 100
+
+    for i in range(6):
+        attempt_manager.make(tx)
+        assert tx.fee.max_priority_fee_per_gas == expected_tip, i
+        assert tx.fee.max_fee_per_gas == expected_gap, i
+        expected_tip = (expected_tip * 112) // 100
+        expected_gap = (expected_gap * 112) // 100
+
+    attempt_manager.make(tx)
+    assert tx.fee.max_priority_fee_per_gas == expected_tip
+    assert tx.fee.max_fee_per_gas == attempt_manager.max_fee
+
+
 def test_v2_fetch_save(w3, eth, attempt_manager, account):
     # Fetch with empty data
     attempt_manager.fetch()
