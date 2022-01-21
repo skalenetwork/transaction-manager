@@ -164,7 +164,8 @@ class AttemptManagerV2(BaseAttemptManager):
         tx.fee, tx.nonce = next_fee, nonce
         estimated_gas = self.eth.calculate_gas(tx)
         logger.info('Estimated gas %d', estimated_gas)
-        if tx.gas:
+        tx.gas = max(estimated_gas, tx.gas or 0)
+        if tx.gas > estimated_gas:
             allowed_fee = self.max_allowed_fee(tx.gas, tx.value)
             if allowed_fee < next_fee.max_fee_per_gas:   # type: ignore
                 logger.warning(
@@ -177,8 +178,6 @@ class AttemptManagerV2(BaseAttemptManager):
                     'Estimated gas will be ignored in favor of %d',
                     tx.gas
                 )
-        else:
-            tx.gas = estimated_gas
 
         self._current = Attempt(
             tx_id=tx.tx_id,

@@ -55,6 +55,7 @@ const config: HardhatUserConfig = {
     },
     hardhat: {
       accounts: getAccounts(),
+      chainId: 31337,
       blockGasLimit: 12000000,
       gasPrice: 1000000000,
       mining: {

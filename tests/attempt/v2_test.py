@@ -95,7 +95,7 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
 
     # Test another attempt with new transaction with same nonce and static gas
     b_id = 'B_ID'
-    initial_gas = 21000
+    initial_gas = 31000
     tx = Tx(
         tx_id=b_id,
         chain_id=chain_id,
@@ -209,6 +209,36 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     # Since nonce was increased index should be 1
     assert current.index == 1
     assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
+
+
+def test_v2_make_low_static_gas(w3, eth, attempt_manager, account, wallet):
+    chain_id = eth.chain_id
+    addr, _ = account
+    a_id = 'A_ID'
+    static_gas = 22000
+
+    attempt_manager._current = None
+
+    tx = Tx(
+        tx_id=a_id,
+        chain_id=chain_id,
+        status=TxStatus.PROPOSED,
+        score=1,
+        to=addr,
+        value=1,
+        fee=None,
+        gas=static_gas,
+        source=addr,
+        tx_hash=None,
+        data=None,
+        multiplier=1.2
+    )
+    attempt_manager.make(tx)
+    current = attempt_manager.current
+    # Id should be the same
+    assert current.tx_id == tx.tx_id == a_id
+    # Tip should be equal to good reward
+    assert current.gas == tx.gas > static_gas
 
 
 def test_v2_make_iterative(w3, history_eth, attempt_manager, account, wallet):
