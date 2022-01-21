@@ -13,6 +13,7 @@ jobs:
       ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
       MANAGER_TAG: "1.8.2-develop.44"
+      SGX_URL: ""
 
     steps:
     - uses: actions/checkout@v2
@@ -37,13 +38,16 @@ jobs:
       run: flake8 .
 
     - name: Mypy check
-      run: mypy transaction_manager/main.py
+      run: mypy transaction_manager
     
-    - name: Deploy manager 
-      run: bash ./helper-scripts/deploy_test_manager.sh
+    - name: Run test containers
+      run: ./scripts/run-test-containers.sh && sleep 60
 
-    - name: Run redis
-      run: bash scripts/run-redis.sh
+    - name: Debug info
+      run: docker ps -a && docker logs hnode --tail 500 && docker inspect hnode
 
-    - name: Run tests
-      run: bash ./scripts/run-tests.sh
+    - name: Run unit tests
+      run: ./scripts/run-tests.sh
+
+    - name: Run functionality tests
+      run: ./scripts/run-docker-tests.sh

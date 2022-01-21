@@ -22,6 +22,8 @@ import logging
 import os
 import time
 
+from typing import Optional
+
 from .config import NODE_DATA_PATH
 
 logger = logging.getLogger(__name__)
@@ -33,17 +35,19 @@ def is_config_created() -> bool:
     return os.path.isfile(NODE_CONFIG_FILEPATH)
 
 
-def get_sgx_keyname() -> str:
-    with open(NODE_CONFIG_FILEPATH, encoding='utf-8') as data_file:
+def get_sgx_keyname(config_filepath: Optional[str] = None) -> str:
+    config_filepath = config_filepath or NODE_CONFIG_FILEPATH
+    with open(config_filepath, encoding='utf-8') as data_file:
         config = json.loads(data_file.read())
     return config['sgx_key_name']
 
 
-def wait_for_sgx_keyname() -> str:
+def wait_for_sgx_keyname(config_filepath: Optional[str] = None) -> str:
+    config_filepath = config_filepath or NODE_CONFIG_FILEPATH
     cnt = 0
-    while not os.path.isfile(NODE_CONFIG_FILEPATH):
+    while not os.path.isfile(config_filepath):
         if cnt < 5:
-            logger.info('No such file %s. Waiting ...', NODE_CONFIG_FILEPATH)
+            logger.info('No such file %s. Waiting ...', config_filepath)
         time.sleep(3)
         cnt += 1
-    return get_sgx_keyname()
+    return get_sgx_keyname(config_filepath)
