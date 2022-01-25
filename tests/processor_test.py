@@ -5,14 +5,14 @@ import pytest
 
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
 from transaction_manager.processor import Processor, SendingError
-from transaction_manager.transaction import TxStatus
+from transaction_manager.structures import TxStatus
 
 from tests.utils.account import generate_address
 
 
 @pytest.fixture
-def proc(tpool, eth, trs, w3wallet):
-    return Processor(eth, tpool, w3wallet)
+def proc(tpool, eth, trs, attempt_manager, w3wallet):
+    return Processor(eth, tpool, attempt_manager, w3wallet)
 
 
 def make_tx(rdp, tpool, to: str, value: int = 10):
@@ -80,6 +80,9 @@ def test_get_exec_data(proc, w3, rdp, eth, tpool):
 def test_send(proc, w3, rdp, eth, tpool):
     to_a = generate_address(w3)
     tx = make_tx(rdp, tpool, to_a)
+    tx.chain_id = eth.chain_id
+    tx.nonce = 0
+    proc.attempt_manager.make(tx)
     tx.gas = 22000
     tx.gas_price = 10 ** 9
 
@@ -113,13 +116,42 @@ def test_send(proc, w3, rdp, eth, tpool):
     assert tx.hashes == ['0x12323213213321321', '0x213812903813123']
 
 
+def test_process_tx(proc, w3, tpool, eth, trs, w3wallet, rdp):
+    to_a = generate_address(w3)
+    tx = make_tx(rdp, tpool, to_a)
+    proc.process(tx)
+    assert tx.tx_hash is not None
+    assert tx.hashes == [tx.tx_hash]
+    assert tx.status == TxStatus.SUCCESS
+
+    tx = make_tx(rdp, tpool, to_a)
+    tx.to = 'bad-address'
+    with pytest.raises(Exception):
+        proc.process(tx)
+
+
+@pytest.mark.skip('Geth only test')
+def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
+    to_a = generate_address(w3)
+    tx = make_tx(rdp, tpool, to_a)
+    tx.chain_id = eth.chain_id
+    tx.nonce = 0
+    proc.attempt_manager.make(tx)
+
+    proc.send(tx)
+    tx.fee.max_priority_fee_per_gas += 1000
+    tx.fee.max_fee_per_gas -= 1000
+    proc.send(tx)
+    r = eth.wait_for_receipt(tx.tx_hash)
+    assert r
+
+
 @pytest.mark.skip
 def test_processor(tpool, eth, trs, w3wallet, rdp):
     eth_tx_a = {
         'from': rdp.address,
         'to': rdp.address,
         'value': 10,
-        'gasPrice': 1,
         'gas': 22000,
         'nonce': 0
     }
@@ -132,7 +164,7 @@ def test_processor(tpool, eth, trs, w3wallet, rdp):
     last_attempt = json.loads(trs.get(b'last_attempt').decode('utf-8'))
     assert tx['nonce'] == last_attempt['nonce']
     assert tx['attempts'] == last_attempt['index']
-    assert tx['gasPrice'] == last_attempt['gas_price']
+    assert tx['gasPrice'] == last_attempt['fee']['gas_price']
     assert tx['data'] is None
     assert tx['score'] == 1
     assert tx_id == last_attempt['tx_id']

@@ -1,5 +1,5 @@
-#   -*- coding: utf-8 -*-
 #
+#   -*- coding: utf-8 -*-
 #   This file is part of SKALE Transaction Manager
 #
 #   Copyright (C) 2021 SKALE Labs
@@ -22,19 +22,21 @@ import time
 from functools import cached_property
 from typing import cast, Dict, Optional
 
-from eth_typing.evm import ChecksumAddress, HexStr
+from eth_typing.evm import HexStr
 from web3 import Web3
 from web3.exceptions import TransactionNotFound
-from web3.types import TxParams
+from web3.types import FeeHistory, TxParams
 
-from .resources import w3 as gw3
 from .config import (
+    AVG_GAS_PRICE_INC_PERCENT,
     CONFIRMATION_BLOCKS,
     DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
-    AVG_GAS_PRICE_INC_PERCENT,
-    MAX_WAITING_TIME
+    MAX_WAITING_TIME,
+    TARGET_REWARD_PERCENTILE
 )
+from .resources import w3 as gw3
+from .structures import Tx
 
 logger = logging.getLogger(__name__)
 
@@ -63,32 +65,85 @@ class Eth:
 
     @property
     def block_gas_limit(self) -> int:
-        latest_block_number = self.w3.eth.blockNumber
-        block = self.w3.eth.getBlock(latest_block_number)
+        latest_block_number = self.w3.eth.block_number
+        block = self.w3.eth.get_block(latest_block_number)
         return block['gasLimit']
 
     @cached_property
     def chain_id(self) -> int:
-        return self.w3.eth.chainId
+        return self.w3.eth.chain_id
 
-    def get_balance(self, address: ChecksumAddress) -> int:
-        return self.w3.eth.getBalance(address)
+    def get_balance(self, address: str) -> int:
+        checksum_addres = self.w3.toChecksumAddress(address)
+        return self.w3.eth.get_balance(checksum_addres)
+
+    TX_ATTRS = [
+        'from',
+        'to',
+        'value',
+        'nonce',
+        'chainId',
+        'gas',
+        'data',
+        'gasPrice',
+        'maxFeePerGas',
+        'maxPriorityFeePerGas'
+    ]
+
+    def get_fee_history(self) -> FeeHistory:
+        return self.w3.eth.fee_history(
+            1,
+            'latest',
+            [50, TARGET_REWARD_PERCENTILE]
+        )
+
+    def get_estimated_base_fee(
+        self,
+        history: Optional[FeeHistory] = None
+    ) -> int:
+        history = history or self.get_fee_history()
+        return history['baseFeePerGas'][-1]
+
+    def get_p60_tip(self, history: Optional[FeeHistory] = None) -> int:
+        history = history or self.get_fee_history()
+        return history['reward'][0][-1]
+
+    @classmethod
+    def convert_tx(cls, tx: Tx) -> Dict:
+        raw_tx = tx.raw_tx
+        etx = {attr: raw_tx[attr] for attr in cls.TX_ATTRS}
+        if etx.get('maxPriorityFeePerGas') is not None or \
+                etx.get('maxFeePerGas') is not None:
+            etx['type'] = 2
+            etx.pop('gasPrice', None)
+        else:
+            etx['type'] = 1
+            etx.pop('maxPriorityFeePerGas', None)
+            etx.pop('maxFeePerGas', None)
+
+        if etx.get('gas') is None:
+            etx.pop('gas')
+        if etx.get('data') is None:
+            etx.pop('data')
+        return etx
 
     @property
     def avg_gas_price(self) -> int:
-        return self.w3.eth.gasPrice * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
+        return self.w3.eth.gas_price * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
 
-    def calculate_gas(self, tx: Dict, multiplier: Optional[float]) -> int:
+    def calculate_gas(self, tx: Tx) -> int:
+        etx = self.convert_tx(tx)
+        multiplier = tx.multiplier
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return int(tx['gas'] * multiplier)
+            return int(etx['gas'] * multiplier)
 
-        logger.info('Estimating gas for %s', tx)
-        estimated = self.w3.eth.estimateGas(
-            cast(TxParams, tx),
+        logger.info('Estimating gas for %s', etx)
+        estimated = self.w3.eth.estimate_gas(
+            cast(TxParams, etx),
             block_identifier='latest'
         )
-        logger.info('Estimated gas: %s', estimated)
+        logger.info('eth_estimateGas returned: %s of gas', estimated)
         gas = int(estimated * multiplier)
         logger.info('Multiplied gas: %s', gas)
         gas_limit = self.block_gas_limit
@@ -98,16 +153,19 @@ class Eth:
                 gas_limit
             )
             gas = gas_limit
-        return int(gas)
+        gas = int(gas)
+        logger.info('Estimation result %s of gas', gas)
+        return gas
 
     def send_tx(self, signed_tx: Dict) -> str:
-        tx_hash = self.w3.eth.sendRawTransaction(
+        tx_hash = self.w3.eth.send_raw_transaction(
             signed_tx['rawTransaction']
         ).hex()
         return tx_hash
 
-    def get_nonce(self, address: ChecksumAddress) -> int:
-        return self.w3.eth.getTransactionCount(address)
+    def get_nonce(self, address: str) -> int:
+        checksum_addres = self.w3.toChecksumAddress(address)
+        return self.w3.eth.get_transaction_count(checksum_addres)
 
     def get_status(
         self,
@@ -115,7 +173,8 @@ class Eth:
         raise_err: bool = False
     ) -> int:
         try:
-            receipt = self.w3.eth.getTransactionReceipt(cast(HexStr, tx_hash))
+            casted_hash = cast(HexStr, tx_hash)
+            receipt = self.w3.eth.get_transaction_receipt(casted_hash)
         except TransactionNotFound as e:
             if raise_err:
                 raise e
@@ -133,12 +192,12 @@ class Eth:
         amount: int = CONFIRMATION_BLOCKS,
         max_time: int = MAX_WAITING_TIME
     ) -> None:
-        current_block = start_block = self.w3.eth.blockNumber
+        current_block = start_block = self.w3.eth.block_number
         current_ts = start_ts = time.time()
         while current_block - start_block < amount and \
                 current_ts - start_ts < max_time:
             time.sleep(1)
-            current_block = self.w3.eth.blockNumber
+            current_block = self.w3.eth.block_number
             current_ts = time.time()
         if current_block - start_block < amount:
             raise BlockTimeoutError(

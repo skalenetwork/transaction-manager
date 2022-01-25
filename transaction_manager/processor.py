@@ -24,18 +24,12 @@ from typing import Generator, Optional, Tuple
 
 from skale.wallets import BaseWallet  # type: ignore
 
-from .attempt import (
-    acquire_attempt,
-    Attempt,
-    create_next_attempt,
-    get_last_attempt,
-    grad_inc_gas_price
-)
+from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import (
     Eth, is_replacement_underpriced, ReceiptTimeoutError
 )
-from .transaction import Tx, TxStatus
+from .structures import Tx, TxStatus
 from .txpool import TxPool
 
 logger = logging.getLogger(__name__)
@@ -54,8 +48,15 @@ class WaitTimeoutError(Exception):
 
 
 class Processor:
-    def __init__(self, eth: Eth, pool: TxPool, wallet: BaseWallet) -> None:
+    def __init__(
+        self,
+        eth: Eth,
+        pool: TxPool,
+        attempt_manager: BaseAttemptManager,
+        wallet: BaseWallet
+    ) -> None:
         self.eth: Eth = eth
+        self.attempt_manager = attempt_manager
         self.pool: TxPool = pool
         self.wallet: BaseWallet = wallet
         self.address = wallet.address
@@ -64,19 +65,19 @@ class Processor:
         tx_hash, err = None, None
         retry = 0
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
-            logger.info('Retry %d', retry)
-            logger.info('Signing tx %s', tx.tx_id)
-            signed = self.wallet.sign(tx.eth_tx)
-            logger.info('Sending transaction %s', tx.eth_tx)
+            logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
+            etx = self.eth.convert_tx(tx)
+            print(etx)
+            signed = self.wallet.sign(etx)
+            logger.info('Sending transaction %s', tx)
             try:
                 tx_hash = self.eth.send_tx(signed)
             except Exception as e:
                 logger.info(f'Sending failed with error {err}')
                 err = e
                 if is_replacement_underpriced(err):
-                    logger.info('Replacement gas price is too low. Increasing')
-                    gp = tx.gas_price
-                    tx.gas_price = grad_inc_gas_price(gp)  # type: ignore
+                    logger.info('Replacement fee is too low. Increasing')
+                    self.attempt_manager.replace(tx)
                     retry += 1
                 else:
                     break
@@ -86,15 +87,18 @@ class Processor:
             raise SendingError(err)
 
         tx.set_as_sent(tx_hash)
+        self.pool.save(tx)
         logger.info(f'Tx {tx.tx_id} was sent successfully')
 
-    def wait(self, tx: Tx, attempt: Attempt) -> Optional[int]:
+    def wait(self, tx: Tx, max_time: int) -> Optional[int]:
         if not tx.tx_hash:
             logger.warning(f'Tx {tx.tx_id} has not any receipt')
             return None
-        max_time = attempt.wait_time
         try:
-            logger.info(f'Waiting for {tx.tx_id}, timeout {max_time}')
+            logger.info(
+                'Waiting for %s, with hash %s, timeout %d',
+                tx.tx_id, tx.tx_hash, max_time
+            )
             self.eth.wait_for_receipt(
                 tx_hash=tx.tx_hash,
                 max_time=max_time
@@ -104,19 +108,30 @@ class Processor:
             tx.status = TxStatus.TIMEOUT
             raise WaitTimeoutError(err)
 
-        return self.eth.wait_for_receipt(
+        rstatus = self.eth.wait_for_receipt(
             tx_hash=tx.tx_hash,
             max_time=max_time
         )
+        if rstatus is not None:
+            logger.info('Setting tx %s as mined', tx.tx_id)
+            tx.set_as_mined()
+            self.pool.save(tx)
+        return rstatus
 
     def confirm(self, tx: Tx) -> None:
+        logger.info(
+            'Tx %s: confirming within %d blocks',
+            tx.tx_id, CONFIRMATION_BLOCKS
+        )
         self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED
             raise ConfirmationError('Tx is not confirmed')
+        logger.info('Setting tx %s as completed, result %d', tx.tx_id, r)
         tx.set_as_completed(h, r)
-        logger.info('Tx was confirmed %s', tx.tx_id)
+        self.pool.save(tx)
+        logger.info('Tx %s was confirmed', tx.tx_id)
 
     def get_exec_data(self, tx: Tx) -> Tuple[Optional[str], Optional[int]]:
         for h in reversed(tx.hashes):
@@ -125,36 +140,26 @@ class Processor:
                 return h, r
         return None, None
 
-    def handle(self, tx: Tx, prev_attempt: Optional[Attempt]) -> None:
+    def process(self, tx: Tx) -> None:
         tx.chain_id = self.eth.chain_id
         tx.source = self.wallet.address
-
-        avg_gp = self.eth.avg_gas_price
-        logger.info(f'Received avg gas price - {avg_gp}')
-        nonce = self.eth.get_nonce(self.address)
-        logger.info(f'Received current nonce - {nonce}')
 
         if tx.is_sent():
             _, rstatus = self.get_exec_data(tx)
             if rstatus is not None:
+                logger.info('Tx %s has been already mined', tx.tx_id)
                 self.confirm(tx)
+                return
 
-        attempt = create_next_attempt(nonce, avg_gp, tx.tx_id, prev_attempt)
-        logger.info(f'Current attempt: {attempt}')
+        self.attempt_manager.make(tx)
+        logger.info(f'Current attempt: {self.attempt_manager.current}')
 
-        tx.gas_price, tx.nonce = attempt.gas_price, attempt.nonce
-        logger.info(f'Calculating gas for {tx}')
-        tx.gas = self.eth.calculate_gas(tx.eth_tx, tx.multiplier)
-        logger.info(f'Gas for {tx.tx_id}: {tx.gas}')
+        self.send(tx)
 
-        with acquire_attempt(attempt, tx) as attempt:
-            self.send(tx)
-
-        logger.info(f'Saving tx: {tx.tx_id} record after sending')
-        self.pool.save(tx)
-        logger.info(f'Waiting for tx: {tx.tx_id} with hash: {tx.tx_hash}')
-
-        rstatus = self.wait(tx, attempt)
+        rstatus = self.wait(
+            tx,
+            self.attempt_manager.current.wait_time  # type: ignore
+        )
         if rstatus is not None:
             self.confirm(tx)
 
@@ -167,6 +172,8 @@ class Processor:
         try:
             yield tx
         finally:
+            if tx.is_sent():
+                self.attempt_manager.save()
             if not tx.is_completed() and tx.is_last_attempt():
                 tx.status = TxStatus.DROPPED
             if tx.is_completed():
@@ -179,11 +186,12 @@ class Processor:
         if txs:
             logger.info('Pool: %s', txs)
         tx = self.pool.fetch_next()
+        self.attempt_manager.fetch()
         if tx is not None:
             with self.acquire_tx(tx) as tx:
-                prev_attempt = get_last_attempt()
-                logger.info('Previous attempt %s', prev_attempt)
-                self.handle(tx, prev_attempt)
+                logger.info(
+                    'Previous attempt %s', self.attempt_manager.current)
+                self.process(tx)
 
     def run(self) -> None:
         while True:

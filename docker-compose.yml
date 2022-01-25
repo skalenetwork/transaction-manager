@@ -1,20 +1,31 @@
 version: '3'
 
 services:
-  # sgx-server:
-  #   image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
-  #   container_name: sgx-server
-  #   restart: unless-stopped
-  #   network_mode: host
-  #   volumes:
-  #     - ${SGX_DIR}:/usr/src/sdk/sgx_data
-  #     -  /dev/urandom:/dev/random
-  #   logging:
-  #     driver: json-file
-  #     options:
-  #       max-size: "10m"
-  #       max-file: "4"
-  #   command: -s -y
+  sgx:
+    image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
+    container_name: sgx
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ${SGX_DIR}:/usr/src/sdk/sgx_data
+      -  /dev/urandom:/dev/random
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "4"
+    command: -s -y
+
+  hnode:
+    container_name: hnode
+    image: "hnode:${TAG:-latest}"
+    network_mode: host
+    build:
+      context: "./hardhat-node"
+      dockerfile: Dockerfile
+    tty: true
+    environment:
+      PRIVATE_KEY: ${ETH_PRIVATE_KEY}
   
   redis:
     container_name: redis
@@ -30,7 +41,7 @@ services:
       - ${REDIS_DIR}/redis-data:/data/db
       - ${REDIS_DIR}/redis-config:/config
 
-  transaction-manager:
+  tm:
     container_name: tm
     image: "transaction-manager:${TAG:-latest}"
     network_mode: host
@@ -39,10 +50,10 @@ services:
       dockerfile: Dockerfile
     tty: true
     environment:
-      SGX_SERVER_URL: ${SGX_SERVER_URL}
+      SGX_URL: ${SGX_URL}
       ETH_PRIVATE_KEY: ${ETH_PRIVATE_KEY}
       ENDPOINT: ${ENDPOINT}
       NODE_DATA_PATH: /skale_node_data
-      ALLOWED_TS_DIFF: 800
+      ALLOWED_TS_DIFF: 5200
     volumes:
       - ${SKALE_DIR}/node_data:/skale_node_data
