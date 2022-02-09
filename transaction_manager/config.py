@@ -34,7 +34,7 @@ GAS_MULTIPLIER: float = 1.2
 NODE_DATA_PATH = '/skale_node_data'
 
 # General
-BASE_WAITING_TIME: int = 10
+BASE_WAITING_TIME: int = 25
 CONFIRMATION_BLOCKS: int = 6
 MAX_RESUBMIT_AMOUNT: int = 10
 MAX_WAITING_TIME: int = 650  # TODO: determine value
