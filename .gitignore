@@ -134,3 +134,12 @@ pk_file
 test_abi.json
 unique.json
 manager.json
+
+# hardhat-node
+hardhat-node/node_modules
+hardhat-node/.env
+hardhat-node/coverage
+hardhat-node/coverage.json
+hardhat-node/typechain
+hardhat-node/cache
+hardhat-node/artifacts

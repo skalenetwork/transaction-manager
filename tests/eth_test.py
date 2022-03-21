@@ -7,13 +7,25 @@ from transaction_manager.eth import (
     MAX_WAITING_TIME,
     ReceiptTimeoutError,
 )
+from transaction_manager.structures import Tx, TxStatus
 
 from tests.utils.account import send_eth
 from tests.utils.timing import in_time
 
 
+def test_eth_fee_history(eth):
+    h = eth.get_fee_history()
+    base_fee = eth.get_estimated_base_fee()
+    tip = eth.get_p60_tip()
+    assert isinstance(base_fee, int)
+    assert isinstance(tip, int)
+    assert base_fee > tip
+    assert len(h['baseFeePerGas']) == 2
+    assert len(h['reward'][0]) == 2
+
+
 def test_eth_chain_id(eth):
-    assert 100 < eth.chain_id < 2000
+    assert eth.chain_id == 31337
 
 
 def test_eth_avg_gas_price(eth):
@@ -37,25 +49,37 @@ def test_eth_tx(w3wallet, w3, eth):
     assert eth.get_balance(addr) == 10 ** 18
     assert eth.get_nonce(addr) == 0
 
-    eth_tx_a = {
-        'from': addr,
-        'to': addr,
-        'value': 1,
-        'gasPrice': 1,
-        'gas': 22000,
-        'nonce': w3.eth.getTransactionCount(addr),
-        'chainId': w3.eth.chainId
-    }
-    assert eth.calculate_gas(eth_tx_a, multiplier=1) == 21000
+    tx = Tx(
+        tx_id='1232321332132131331321',
+        chain_id=31337,
+        status=TxStatus.PROPOSED,
+        score=1,
+        to=addr,
+        value=1,
+        fee={'gas_price': 1000000000},
+        gas=21000,
+        nonce=0,
+        source=addr,
+        tx_hash=None,
+        data=None,
+        multiplier=1.2
+    )
 
-    signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
+    tx.gas = eth.calculate_gas(tx)
+    assert tx.gas > 1.2 * 21000
+    eth_tx_a = eth.convert_tx(tx)
+
+    signed = w3.eth.account.sign_transaction(
+        private_key=pk,
+        transaction_dict=eth_tx_a
+    )
     h = eth.send_tx(signed)
     with pytest.raises(ReceiptTimeoutError):
         eth.wait_for_receipt(h, max_time=0)
 
     time.sleep(1)
     eth_tx_a['gasPrice'] = 2 * eth.avg_gas_price
-    second_nonce = w3.eth.getTransactionCount(addr)
+    second_nonce = w3.eth.get_transaction_count(addr)
     eth_tx_a['nonce'] = second_nonce
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)
     h = eth.send_tx(signed)

@@ -12,6 +12,8 @@ cd $PROJECT_DIR
 
 export SKALE_DIR=./tests/data-volumes/skale-dir
 export REDIS_DIR=./tests/data-volumes/redis-dir
+export SGX_DIR=./tests/data-volumes/skale-dir/node_data/sgx-dir
+export PYTHONPATH=${PYTHONPATH}:${PROJECT_DIR}
 
 create_skale_dir() {
     mkdir -p $SKALE_DIR/node_data/log
@@ -23,25 +25,32 @@ create_redis_dir() {
     cp tests/utils/redis.conf $REDIS_DIR/redis-config
 }
 
+build() {
+    docker-compose build --force-rm $@
+}
+
 run_containers() {
-    docker-compose up --build --force-recreate -d
+    docker-compose up -d $@
 }
 
 shutdown_containers() {
     docker-compose down --rmi local
 }
 
-
 cleanup_skale_dir() {
     if [ -d $SKALE_DIR ]; then
-        rm -r --interactive=never $SKALE_DIR
+        sudo rm -r --interactive=never $SKALE_DIR
     fi
 }
 
 cleanup_redis_dir() {
     if [ -d $REDIS_DIR ]; then
-        rm -r --interactive=never $REDIS_DIR
+        sudo rm -r --interactive=never $REDIS_DIR
     fi
+}
+
+gen_sgx_key() {
+    python3 tests/gen_sgx.py
 }
 
 shutdown_containers
@@ -49,4 +58,11 @@ cleanup_skale_dir
 cleanup_redis_dir
 create_skale_dir
 create_redis_dir
-run_containers
+build tm hnode
+
+if [ -n ${SGX_URL} ]; then
+    run_containers tm hnode redis
+else
+    run_containers sgx tm hnode redis
+    gen_sgx_key
+fi

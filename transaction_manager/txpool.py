@@ -24,8 +24,9 @@ from typing import Optional
 
 import redis
 
-from .transaction import InvalidFormatError, Tx
+from .config import TXRECORD_EXPIRATION
 from .resources import rs as grs
+from .structures import InvalidFormatError, Tx
 
 
 logger = logging.getLogger(__name__)
@@ -77,7 +78,7 @@ class TxPool:
     ) -> None:
         pipe = self.rs.pipeline()
         pipe.zadd(self.name, {tx_id: score})
-        pipe.set(tx_id, tx_record)
+        pipe.set(tx_id, tx_record, ex=TXRECORD_EXPIRATION)
         pipe.execute()
 
     def _clear(self) -> None:
@@ -90,7 +91,7 @@ class TxPool:
 
     def save(self, tx: Tx) -> None:
         logger.info('Updating record for tx %s', tx.tx_id)
-        self.rs.set(tx.tx_id, tx.to_bytes())
+        self.rs.set(tx.tx_id, tx.to_bytes(), ex=TXRECORD_EXPIRATION)
 
     def fetch_next(self) -> Optional[Tx]:
         tx = None
@@ -106,6 +107,6 @@ class TxPool:
     def release(self, tx: Tx) -> None:
         logger.info('Releasing tx %s', tx.tx_id)
         pipe = self.rs.pipeline()
-        pipe.set(tx.tx_id, tx.to_bytes())
+        pipe.set(tx.tx_id, tx.to_bytes(), ex=TXRECORD_EXPIRATION)
         pipe.zrem(self.name, tx.tx_id)
         pipe.execute()
