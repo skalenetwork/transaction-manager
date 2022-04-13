@@ -143,3 +143,4 @@ hardhat-node/coverage.json
 hardhat-node/typechain
 hardhat-node/cache
 hardhat-node/artifacts
+hardhat-node/abi.json

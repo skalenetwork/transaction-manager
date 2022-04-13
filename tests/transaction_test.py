@@ -23,7 +23,6 @@ def test_sample_tx():
     assert not tx.is_sent()
 
     dumped_tx = tx.to_bytes()
-    print(dumped_tx)
     expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "1232321332132131331321", "value": 1}'  # noqa
     assert dumped_tx == expected
 
@@ -126,3 +125,23 @@ def test_tx_from_bytes():
     missing_field_hash = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, missing_field_hash)
     assert tx.hashes == []
+
+
+def test_is_sent_by_ima():
+    tx = Tx(
+        tx_id='tx-72c337ab0ac56aa8js',
+        status=TxStatus.PROPOSED,
+        score=1,
+        to='0x1',
+        value=1,
+        fee={'gas_price': 1000000000},
+        gas=22000,
+        nonce=3,
+        source=None,
+        tx_hash=None,
+        data={'test': 1}
+    )
+    assert tx.is_sent_by_ima()
+
+    tx.tx_id = 'tx-cfada2025eb7d62e'
+    assert not tx.is_sent_by_ima()

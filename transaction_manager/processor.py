@@ -27,7 +27,10 @@ from skale.wallets import BaseWallet  # type: ignore
 from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import (
-    Eth, is_replacement_underpriced, ReceiptTimeoutError
+    EstimateGasRevertError,
+    Eth,
+    is_replacement_underpriced,
+    ReceiptTimeoutError
 )
 from .structures import Tx, TxStatus
 from .txpool import TxPool
@@ -151,8 +154,16 @@ class Processor:
                 self.confirm(tx)
                 return
 
-        self.attempt_manager.make(tx)
-        logger.info(f'Current attempt: {self.attempt_manager.current}')
+        try:
+            self.attempt_manager.make(tx)
+        except EstimateGasRevertError as e:
+            logger.info('Estimate gas failed for %s with %s', tx.tx_id, e)
+            if tx.is_sent_by_ima():
+                logger.info('Dropping tx with failed dry run from IMA %s', tx.tx_id)
+                tx.set_as_dropped()
+            raise
+
+        logger.info('Current attempt: %s', self.attempt_manager.current)
 
         self.send(tx)
 
@@ -175,7 +186,7 @@ class Processor:
             if tx.is_sent():
                 self.attempt_manager.save()
             if not tx.is_completed() and tx.is_last_attempt():
-                tx.status = TxStatus.DROPPED
+                tx.set_as_dropped()
             if tx.is_completed():
                 self.pool.release(tx)
             else:

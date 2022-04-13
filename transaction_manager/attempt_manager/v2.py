@@ -163,6 +163,7 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info('Next fee %s', next_fee)
         tx.fee, tx.nonce = next_fee, nonce
         estimated_gas = self.eth.calculate_gas(tx)
+
         logger.info('Estimated gas %d', estimated_gas)
         tx.gas = max(estimated_gas, tx.gas or 0)
         if tx.gas > estimated_gas:
