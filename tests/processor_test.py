@@ -1,13 +1,14 @@
-import json
-
 import mock
 import pytest
 
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
+from transaction_manager.eth import EstimateGasRevertError
 from transaction_manager.processor import Processor, SendingError
 from transaction_manager.structures import TxStatus
 
-from tests.utils.account import generate_address
+from tests.utils.contracts import get_tester_abi
+
+DEFAULT_GAS = 21000
 
 
 @pytest.fixture
@@ -15,15 +16,29 @@ def proc(tpool, eth, trs, attempt_manager, w3wallet):
     return Processor(eth, tpool, attempt_manager, w3wallet)
 
 
-def make_tx(rdp, tpool, to: str, value: int = 10):
-    eth_tx = {
-        'from': rdp.address,
-        'to': to,
-        'value': 10
-    }
-    tx_id = rdp.sign_and_send(eth_tx)
+def make_tx(w3, rdp, tpool, w3wallet, failed=False):
+    tester_abi = get_tester_abi()
+    tester = w3.eth.contract(
+        abi=tester_abi['abi'],
+        address=tester_abi['address']
+    )
+    number = 3 if failed else 4
+    set_only_even_tx = tester.functions.setOnlyEven(
+        number
+    ).buildTransaction({
+        'gasPrice': w3.eth.gasPrice,
+        'gas': DEFAULT_GAS,
+        'from': w3wallet.address
+    })
+    tx_id = rdp.sign_and_send(set_only_even_tx)
     raw_id = tx_id.encode('utf-8')
     return tpool.get(raw_id)
+
+
+def make_ima_tx(w3, rdp, tpool, w3wallet, failed=False):
+    tx = make_tx(w3, rdp, tpool, w3wallet, failed=failed)
+    tx.tx_id = tx.tx_id + 'js'
+    return tx
 
 
 def get_from_pool(tx_id, tpool):
@@ -36,8 +51,7 @@ class ProcTestError(Exception):
 
 
 def test_processor_acquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
-    to_a = generate_address(w3)
-    tx = make_tx(rdp, tpool, to_a)
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     with proc.acquire_tx(tx):
         tx.status = TxStatus.SUCCESS
     assert get_from_pool(tx.tx_id, tpool).status == TxStatus.SUCCESS
@@ -63,9 +77,8 @@ def test_processor_acquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
     assert tx.status == TxStatus.SUCCESS
 
 
-def test_get_exec_data(proc, w3, rdp, eth, tpool):
-    to_a = generate_address(w3)
-    tx = make_tx(rdp, tpool, to_a)
+def test_get_exec_data(proc, w3, rdp, eth, tpool, w3wallet):
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     tx.hashes = ['0x1234', '0x1235', '0x12346']
     tx.attempts = 3
     eth.get_status = mock.Mock(return_value=-1)
@@ -77,9 +90,8 @@ def test_get_exec_data(proc, w3, rdp, eth, tpool):
     assert r == 1 and h == '0x12346'
 
 
-def test_send(proc, w3, rdp, eth, tpool):
-    to_a = generate_address(w3)
-    tx = make_tx(rdp, tpool, to_a)
+def test_send(proc, w3, rdp, eth, tpool, w3wallet):
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -117,23 +129,21 @@ def test_send(proc, w3, rdp, eth, tpool):
 
 
 def test_process_tx(proc, w3, tpool, eth, trs, w3wallet, rdp):
-    to_a = generate_address(w3)
-    tx = make_tx(rdp, tpool, to_a)
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     proc.process(tx)
     assert tx.tx_hash is not None
     assert tx.hashes == [tx.tx_hash]
     assert tx.status == TxStatus.SUCCESS
 
-    tx = make_tx(rdp, tpool, to_a)
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     tx.to = 'bad-address'
     with pytest.raises(Exception):
         proc.process(tx)
 
 
 @pytest.mark.skip('Geth only test')
-def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
-    to_a = generate_address(w3)
-    tx = make_tx(rdp, tpool, to_a)
+def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool, w3wallet):
+    tx = make_tx(w3, rdp, tpool, w3wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -146,25 +156,21 @@ def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool):
     assert r
 
 
-@pytest.mark.skip
-def test_processor(tpool, eth, trs, w3wallet, rdp):
-    eth_tx_a = {
-        'from': rdp.address,
-        'to': rdp.address,
-        'value': 10,
-        'gas': 22000,
-        'nonce': 0
-    }
-    tx_id = rdp.sign_and_send(eth_tx_a)
-    tx = rdp.wait(tx_id, timeout=2)
-    assert tx['status'] == 'SUCCESS'
-    assert tx['from'] == rdp.address
-    assert tx['to'] == rdp.address
-    assert tx['nonce'] == eth.get_nonce(rdp.address) - 1
-    last_attempt = json.loads(trs.get(b'last_attempt').decode('utf-8'))
-    assert tx['nonce'] == last_attempt['nonce']
-    assert tx['attempts'] == last_attempt['index']
-    assert tx['gasPrice'] == last_attempt['fee']['gas_price']
-    assert tx['data'] is None
-    assert tx['score'] == 1
-    assert tx_id == last_attempt['tx_id']
+def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, w3wallet):
+    tx = make_tx(w3, rdp, tpool, w3wallet, failed=True)
+    with pytest.raises(EstimateGasRevertError):
+        with proc.acquire_tx(tx):
+            proc.process(tx)
+    assert tx.tx_hash is None
+    assert tx.status == TxStatus.SEEN
+    assert tx.tx_id.encode('utf-8') in tpool.to_list()
+
+    tx = make_ima_tx(w3, rdp, tpool, w3wallet, failed=True)
+
+    with pytest.raises(EstimateGasRevertError):
+        with proc.acquire_tx(tx):
+            proc.process(tx)
+    assert tx.tx_hash is None
+    assert tx.status == TxStatus.DROPPED
+
+    assert tx.tx_id.encode('utf-8') not in tpool.to_list()
