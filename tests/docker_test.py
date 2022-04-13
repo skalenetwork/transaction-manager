@@ -35,7 +35,7 @@ def retry_rdp(func):
 
 
 @retry_rdp
-def make_simple_tx(w3, rdp, w3wallet, failed=False):
+def make_tx(w3, rdp, w3wallet, failed=False):
     tester_abi = get_tester_abi()
     tester = w3.eth.contract(
         abi=tester_abi['abi'],
@@ -52,6 +52,11 @@ def make_simple_tx(w3, rdp, w3wallet, failed=False):
     return rdp.sign_and_send(set_only_even_tx, priority=6)
 
 
+def make_simple_tx(rdp, address):
+    etx = {'to': address, 'value': 10}
+    return rdp.sign_and_send(etx)
+
+
 @retry_rdp
 def wait_for_tx(rdp, tx_id):
     rdp.wait(tx_id, timeout=300)
@@ -60,7 +65,7 @@ def wait_for_tx(rdp, tx_id):
 
 def test_processor(tpool, w3, eth, trs, rdp, wallet):
     tester_abi = get_tester_abi()
-    tx_id = make_simple_tx(w3, rdp, wallet)
+    tx_id = make_tx(w3, rdp, wallet)
     rec = rdp.wait(tx_id, timeout=60)
     assert rec['status'] == 1
     tx = rdp.get_record(tx_id)
