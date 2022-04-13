@@ -55,6 +55,7 @@ gen_sgx_key() {
 
 deploy_test_contract() {
     cd hardhat-node
+    yarn install
     npx hardhat run --network localhost scripts/deploy.ts
     cd -
 }
