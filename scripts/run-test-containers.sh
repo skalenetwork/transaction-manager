@@ -53,6 +53,12 @@ gen_sgx_key() {
     python3 tests/gen_sgx.py
 }
 
+deploy_test_contract() {
+    cd hardhat-node
+    npx hardhat run --network localhost scripts/deploy.ts
+    cd -
+}
+
 shutdown_containers
 cleanup_skale_dir
 cleanup_redis_dir
@@ -66,3 +72,5 @@ else
     run_containers sgx tm hnode redis
     gen_sgx_key
 fi
+
+deploy_test_contract
