@@ -24,7 +24,7 @@ from typing import cast, Dict, Optional
 
 from eth_typing.evm import HexStr
 from web3 import Web3
-from web3.exceptions import TransactionNotFound
+from web3.exceptions import ContractLogicError, TransactionNotFound
 from web3.types import FeeHistory, TxParams
 
 from .config import (
@@ -47,6 +47,17 @@ class BlockTimeoutError(TimeoutError):
 
 class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
     pass
+
+
+class EstimateGasRevertError(Exception):
+    pass
+
+
+REVERT_CODES = [
+    # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1474.md#error-codes
+    -32601,  # Method not found
+    -32603  # Invalid params
+]
 
 
 def is_replacement_underpriced(err: Exception) -> bool:
@@ -139,10 +150,24 @@ class Eth:
             return int(etx['gas'] * multiplier)
 
         logger.info('Estimating gas for %s', etx)
-        estimated = self.w3.eth.estimate_gas(
-            cast(TxParams, etx),
-            block_identifier='latest'
-        )
+
+        try:
+            estimated = self.w3.eth.estimate_gas(
+                cast(TxParams, etx),
+                block_identifier='latest'
+            )
+        except ContractLogicError as e:
+            logger.exception('Estimate gas reverted with ContractLogicError')
+            raise EstimateGasRevertError(e)
+        except ValueError as e:
+            logger.exception('Estimate gas reverted with ValueError')
+            if len(e.args) > 0 and \
+                    isinstance(e.args[0], dict) and \
+                    e.args[0].get('code') in REVERT_CODES:
+                raise EstimateGasRevertError(e)
+            else:
+                raise
+
         logger.info('eth_estimateGas returned: %s of gas', estimated)
         gas = int(estimated * multiplier)
         logger.info('Multiplied gas: %s', gas)
