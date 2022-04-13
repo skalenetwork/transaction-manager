@@ -132,7 +132,7 @@ class Tx:
     def set_as_dropped(self) -> None:
         self.status = TxStatus.DROPPED
 
-    def is_sent_by_ima(self) -> None:
+    def is_sent_by_ima(self) -> bool:
         return len(self.tx_id) > DEFAULT_ID_LEN and self.tx_id[-2:] == IMA_ID_SUFIX
 
     @property
