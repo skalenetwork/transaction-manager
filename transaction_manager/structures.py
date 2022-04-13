@@ -24,7 +24,12 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional
 
-from .config import MAX_RESUBMIT_AMOUNT, GAS_MULTIPLIER
+from .config import (
+    DEFAULT_ID_LEN,
+    GAS_MULTIPLIER,
+    IMA_ID_SUFIX,
+    MAX_RESUBMIT_AMOUNT
+)
 
 logger = logging.getLogger(__name__)
 
@@ -123,6 +128,12 @@ class Tx:
         self.tx_hash = tx_hash
         self.sent_ts = int(time.time())
         self.hashes.append(tx_hash)
+
+    def set_as_dropped(self) -> None:
+        self.status = TxStatus.DROPPED
+
+    def is_sent_by_ima(self) -> None:
+        return len(self.tx_id) > DEFAULT_ID_LEN and self.tx_id[-2:] == IMA_ID_SUFIX
 
     @property
     def raw_tx(self) -> Dict:
