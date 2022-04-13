@@ -27,7 +27,7 @@ from typing import Dict, List, Optional
 from .config import (
     DEFAULT_ID_LEN,
     GAS_MULTIPLIER,
-    IMA_ID_SUFIX,
+    IMA_ID_SUFFIX,
     MAX_RESUBMIT_AMOUNT
 )
 
@@ -133,7 +133,7 @@ class Tx:
         self.status = TxStatus.DROPPED
 
     def is_sent_by_ima(self) -> bool:
-        return len(self.tx_id) > DEFAULT_ID_LEN and self.tx_id[-2:] == IMA_ID_SUFIX
+        return len(self.tx_id) > DEFAULT_ID_LEN and self.tx_id[-2:] == IMA_ID_SUFFIX
 
     @property
     def raw_tx(self) -> Dict:

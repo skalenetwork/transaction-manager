@@ -1,5 +1,5 @@
 import { ethers } from "hardhat";
-import { promises as fs } from 'fs';
+import { promises as fs } from "fs";
 
 async function main() {
   const Tester = await ethers.getContractFactory("Tester");
