@@ -16,27 +16,36 @@ def proc(tpool, eth, trs, attempt_manager, w3wallet):
     return Processor(eth, tpool, attempt_manager, w3wallet)
 
 
-def make_tx(w3, rdp, tpool, w3wallet, failed=False):
+@pytest.fixture
+def proc_v1(tpool, eth, trs, attempt_manager_v1, w3wallet):
+    return Processor(eth, tpool, attempt_manager_v1, w3wallet)
+
+
+def make_tx(w3, w3wallet, failed=False):
     tester_abi = get_tester_abi()
     tester = w3.eth.contract(
         abi=tester_abi['abi'],
         address=tester_abi['address']
     )
     number = 3 if failed else 4
-    set_only_even_tx = tester.functions.setOnlyEven(
+    return tester.functions.setOnlyEven(
         number
     ).buildTransaction({
         'gasPrice': w3.eth.gasPrice,
         'gas': DEFAULT_GAS,
         'from': w3wallet.address
     })
-    tx_id = rdp.sign_and_send(set_only_even_tx)
+
+
+def push_tx(w3, rdp, tpool, w3wallet, failed=False):
+    tx = make_tx(w3, w3wallet, failed=failed)
+    tx_id = rdp.sign_and_send(tx)
     raw_id = tx_id.encode('utf-8')
     return tpool.get(raw_id)
 
 
-def make_ima_tx(w3, rdp, tpool, w3wallet, failed=False):
-    tx = make_tx(w3, rdp, tpool, w3wallet, failed=failed)
+def push_ima_tx(w3, rdp, tpool, w3wallet, failed=False):
+    tx = push_tx(w3, rdp, tpool, w3wallet, failed=failed)
     tx.tx_id = tx.tx_id + 'js'
     return tx
 
@@ -51,7 +60,7 @@ class ProcTestError(Exception):
 
 
 def test_processor_acquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     with proc.acquire_tx(tx):
         tx.status = TxStatus.SUCCESS
     assert get_from_pool(tx.tx_id, tpool).status == TxStatus.SUCCESS
@@ -78,7 +87,7 @@ def test_processor_acquire_tx(proc, tpool, eth, trs, w3, w3wallet, rdp):
 
 
 def test_get_exec_data(proc, w3, rdp, eth, tpool, w3wallet):
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     tx.hashes = ['0x1234', '0x1235', '0x12346']
     tx.attempts = 3
     eth.get_status = mock.Mock(return_value=-1)
@@ -91,7 +100,7 @@ def test_get_exec_data(proc, w3, rdp, eth, tpool, w3wallet):
 
 
 def test_send(proc, w3, rdp, eth, tpool, w3wallet):
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -129,13 +138,13 @@ def test_send(proc, w3, rdp, eth, tpool, w3wallet):
 
 
 def test_process_tx(proc, w3, tpool, eth, trs, w3wallet, rdp):
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     proc.process(tx)
     assert tx.tx_hash is not None
     assert tx.hashes == [tx.tx_hash]
     assert tx.status == TxStatus.SUCCESS
 
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     tx.to = 'bad-address'
     with pytest.raises(Exception):
         proc.process(tx)
@@ -143,7 +152,7 @@ def test_process_tx(proc, w3, tpool, eth, trs, w3wallet, rdp):
 
 @pytest.mark.skip('Geth only test')
 def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool, w3wallet):
-    tx = make_tx(w3, rdp, tpool, w3wallet)
+    tx = push_tx(w3, rdp, tpool, w3wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -157,7 +166,7 @@ def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool, w3wallet):
 
 
 def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, w3wallet):
-    tx = make_tx(w3, rdp, tpool, w3wallet, failed=True)
+    tx = push_tx(w3, rdp, tpool, w3wallet, failed=True)
     with pytest.raises(EstimateGasRevertError):
         with proc.acquire_tx(tx):
             proc.process(tx)
@@ -165,7 +174,7 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, w3wallet):
     assert tx.status == TxStatus.SEEN
     assert tx.tx_id.encode('utf-8') in tpool.to_list()
 
-    tx = make_ima_tx(w3, rdp, tpool, w3wallet, failed=True)
+    tx = push_ima_tx(w3, rdp, tpool, w3wallet, failed=True)
 
     with pytest.raises(EstimateGasRevertError):
         with proc.acquire_tx(tx):
