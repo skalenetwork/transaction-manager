@@ -60,6 +60,8 @@ FEE_INC_PERCENT: int = 12
 MAX_FEE_VALUE: int = 10 ** 18
 MIN_FEE_INC_PERCENT: int = 5
 MAX_TX_CAP: int = 10 ** 18
+HARD_REPLACE_START_INDEX = 3
+HARD_REPLACE_TIP_OFFSET = 10
 
 
 def get_params() -> List[str]:
