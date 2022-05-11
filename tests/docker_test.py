@@ -119,8 +119,13 @@ def test_replace_legacy(eth, w3, rdp, tpool, wallet):
         # Switch to bigger percentile to make sure it cannot be easily replaced
         [50, TARGET_REWARD_PERCENTILE + 10]
     )
-    raw_tx['gasPrice'] = history['reward'][0][-1] * 5  # Setting cap as tip to make it stuck
-    raw_tx['gas'] += random.randint(0, 3000)  # to prevent already known error
+    # Setting cap as tip to make it stuck
+    raw_tx['gasPrice'] = max(
+        history['baseFeePerGas'][-1],
+        history['reward'][0][-1] * 5
+    )
+    # To prevent already known error
+    raw_tx['gas'] += random.randint(0, 3000)
     raw_tx['nonce'] = eth.get_nonce(wallet.address)
     stuck_tx_hash = wallet.sign_and_send(raw_tx)
 

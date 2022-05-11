@@ -109,14 +109,12 @@ class AttemptManagerV2(BaseAttemptManager):
                 gap, self.max_fee
             )
 
-        fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
         # To prevent stucked legacy transactions
         if replace_attempt >= HARD_REPLACE_START_INDEX and tip + HARD_REPLACE_TIP_OFFSET < gap:
             # to make sure tip will never be more then gap
             tip = gap - HARD_REPLACE_TIP_OFFSET
-            # Emulates legacy tx
-            fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
 
+        fee = Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
         tx.fee = self._current.fee = fee  # type: ignore
 
     def next_fee_value(
