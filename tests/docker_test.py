@@ -1,15 +1,22 @@
 import json
+import random
 import time
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from functools import wraps
 
 import pytest
+from skale.transactions.exceptions import TransactionNotMinedError
 from skale.wallets import RedisWalletAdapter
 
+from transaction_manager.config import (
+    HARD_REPLACE_TIP_OFFSET,
+    TARGET_REWARD_PERCENTILE
+)
+from transaction_manager.structures import TxStatus
 from tests.utils.contracts import get_tester_abi
 
 
-DEFAULT_GAS = 21000
+DEFAULT_GAS = 20000
 TX_NUMBER = 10
 RETRY_NUMBER = 10
 
@@ -26,7 +33,7 @@ def retry_rdp(func):
         err = None
         for i in range(RETRY_NUMBER):
             try:
-                return func(*args, *kwargs)
+                return func(*args, **kwargs)
             except Exception as e:
                 err = e
                 time.sleep(2)
@@ -35,24 +42,30 @@ def retry_rdp(func):
 
 
 @retry_rdp
-def make_tx(w3, rdp, w3wallet, failed=False):
+def make_tx(w3, wallet, failed=False):
     tester_abi = get_tester_abi()
     tester = w3.eth.contract(
         abi=tester_abi['abi'],
         address=tester_abi['address']
     )
     number = 3 if failed else 4
-    set_only_even_tx = tester.functions.setOnlyEven(
+    return tester.functions.setOnlyEven(
         number
     ).buildTransaction({
         'gasPrice': w3.eth.gasPrice,
         'gas': DEFAULT_GAS,
-        'from': w3wallet.address
+        'from': wallet.address
     })
-    return rdp.sign_and_send(set_only_even_tx, priority=6)
 
 
-def make_simple_tx(rdp, address):
+def push_tx(w3, rdp, tpool, wallet, failed=False):
+    tx = make_tx(w3, wallet, failed=failed)
+    tx_id = rdp.sign_and_send(tx, priority=6)
+    raw_id = tx_id.encode('utf-8')
+    return tpool.get(raw_id)
+
+
+def push_simple_tx(rdp, address):
     etx = {'to': address, 'value': 10}
     return rdp.sign_and_send(etx)
 
@@ -65,10 +78,10 @@ def wait_for_tx(rdp, tx_id):
 
 def test_processor(tpool, w3, eth, trs, rdp, wallet):
     tester_abi = get_tester_abi()
-    tx_id = make_tx(w3, rdp, wallet)
-    rec = rdp.wait(tx_id, timeout=60)
+    tx_obj = push_tx(w3, rdp, tpool, wallet)
+    rec = rdp.wait(tx_obj.tx_id, timeout=60)
     assert rec['status'] == 1
-    tx = rdp.get_record(tx_id)
+    tx = rdp.get_record(tx_obj.tx_id)
     assert tx['status'] == 'SUCCESS'
     assert tx['from'] == wallet.address
     assert tx['to'] == tester_abi['address']
@@ -79,14 +92,14 @@ def test_processor(tpool, w3, eth, trs, rdp, wallet):
     assert tx['gasPrice'] == last_attempt['fee']['gas_price']
     assert tx['data'] == '0x8e4ed53e0000000000000000000000000000000000000000000000000000000000000004'  # noqa
     assert tx['score'] > 6 * 10 ** 10 + int(time.time() - 10)
-    assert tx_id == last_attempt['tx_id']
+    assert tx['tx_id'] == last_attempt['tx_id']
 
 
 def test_processor_many_tx(tpool, eth, w3, trs, rdp):
     addrs = [w3.eth.account.create().address for i in range(TX_NUMBER)]
     futures = []
     with ThreadPoolExecutor(max_workers=3) as p:
-        futures = [p.submit(make_simple_tx, rdp, addr) for addr in addrs]
+        futures = [p.submit(push_simple_tx, rdp, addr) for addr in addrs]
 
     tids = [f.result() for f in as_completed(futures)]
 
@@ -95,3 +108,44 @@ def test_processor_many_tx(tpool, eth, w3, trs, rdp):
     txs = [f.result() for f in as_completed(futures)]
     assert any(tx['status'] == 'SUCCESS' for tx in txs)
     assert tpool.size == 0
+
+
+@pytest.mark.skip('Geth only')
+def test_replace_legacy(eth, w3, rdp, tpool, wallet):
+    # First transaction is legacy that meant to stuck
+    raw_tx = make_tx(w3, wallet)
+    history = w3.eth.fee_history(
+        1,
+        'latest',
+        # Switch to bigger percentile to make sure it cannot be easily replaced
+        [50, TARGET_REWARD_PERCENTILE + 10]
+    )
+    # Setting cap as tip to make it stuck
+    raw_tx['gasPrice'] = max(
+        history['baseFeePerGas'][-1],
+        history['reward'][0][-1] * 5
+    )
+    # To prevent already known error
+    raw_tx['gas'] = 30000 + random.randint(0, 3000)
+    raw_tx['nonce'] = eth.get_nonce(wallet.address)
+    stuck_tx_hash = wallet.sign_and_send(raw_tx)
+
+    tx_id = rdp.sign_and_send(raw_tx)
+    rdp.wait(tx_id)
+    raw_id = tx_id.encode('utf-8')
+    tx = tpool.get(raw_id)
+    assert tx.fee.max_fee_per_gas == tx.fee.max_priority_fee_per_gas + HARD_REPLACE_TIP_OFFSET
+    assert tx.tx_hash is not None
+    assert tx.status == TxStatus.SUCCESS
+
+    with pytest.raises(TransactionNotMinedError):
+        wallet.wait(stuck_tx_hash, timeout=5)
+
+    # Ensure that next tx is sent in a regular way
+    tx_id = rdp.sign_and_send(raw_tx)
+    rdp.wait(tx_id)
+    raw_id = tx_id.encode('utf-8')
+    tx = tpool.get(raw_id)
+    assert tx.tx_hash is not None
+    assert tx.status == TxStatus.SUCCESS
+    assert tx.fee.max_priority_fee_per_gas + HARD_REPLACE_TIP_OFFSET < tx.fee.max_fee_per_gas

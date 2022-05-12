@@ -5,6 +5,7 @@ from skale.utils.account_tools import send_ether
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
 
 from transaction_manager.attempt_manager import (
+    AttemptManagerV1,
     AttemptManagerV2,
     RedisAttemptStorage
 )
@@ -41,6 +42,11 @@ def attempt_storage(trs):
 @pytest.fixture
 def attempt_manager(eth, attempt_storage, wallet):
     return AttemptManagerV2(eth, attempt_storage, wallet.address)
+
+
+@pytest.fixture
+def attempt_manager_v1(eth, attempt_storage, wallet):
+    return AttemptManagerV1(eth, attempt_storage, wallet.address)
 
 
 @pytest.fixture
