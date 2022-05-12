@@ -62,5 +62,5 @@ class BaseAttemptManager(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def replace(self, tx: Tx) -> None:  # pragma: no cover
+    def replace(self, tx: Tx, replace_attempt: int) -> None:  # pragma: no cover
         pass

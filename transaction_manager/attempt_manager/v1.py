@@ -84,7 +84,7 @@ class AttemptManagerV1(BaseAttemptManager):
         )
 
     @made
-    def replace(self, tx) -> None:
+    def replace(self, tx, replace_attempt: int = 0) -> None:
         ngp = self.inc_gas_price(
             self.current.fee.gas_price,  # type: ignore
             inc=self.grad_gas_price_inc_percent)
