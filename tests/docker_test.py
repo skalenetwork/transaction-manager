@@ -16,7 +16,7 @@ from transaction_manager.structures import TxStatus
 from tests.utils.contracts import get_tester_abi
 
 
-DEFAULT_GAS = 21000
+DEFAULT_GAS = 20000
 TX_NUMBER = 10
 RETRY_NUMBER = 10
 
@@ -33,7 +33,7 @@ def retry_rdp(func):
         err = None
         for i in range(RETRY_NUMBER):
             try:
-                return func(*args, *kwargs)
+                return func(*args, **kwargs)
             except Exception as e:
                 err = e
                 time.sleep(2)
@@ -60,7 +60,7 @@ def make_tx(w3, wallet, failed=False):
 
 def push_tx(w3, rdp, tpool, wallet, failed=False):
     tx = make_tx(w3, wallet, failed=failed)
-    tx_id = rdp.sign_and_send(tx)
+    tx_id = rdp.sign_and_send(tx, priority=6)
     raw_id = tx_id.encode('utf-8')
     return tpool.get(raw_id)
 
@@ -78,10 +78,10 @@ def wait_for_tx(rdp, tx_id):
 
 def test_processor(tpool, w3, eth, trs, rdp, wallet):
     tester_abi = get_tester_abi()
-    tx_id = push_tx(w3, rdp, wallet)
-    rec = rdp.wait(tx_id, timeout=60)
+    tx_obj = push_tx(w3, rdp, tpool, wallet)
+    rec = rdp.wait(tx_obj.tx_id, timeout=60)
     assert rec['status'] == 1
-    tx = rdp.get_record(tx_id)
+    tx = rdp.get_record(tx_obj.tx_id)
     assert tx['status'] == 'SUCCESS'
     assert tx['from'] == wallet.address
     assert tx['to'] == tester_abi['address']
@@ -92,9 +92,10 @@ def test_processor(tpool, w3, eth, trs, rdp, wallet):
     assert tx['gasPrice'] == last_attempt['fee']['gas_price']
     assert tx['data'] == '0x8e4ed53e0000000000000000000000000000000000000000000000000000000000000004'  # noqa
     assert tx['score'] > 6 * 10 ** 10 + int(time.time() - 10)
-    assert tx_id == last_attempt['tx_id']
+    assert tx['tx_id'] == last_attempt['tx_id']
 
 
+@pytest.mark.skip
 def test_processor_many_tx(tpool, eth, w3, trs, rdp):
     addrs = [w3.eth.account.create().address for i in range(TX_NUMBER)]
     futures = []
@@ -110,6 +111,7 @@ def test_processor_many_tx(tpool, eth, w3, trs, rdp):
     assert tpool.size == 0
 
 
+@pytest.mark.skip('Geth only')
 def test_replace_legacy(eth, w3, rdp, tpool, wallet):
     # First transaction is legacy that meant to stuck
     raw_tx = make_tx(w3, wallet)
@@ -125,7 +127,7 @@ def test_replace_legacy(eth, w3, rdp, tpool, wallet):
         history['reward'][0][-1] * 5
     )
     # To prevent already known error
-    raw_tx['gas'] += random.randint(0, 3000)
+    raw_tx['gas'] = 30000 + random.randint(0, 3000)
     raw_tx['nonce'] = eth.get_nonce(wallet.address)
     stuck_tx_hash = wallet.sign_and_send(raw_tx)
 
