@@ -53,30 +53,26 @@ def compose_hiding_patterns():
 
 
 class HidingFormatter(Formatter):
-    def __init__(self, base_formatter: Formatter, patterns: dict) -> None:
-        self.base_formatter: Formatter = base_formatter
+    def __init__(self, log_format: str, patterns: dict) -> None:
+        super().__init__(log_format)
         self._patterns: dict = patterns
 
-    @classmethod
-    def convert_match_to_sha3(cls, match) -> str:
-        return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
-
-    def _filter_sensitive(self, msg):
+    def _filter_sensitive(self, msg) -> str:
         for match, replacement in self._patterns.items():
             pat = re.compile(match)
             msg = pat.sub(replacement, msg)
         return msg
 
-    def format(self, record):
-        msg = self.base_formatter.format(record)
+    def format(self, record) -> str:
+        msg = super().format(record)
         return self._filter_sensitive(msg)
 
-    def formatException(self, exc_info):
-        msg = self.base_formatter.formatException(exc_info)
+    def formatException(self, exc_info) -> str:
+        msg = super().formatException(exc_info)
         return self._filter_sensitive(msg)
 
-    def formatStack(self, stack_info):
-        msg = self.base_formatter.formatStack(stack_info)
+    def formatStack(self, stack_info) -> str:
+        msg = super().formatStack(stack_info)
         return self._filter_sensitive(msg)
 
     def __getattr__(self, attr):
@@ -85,10 +81,8 @@ class HidingFormatter(Formatter):
 
 def init_logger() -> None:
     handlers: List[Handler] = []
-
-    base_formatter = Formatter(LOG_FORMAT)
     hiding_patterns = compose_hiding_patterns()
-    formatter = HidingFormatter(base_formatter, hiding_patterns)
+    formatter = HidingFormatter(LOG_FORMAT, hiding_patterns)
 
     f_handler = RotatingFileHandler(
         TM_LOG_PATH,
