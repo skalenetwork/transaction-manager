@@ -25,8 +25,9 @@ import sys
 from logging import Formatter, Handler, StreamHandler
 from logging.handlers import RotatingFileHandler
 from typing import List
+from urllib.parse import urlparse
 
-from .config import NODE_DATA_PATH
+from .config import ENDPOINT, NODE_DATA_PATH, SGX_URL
 
 
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, 'log')
@@ -41,28 +42,42 @@ LOG_BACKUP_COUNT = 3
 LOG_FORMAT = '%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s'  # noqa
 
 
-HIDING_PATTERNS = [
-    r'NEK\:\w+',
-    r'http[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+',  # noqa
-    r'ws[s]?://(?:[a-zA-Z]|[0-9]|[$-_@.&+]|[!*\(\),]|(?:%[0-9a-fA-F][0-9a-fA-F]))+'  # noqa
-]
+def compose_hiding_patterns():
+    sgx_ip = urlparse(SGX_URL).hostname
+    eth_ip = urlparse(ENDPOINT).hostname
+    return {
+        rf'{sgx_ip}': '[SGX_IP]',
+        rf'{eth_ip}': '[ETH_IP]',
+        r'NEK\:\w+': '[SGX_KEY]'
+    }
 
 
 class HidingFormatter(Formatter):
-    def __init__(self, base_formatter: Formatter, patterns: List[str]) -> None:
+    def __init__(self, base_formatter: Formatter, patterns: dict) -> None:
         self.base_formatter: Formatter = base_formatter
-        self._patterns: List[str] = patterns
+        self._patterns: dict = patterns
 
     @classmethod
     def convert_match_to_sha3(cls, match) -> str:
         return hashlib.sha3_256(match.group(0).encode('utf-8')).digest().hex()
 
+    def _filter_sensitive(self, msg):
+        for match, replacement in self._patterns.items():
+            pat = re.compile(match)
+            msg = pat.sub(replacement, msg)
+        return msg
+
     def format(self, record):
         msg = self.base_formatter.format(record)
-        for pattern in self._patterns:
-            pat = re.compile(pattern)
-            msg = pat.sub(self.convert_match_to_sha3, msg)
-        return msg
+        return self._filter_sensitive(msg)
+
+    def formatException(self, exc_info):
+        msg = self.base_formatter.formatException(exc_info)
+        return self._filter_sensitive(msg)
+
+    def formatStack(self, stack_info):
+        msg = self.base_formatter.formatStack(stack_info)
+        return self._filter_sensitive(msg)
 
     def __getattr__(self, attr):
         return getattr(self.base_formatter, attr)
@@ -72,7 +87,8 @@ def init_logger() -> None:
     handlers: List[Handler] = []
 
     base_formatter = Formatter(LOG_FORMAT)
-    formatter = HidingFormatter(base_formatter, HIDING_PATTERNS)
+    hiding_patterns = compose_hiding_patterns()
+    formatter = HidingFormatter(base_formatter, hiding_patterns)
 
     f_handler = RotatingFileHandler(
         TM_LOG_PATH,
@@ -97,4 +113,4 @@ def init_logger() -> None:
     f_handler_debug.setLevel(logging.DEBUG)
     handlers.append(f_handler_debug)
 
-    logging.basicConfig(level=logging.DEBUG, handlers=handlers)
+    logging.basicConfig(level=logging.INFO, handlers=handlers)
