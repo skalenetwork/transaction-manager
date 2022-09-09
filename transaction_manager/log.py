@@ -17,7 +17,6 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
-import hashlib
 import logging
 import os
 import re
@@ -74,9 +73,6 @@ class HidingFormatter(Formatter):
     def formatStack(self, stack_info) -> str:
         msg = super().formatStack(stack_info)
         return self._filter_sensitive(msg)
-
-    def __getattr__(self, attr):
-        return getattr(self.base_formatter, attr)
 
 
 def init_logger() -> None:
