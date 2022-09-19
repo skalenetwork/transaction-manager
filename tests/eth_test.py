@@ -86,3 +86,4 @@ def test_eth_tx(w3wallet, w3, eth):
     status = eth.wait_for_receipt(h)
     assert status == 1
     assert eth.get_nonce(addr) == second_nonce + 1
+    assert eth.get_tx_block(h) == eth.get_receipt(h)['blockNumber']
