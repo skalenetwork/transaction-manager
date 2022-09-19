@@ -7,6 +7,7 @@ from transaction_manager.processor import Processor, SendingError
 from transaction_manager.structures import TxStatus
 
 from tests.utils.contracts import get_tester_abi
+from tests.utils.timing import in_time
 
 DEFAULT_GAS = 20000
 
@@ -187,3 +188,16 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
     assert tx.status == TxStatus.DROPPED
 
     assert tx.tx_id.encode('utf-8') not in tpool.to_list()
+
+
+def test_confirm(proc, w3, rdp, tpool, wallet):
+    tx = push_tx(w3, rdp, tpool, wallet)
+    proc.attempt_manager.make(tx)
+    proc.send(tx)
+    proc.wait(tx, max_time=proc.attempt_manager.current.wait_time)
+    # Make sure it is confirmed after reasonable number of seconds
+    with in_time(8):
+        proc.confirm(tx)
+    # Make sure next time it is confirmed instantly
+    with in_time(0.1):
+        proc.confirm(tx)
