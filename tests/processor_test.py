@@ -104,9 +104,16 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
-    tx.gas = 22000
-    tx.fee.max_fee_per_gas = 10 ** 9
-    tx.fee.max_priority_fee_per_gas = 10 ** 8
+
+    proc.eth.send_tx = mock.Mock(
+        side_effect=ValueError('unknown error')
+    )
+    with pytest.raises(SendingError):
+        proc.send(tx)
+    # Test that attempt was not saved if it was neither sent or replaced
+    assert proc.attempt_manager.storage.get() is None
+    assert tx.tx_hash is None
+    assert tx.hashes == []
 
     proc.eth.send_tx = mock.Mock(
         side_effect=ValueError({
@@ -116,29 +123,10 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     )
     with pytest.raises(SendingError):
         proc.send(tx)
-
+    # Test that attempt was saved if it was replaced
+    assert proc.attempt_manager.storage.get().fee == tx.fee
     assert tx.tx_hash is None
     assert tx.hashes == []
-
-    # Test that attempt was saved
-    proc.attempt_manager.fetch()
-    after_replacement = proc.attempt_manager.current
-    assert after_replacement.fee.max_fee_per_gas > 10 ** 9
-    assert after_replacement.fee.max_priority_fee_per_gas > 10 ** 8
-
-    proc.eth.send_tx = mock.Mock(
-        side_effect=ValueError('unknown error')
-    )
-    with pytest.raises(SendingError):
-        proc.send(tx)
-    assert tx.tx_hash is None
-    assert tx.hashes == []
-
-    # Test that attempt was NOT saved
-    proc.attempt_manager.fetch()
-    after_failure = proc.attempt_manager.current
-    assert after_failure.fee.max_fee_per_gas == after_replacement.fee.max_fee_per_gas
-    assert after_failure.fee.max_priority_fee_per_gas == after_replacement.fee.max_priority_fee_per_gas  # noqa
 
     proc.eth.send_tx = mock.Mock(return_value='0x12323213213321321')
     proc.send(tx)
@@ -147,6 +135,8 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
 
     proc.eth.send_tx = mock.Mock(return_value='0x213812903813123')
     proc.send(tx)
+    # Test that attempt was saved if it was sent
+    assert proc.attempt_manager.storage.get().fee == tx.fee
     assert tx.tx_hash == '0x213812903813123'
     assert tx.hashes == ['0x12323213213321321', '0x213812903813123']
 
