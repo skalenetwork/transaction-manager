@@ -130,7 +130,11 @@ class Processor:
             'Tx %s: confirming within %d blocks',
             tx.tx_id, CONFIRMATION_BLOCKS
         )
-        self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
+        start_block = self.eth.get_tx_block(tx.tx_hash)  # type: ignore
+        self.eth.wait_for_blocks(
+            amount=CONFIRMATION_BLOCKS,
+            start_block=start_block
+        )
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED
