@@ -30,6 +30,7 @@ from web3.types import FeeHistory, TxParams
 from .config import (
     AVG_GAS_PRICE_INC_PERCENT,
     CONFIRMATION_BLOCKS,
+    DEFAULT_GAS_LIMIT,
     DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
     MAX_WAITING_TIME,
@@ -147,7 +148,7 @@ class Eth:
         multiplier = tx.multiplier
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return int(etx['gas'] * multiplier)
+            return int(etx.get('gas', DEFAULT_GAS_LIMIT) * multiplier)
 
         logger.info('Estimating gas for %s', etx)
 
