@@ -1,7 +1,7 @@
 import pytest
 import redis
 
-from skale.utils.account_tools import send_ether
+from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
 
 from transaction_manager.attempt_manager import (
@@ -77,7 +77,7 @@ def wallet(w3, w3wallet):
     else:
         return w3wallet
     if isinstance(w, SgxWallet):
-        send_ether(w3, w3wallet, w.address, ETH_AMOUNT_FOR_TESTS)
+        send_eth(w3, w3wallet, w.address, ETH_AMOUNT_FOR_TESTS)
     return w
 
 
