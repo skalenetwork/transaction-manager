@@ -67,7 +67,7 @@ create_skale_dir
 create_redis_dir
 build tm hnode
 
-if [ -n ${SGX_URL} ]; then
+if [ -z ${SGX_URL} ]; then
     run_containers tm hnode redis
 else
     run_containers sgx tm hnode redis
