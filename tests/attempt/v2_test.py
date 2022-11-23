@@ -1,6 +1,6 @@
 import pytest
 from mock import Mock
-from skale.utils.account_tools import send_ether
+from skale.utils.account_tools import send_eth
 
 from transaction_manager.attempt_manager.base import NoCurrentAttemptError
 from transaction_manager.attempt_manager.v2 import AttemptManagerV2
@@ -28,7 +28,7 @@ def create_attempt(nonce=1, index=2, gas_price=10 ** 9, wait_time=30):
 @pytest.fixture
 def account(w3, wallet):
     acc = w3.eth.account.create()
-    send_ether(w3, wallet, acc.address, TEST_ETH_VALUE)
+    send_eth(w3, wallet, acc.address, TEST_ETH_VALUE)
     return acc.address, acc.key.hex()
 
 
