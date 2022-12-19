@@ -65,6 +65,7 @@ class Tx:
     score: int
     to: str
     fee: Fee
+    type_: Optional[int] = None
     hashes: List = field(default_factory=list)
     attempts: int = 0
     value: int = 0
@@ -82,7 +83,8 @@ class Tx:
         'gasPrice': 'gas_price',
         'maxFeePerGas': 'max_fee_per_gas',
         'maxPriorityFeePerGas': 'max_priority_fee_per_gas',
-        'from': 'source'
+        'from': 'source',
+        'type': 'type_'
     }
 
     def __post_init__(self):
