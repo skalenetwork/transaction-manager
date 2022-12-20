@@ -181,6 +181,7 @@ class Tx:
 
         raw_tx['fee'] = cls._extract_fee(raw_tx)
         raw_tx['hashes'] = raw_tx.get('hashes') or []
+        raw_tx.pop('type', None)
         try:
             tx = Tx(**raw_tx)
         except TypeError:
