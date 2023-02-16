@@ -18,6 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+import time
 
 from . import config
 from .attempt_manager import AttemptManagerV2, RedisAttemptStorage
@@ -31,10 +32,8 @@ from .wallet import init_wallet
 logger = logging.getLogger(__name__)
 
 
-def main() -> None:
-    init_logger()
+def run_proc():
     eth = Eth()
-    logger.info('Starting. Config:\n%s', config_string(vars(config)))
     pool = TxPool()
     wallet = init_wallet()
     attempt_manager = AttemptManagerV2(
@@ -45,6 +44,17 @@ def main() -> None:
     proc = Processor(eth, pool, attempt_manager, wallet)
     logger.info('Starting transaction processor')
     proc.run()
+
+
+def main() -> None:
+    init_logger()
+    while True:
+        try:
+            logger.info('Running processor. Config:\n%s', config_string(vars(config)))
+            run_proc()
+        except Exception:
+            logger.exception('TM failed. Sleeping for %ds', config.RESTART_TIMEOUT)
+            time.sleep(config.RESTART_TIMEOUT)
 
 
 if __name__ == '__main__':

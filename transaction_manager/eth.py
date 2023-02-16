@@ -30,6 +30,7 @@ from web3.types import FeeHistory, TxParams
 from .config import (
     AVG_GAS_PRICE_INC_PERCENT,
     CONFIRMATION_BLOCKS,
+    DEFAULT_GAS_LIMIT,
     DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
     MAX_WAITING_TIME,
@@ -147,7 +148,7 @@ class Eth:
         multiplier = tx.multiplier
         multiplier = multiplier or GAS_MULTIPLIER
         if DISABLE_GAS_ESTIMATION:
-            return int(etx['gas'] * multiplier)
+            return int(etx.get('gas', DEFAULT_GAS_LIMIT) * multiplier)
 
         logger.info('Estimating gas for %s', etx)
 
@@ -192,32 +193,14 @@ class Eth:
         checksum_addres = self.w3.toChecksumAddress(address)
         return self.w3.eth.get_transaction_count(checksum_addres)
 
-    def get_status(
-        self,
-        tx_hash: str,
-        raise_err: bool = False
-    ) -> int:
-        try:
-            casted_hash = cast(HexStr, tx_hash)
-            receipt = self.w3.eth.get_transaction_receipt(casted_hash)
-        except TransactionNotFound as e:
-            if raise_err:
-                raise e
-            else:
-                return -1
-        logger.debug(f'Receipt for {tx_hash}: {receipt}')
-        rstatus = receipt.get('status', -1)
-        if rstatus < 0:
-            logger.error('Receipt has no "status" field')
-            return rstatus
-        return rstatus
-
     def wait_for_blocks(
         self,
         amount: int = CONFIRMATION_BLOCKS,
-        max_time: int = MAX_WAITING_TIME
+        max_time: int = MAX_WAITING_TIME,
+        start_block: Optional[int] = None
     ) -> None:
-        current_block = start_block = self.w3.eth.block_number
+        current_block = self.w3.eth.block_number
+        start_block = start_block or current_block
         current_ts = start_ts = time.time()
         while current_block - start_block < amount and \
                 current_ts - start_ts < max_time:
@@ -235,13 +218,39 @@ class Eth:
         max_time: int = MAX_WAITING_TIME,
     ) -> int:
         start_ts = time.time()
-        rstatus = None
-        while rstatus is None and time.time() - start_ts < max_time:
-            try:
-                rstatus = self.get_status(tx_hash, raise_err=True)
-            except TransactionNotFound:
+        rstatus = -1
+        while rstatus == -1 and time.time() - start_ts < max_time:
+            rstatus = self.get_status(tx_hash)
+            if rstatus == -1:
                 time.sleep(1)
 
-        if rstatus is None:
+        if rstatus == -1:
             raise ReceiptTimeoutError(f'No receipt after {max_time}')
+        return rstatus
+
+    def get_receipt(self, tx_hash: str) -> Optional[Dict]:
+        casted_hash = cast(HexStr, tx_hash)
+        receipt = None
+        try:
+            casted_hash = cast(HexStr, tx_hash)
+            receipt = self.w3.eth.get_transaction_receipt(casted_hash)
+        except TransactionNotFound:
+            pass
+        return cast(Dict, receipt)
+
+    def get_tx_block(self, tx_hash: str) -> int:
+        receipt = self.get_receipt(tx_hash)
+        if receipt is None:
+            return -1
+        return cast(int, receipt.get('blockNumber'))
+
+    def get_status(self, tx_hash: str) -> int:
+        receipt = self.get_receipt(tx_hash)
+        logger.debug('Receipt for %s: %s', tx_hash, receipt)
+        if receipt is None:
+            return -1
+        rstatus = receipt.get('status', -1)
+        if rstatus < 0:
+            logger.error('Receipt has no "status" field')
+            return rstatus
         return rstatus

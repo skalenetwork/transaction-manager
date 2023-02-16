@@ -67,6 +67,7 @@ class Processor:
     def send(self, tx: Tx) -> None:
         tx_hash, err = None, None
         retry = 0
+        replaced = False
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
             etx = self.eth.convert_tx(tx)
@@ -80,9 +81,13 @@ class Processor:
                 if is_replacement_underpriced(err):
                     logger.info('Replacement fee is too low. Increasing')
                     self.attempt_manager.replace(tx, replace_attempt=retry)
+                    replaced = True
                     retry += 1
                 else:
                     break
+
+        if tx_hash is not None or replaced:
+            self.attempt_manager.save()
 
         if tx_hash is None:
             tx.status = TxStatus.UNSENT
@@ -125,7 +130,11 @@ class Processor:
             'Tx %s: confirming within %d blocks',
             tx.tx_id, CONFIRMATION_BLOCKS
         )
-        self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS)
+        start_block = self.eth.get_tx_block(tx.tx_hash)  # type: ignore
+        self.eth.wait_for_blocks(
+            amount=CONFIRMATION_BLOCKS,
+            start_block=start_block
+        )
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED

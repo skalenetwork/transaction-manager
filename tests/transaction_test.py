@@ -126,6 +126,11 @@ def test_tx_from_bytes():
     tx = Tx.from_bytes(tx_id, missing_field_hash)
     assert tx.hashes == []
 
+    with_type = b'{"attempts": 0, "type": "0x0", "status": "PROPOSED", "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    tx = Tx.from_bytes(tx_id, with_type)
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    tx.to_bytes() == expected
+
 
 def test_is_sent_by_ima():
     tx = Tx(

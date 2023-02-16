@@ -7,6 +7,7 @@ from transaction_manager.processor import Processor, SendingError
 from transaction_manager.structures import TxStatus
 
 from tests.utils.contracts import get_tester_abi
+from tests.utils.timing import in_time
 
 DEFAULT_GAS = 20000
 
@@ -104,8 +105,16 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
-    tx.gas = 22000
-    tx.gas_price = 10 ** 9
+
+    proc.eth.send_tx = mock.Mock(
+        side_effect=ValueError('unknown error')
+    )
+    with pytest.raises(SendingError):
+        proc.send(tx)
+    # Test that attempt was not saved if it was neither sent or replaced
+    assert proc.attempt_manager.storage.get() is None
+    assert tx.tx_hash is None
+    assert tx.hashes == []
 
     proc.eth.send_tx = mock.Mock(
         side_effect=ValueError({
@@ -115,14 +124,8 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     )
     with pytest.raises(SendingError):
         proc.send(tx)
-    assert tx.tx_hash is None
-    assert tx.hashes == []
-
-    proc.eth.send_tx = mock.Mock(
-        side_effect=ValueError('unknown error')
-    )
-    with pytest.raises(SendingError):
-        proc.send(tx)
+    # Test that attempt was saved if it was replaced
+    assert proc.attempt_manager.storage.get().fee == tx.fee
     assert tx.tx_hash is None
     assert tx.hashes == []
 
@@ -133,6 +136,8 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
 
     proc.eth.send_tx = mock.Mock(return_value='0x213812903813123')
     proc.send(tx)
+    # Test that attempt was saved if it was sent
+    assert proc.attempt_manager.storage.get().fee == tx.fee
     assert tx.tx_hash == '0x213812903813123'
     assert tx.hashes == ['0x12323213213321321', '0x213812903813123']
 
@@ -183,3 +188,16 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
     assert tx.status == TxStatus.DROPPED
 
     assert tx.tx_id.encode('utf-8') not in tpool.to_list()
+
+
+def test_confirm(proc, w3, rdp, tpool, wallet):
+    tx = push_tx(w3, rdp, tpool, wallet)
+    proc.attempt_manager.make(tx)
+    proc.send(tx)
+    proc.wait(tx, max_time=proc.attempt_manager.current.wait_time)
+    # Make sure it is confirmed after reasonable number of seconds
+    with in_time(8):
+        proc.confirm(tx)
+    # Make sure next time it is confirmed instantly
+    with in_time(0.1):
+        proc.confirm(tx)
