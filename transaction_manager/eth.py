@@ -86,7 +86,7 @@ class Eth:
         return self.w3.eth.chain_id
 
     def get_balance(self, address: str) -> int:
-        checksum_addres = self.w3.toChecksumAddress(address)
+        checksum_addres = self.w3.to_checksum_address(address)
         return self.w3.eth.get_balance(checksum_addres)
 
     TX_ATTRS = [
@@ -190,7 +190,7 @@ class Eth:
         return tx_hash
 
     def get_nonce(self, address: str) -> int:
-        checksum_addres = self.w3.toChecksumAddress(address)
+        checksum_addres = self.w3.to_checksum_address(address)
         return self.w3.eth.get_transaction_count(checksum_addres)
 
     def wait_for_blocks(
