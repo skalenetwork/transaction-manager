@@ -177,6 +177,7 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
             proc.process(tx)
     assert tx.tx_hash is None
     assert tx.status == TxStatus.SEEN
+    assert 'Not an even number' in tx.revert
     assert tx.tx_id.encode('utf-8') in tpool.to_list()
 
     tx = push_ima_tx(w3, rdp, tpool, wallet, failed=True)
@@ -186,6 +187,7 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
             proc.process(tx)
     assert tx.tx_hash is None
     assert tx.status == TxStatus.DROPPED
+    assert 'Not an even number' in tx.revert
 
     assert tx.tx_id.encode('utf-8') not in tpool.to_list()
 

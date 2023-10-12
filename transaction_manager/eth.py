@@ -50,7 +50,7 @@ class ReceiptTimeoutError(TransactionNotFound, TimeoutError):
     pass
 
 
-class EstimateGasRevertError(Exception):
+class EstimateGasRevertError(ContractLogicError):
     pass
 
 
@@ -159,13 +159,13 @@ class Eth:
             )
         except ContractLogicError as e:
             logger.exception('Estimate gas reverted with ContractLogicError')
-            raise EstimateGasRevertError(e)
+            raise EstimateGasRevertError(message=e.message)
         except ValueError as e:
             logger.exception('Estimate gas reverted with ValueError')
             if len(e.args) > 0 and \
                     isinstance(e.args[0], dict) and \
                     e.args[0].get('code') in REVERT_CODES:
-                raise EstimateGasRevertError(e)
+                raise EstimateGasRevertError(message=e.args[0]['message'])
             else:
                 raise
 

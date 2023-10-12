@@ -156,6 +156,7 @@ class Processor:
         tx.source = self.wallet.address
 
         if tx.is_sent():
+            tx.revert = None
             _, rstatus = self.get_exec_data(tx)
             if rstatus is not None:
                 logger.info('Tx %s has been already mined', tx.tx_id)
@@ -166,10 +167,13 @@ class Processor:
             self.attempt_manager.make(tx)
         except EstimateGasRevertError as e:
             logger.info('Estimate gas failed for %s with %s', tx.tx_id, e)
+            tx.revert = e.message
             if tx.is_sent_by_ima():
                 logger.info('Dropping tx with failed dry run from IMA %s', tx.tx_id)
                 tx.set_as_dropped()
             raise
+        else:
+            tx.revert = None
 
         logger.info('Current attempt: %s', self.attempt_manager.current)
 

@@ -78,6 +78,7 @@ class Tx:
     sent_ts: Optional[int] = None
     method: Optional[str] = None
     meta: Optional[Dict] = None
+    revert: Optional[str] = None
 
     MAPPED_ATTR = {
         'chainId': 'chain_id',

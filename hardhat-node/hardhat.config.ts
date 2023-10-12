@@ -59,8 +59,8 @@ const config: HardhatUserConfig = {
       blockGasLimit: 12000000,
       gasPrice: 1000000000,
       mining: {
-          auto: true,
-          interval: 1000
+          auto: false,
+          interval: 10
       }
     }
   },
