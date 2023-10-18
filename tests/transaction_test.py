@@ -13,6 +13,7 @@ def test_sample_tx():
         fee={'gas_price': 1000000000},
         gas=22000,
         nonce=3,
+        method='createNode',
         source=None,
         tx_hash=None,
         data={'test': 1}
@@ -23,7 +24,7 @@ def test_sample_tx():
     assert not tx.is_sent()
 
     dumped_tx = tx.to_bytes()
-    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "1232321332132131331321", "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": "createNode", "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "1232321332132131331321", "value": 1}'  # noqa
     assert dumped_tx == expected
 
     loaded_tx = Tx.from_bytes(tx.tx_id.encode('utf-8'), dumped_tx)
@@ -99,37 +100,47 @@ def test_tx_from_bytes():
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, b'')
 
-    before_eip_1559 = b'{"attempts": 0, "status": "PROPOSED", "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    before_eip_1559 = b'{"attempts": 0, "status": "PROPOSED", "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "meta": null, "method": null, "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, before_eip_1559)
 
     # sorted before_eip_1559 incuding eip_1559 fields
-    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
     assert tx.to_bytes() == expected
 
-    missing_field_tx_id = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_tx_id = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, missing_field_tx_id)
     # Same as missing_field_tx_id but with tx id
-    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
     assert tx.to_bytes() == expected
 
-    missing_field_status = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_status = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "hashes": [], "meta": null, "method": null, "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
 
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, missing_field_status)
 
-    missing_field_to = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "from": null, "gas": 22000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_to = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "from": null, "gas": 22000, "hashes": [], "meta": null, "method": null, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "tx_hash": null, "value": 1}'  # noqa
 
     with pytest.raises(InvalidFormatError):
         Tx.from_bytes(tx_id, missing_field_to)
 
-    missing_field_hash = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    missing_field_hash = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "maxFeePerGas": 1000000000, "maxPriorityFeePerGas": 1000000000, "meta": null, "method": null, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, missing_field_hash)
     assert tx.hashes == []
 
-    with_type = b'{"attempts": 0, "type": "0x0", "status": "PROPOSED", "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
+    with_type = b'{"attempts": 0, "type": "0x0", "status": "PROPOSED", "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "meta": null, "method": null, "nonce": 3, "score": 1, "sent_ts": null, "to": "0x1", "tx_hash": null, "value": 1}'  # noqa
     tx = Tx.from_bytes(tx_id, with_type)
-    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
     tx.to_bytes() == expected
+
+    with_method_and_meta = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": {"chain": "test"}, "method": "createNode", "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    tx = Tx.from_bytes(tx_id, with_method_and_meta)
+    assert tx.to_bytes() == with_method_and_meta
+
+    missing_method_and_meta = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    expected = b'{"attempts": 0, "chainId": null, "data": {"test": 1}, "from": null, "gas": 22000, "gasPrice": 1000000000, "hashes": [], "maxFeePerGas": null, "maxPriorityFeePerGas": null, "meta": null, "method": null, "multiplier": 1.2, "nonce": 3, "score": 1, "sent_ts": null, "status": "PROPOSED", "to": "0x1", "tx_hash": null, "tx_id": "tx-1232321332132131331321", "value": 1}'  # noqa
+    tx = Tx.from_bytes(tx_id, missing_method_and_meta)
+    actual = tx.to_bytes()
+    assert actual == expected
 
 
 def test_is_sent_by_ima():

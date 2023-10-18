@@ -19,11 +19,11 @@ def send_eth(
         'to': address,
         'value': amount,
         'gas': 8000000,
-        'gasPrice': w3.eth.gasPrice
+        'gasPrice': w3.eth.gas_price
     }
     signed_txn = wallet.sign(tx)
-    h = w3.eth.sendRawTransaction(signed_txn.rawTransaction)
-    w3.eth.waitForTransactionReceipt(h, timeout=60)
+    h = w3.eth.send_raw_transaction(signed_txn.rawTransaction)
+    w3.eth.wait_for_transaction_receipt(h, timeout=60)
 
 
 def generate_address(w3: Web3) -> str:

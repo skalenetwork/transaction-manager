@@ -76,6 +76,8 @@ class Tx:
     data: Optional[Dict] = None
     tx_hash: Optional[str] = None
     sent_ts: Optional[int] = None
+    method: Optional[str] = None
+    meta: Optional[Dict] = None
 
     MAPPED_ATTR = {
         'chainId': 'chain_id',
