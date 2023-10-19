@@ -51,8 +51,8 @@ def make_tx(w3, wallet, failed=False):
     number = 3 if failed else 4
     return tester.functions.setOnlyEven(
         number
-    ).buildTransaction({
-        'gasPrice': w3.eth.gasPrice,
+    ).build_transaction({
+        'gasPrice': w3.eth.gas_price,
         'gas': DEFAULT_GAS,
         'from': wallet.address
     })
