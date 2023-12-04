@@ -65,12 +65,12 @@ cleanup_skale_dir
 cleanup_redis_dir
 create_skale_dir
 create_redis_dir
-build tm hnode
+build tm
 
 if [ -z ${SGX_URL} ]; then
-    run_containers tm hnode redis
+    run_containers tm redis
 else
-    run_containers sgx tm hnode redis
+    run_containers sgx tm redis
     gen_sgx_key
 fi
 
