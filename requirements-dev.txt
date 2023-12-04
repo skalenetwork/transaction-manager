@@ -1,5 +1,10 @@
 flake8==3.8.2
 mock==4.0.2
-mypy==0.790
+
+# mypy
+mypy==1.7.1
+types-redis==4.6.0.11
+
+# pytest
 pytest==6.0.1
 pytest-cov==2.8.1
