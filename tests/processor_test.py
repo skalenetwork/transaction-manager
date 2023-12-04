@@ -1,4 +1,4 @@
-import mock
+from unittest import mock
 import pytest
 
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
