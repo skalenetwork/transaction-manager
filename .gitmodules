@@ -6,5 +6,3 @@
 [submodule "hardhat-node"]
 	path = hardhat-node
 	url = https://github.com/skalenetwork/hardhat-node.git
-    branch = develop
-
