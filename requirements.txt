@@ -1,1 +1,1 @@
-skale.py==6.1dev0
+skale.py==6.1dev3
