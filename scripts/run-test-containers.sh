@@ -54,7 +54,7 @@ gen_sgx_key() {
 }
 
 deploy_test_contract() {
-    cd hardhat-node/src
+    cd tests/contract-sample/
     yarn install
     npx hardhat run --network localhost scripts/deploy.ts
     cd -
@@ -68,9 +68,9 @@ create_redis_dir
 build tm
 
 if [ -z ${SGX_URL} ]; then
-    run_containers tm redis
+    run_containers tm redis hnode
 else
-    run_containers sgx tm redis
+    run_containers sgx tm redis hnode
     gen_sgx_key
 fi
 

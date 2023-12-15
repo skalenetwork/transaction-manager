@@ -135,12 +135,12 @@ test_abi.json
 unique.json
 manager.json
 
-# hardhat-node
-hardhat-node/node_modules
-hardhat-node/.env
-hardhat-node/coverage
-hardhat-node/coverage.json
-hardhat-node/typechain
-hardhat-node/cache
-hardhat-node/artifacts
-hardhat-node/abi.json
+# contract-sample
+tests/contract-sample/node_modules
+tests/contract-sample/.env
+tests/contract-sample/coverage
+tests/contract-sample/coverage.json
+tests/contract-sample/typechain
+tests/contract-sample/cache
+tests/contract-sample/artifacts
+tests/contract-sample/abi.json
