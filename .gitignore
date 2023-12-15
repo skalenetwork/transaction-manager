@@ -136,11 +136,11 @@ unique.json
 manager.json
 
 # contract-sample
-tests/contract-sample/node_modules
-tests/contract-sample/.env
-tests/contract-sample/coverage
-tests/contract-sample/coverage.json
-tests/contract-sample/typechain
-tests/contract-sample/cache
-tests/contract-sample/artifacts
-tests/contract-sample/abi.json
+tests/tester-contract/node_modules
+tests/tester-contract/.env
+tests/tester-contract/coverage
+tests/tester-contract/coverage.json
+tests/tester-contract/typechain
+tests/tester-contract/cache
+tests/tester-contract/artifacts
+tests/tester-contract/abi.json
