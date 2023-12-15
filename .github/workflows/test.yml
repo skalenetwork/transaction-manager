@@ -40,11 +40,6 @@ jobs:
     - name: Mypy check
       run: mypy transaction_manager
     
-    - name: Launch hardhat node
-      working-directory: hardhat-node
-      run: |
-        docker-compose up -d 
-
     - name: Run test containers
       run: ./scripts/run-test-containers.sh && sleep 60
 
