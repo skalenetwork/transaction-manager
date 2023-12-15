@@ -53,7 +53,7 @@ class TxPool:
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
             return None
-        r = self.rs.get(tx_id) or b''
+        r = self.rs.get(tx_id)
         logger.info('Received record %s', r)
         tx = None
         try:
