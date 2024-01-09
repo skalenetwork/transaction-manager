@@ -1,6 +1,6 @@
-FROM python:3.8-buster
+FROM python:3.11-bookworm
 
-RUN apt update && apt install build-essential python-dev libssl-dev swig --yes 
+RUN apt update && apt install build-essential libssl-dev swig --yes
 
 RUN mkdir app
 WORKDIR /app
