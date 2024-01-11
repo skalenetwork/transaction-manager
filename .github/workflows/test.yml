@@ -6,7 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [3.8]
+        python-version: [3.11]
 
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
@@ -33,6 +33,7 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-dev.txt
         pip install codecov 
+
     - name: Lint with flake8
       run: flake8 .
 
