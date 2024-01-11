@@ -1,5 +1,5 @@
 import pytest
-from mock import Mock
+from unittest.mock import Mock
 from skale.utils.account_tools import send_eth
 
 from transaction_manager.attempt_manager.base import NoCurrentAttemptError

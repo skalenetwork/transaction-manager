@@ -19,8 +19,7 @@
 
 import logging
 
-from typing import List
-from typing import Optional
+from typing import List, Optional
 
 import redis
 
@@ -54,7 +53,7 @@ class TxPool:
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
             return None
-        r = self.rs.get(tx_id)
+        r = self.rs.get(tx_id) or b''
         logger.info('Received record %s', r)
         tx = None
         try:
