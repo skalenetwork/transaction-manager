@@ -57,4 +57,5 @@ def endpoints() -> list[str]:
         local_endpoint_str = local_skaled_endpoint.decode('utf-8')
         logger.info(f'Found local skaled endpoint in Redis: {local_endpoint_str}')
         endpoints.insert(0, local_endpoint_str)
+    logger.info(f'Returning a list of endpoints: {endpoints}')
     return endpoints
