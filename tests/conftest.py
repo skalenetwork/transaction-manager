@@ -1,13 +1,14 @@
 import pytest
 import redis
 
+from web3 import Web3
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
 
 from transaction_manager.attempt_manager import (
     AttemptManagerV1,
     AttemptManagerV2,
-    RedisAttemptStorage
+    RedisAttemptStorage,
 )
 from transaction_manager.config import ETH_PRIVATE_KEY, SGX_URL
 from transaction_manager.eth import Eth
@@ -50,8 +51,8 @@ def attempt_manager_v1(eth, attempt_storage, wallet):
 
 
 @pytest.fixture
-def w3():
-    return gw3
+def w3() -> Web3:
+    return gw3()
 
 
 @pytest.fixture
@@ -69,11 +70,7 @@ def w3wallet(w3):
 @pytest.fixture
 def wallet(w3, w3wallet):
     if SGX_URL:
-        w = init_wallet(
-            w3,
-            config_filepath=HOST_CONFIG_PATH,
-            path_to_cert=CERT_DIR
-        )
+        w = init_wallet(w3, config_filepath=HOST_CONFIG_PATH, path_to_cert=CERT_DIR)
     else:
         return w3wallet
     if isinstance(w, SgxWallet):
@@ -83,5 +80,5 @@ def wallet(w3, w3wallet):
 
 @pytest.fixture
 def rdp(trs, w3wallet):
-    """ Redis wallet for base tests """
+    """Redis wallet for base tests"""
     return RedisWalletAdapter(trs, 'test_pool', w3wallet)

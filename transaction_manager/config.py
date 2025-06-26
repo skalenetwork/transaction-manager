@@ -28,6 +28,10 @@ SGX_URL: Optional[str] = 'https://127.0.0.1:1026'
 ETH_PRIVATE_KEY: Optional[str] = None
 
 ENDPOINT: str = 'http://127.0.0.1:8545'
+BOOT_ENDPOINT: str = 'http://127.0.0.1:8545'
+SKALE_NETWORK_TYPE: str = 'skale'
+
+LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_mirage_local_endpoint'
 
 GAS_MULTIPLIER: float = 1.2
 
@@ -51,7 +55,7 @@ STATSD_PORT: int = 8125
 
 # V1
 AVG_GAS_PRICE_INC_PERCENT = 50
-MAX_GAS_PRICE: int = 1000 * 10 ** 9
+MAX_GAS_PRICE: int = 1000 * 10**9
 GAS_PRICE_INC_PERCENT: int = 10
 GRAD_GAS_PRICE_INC_PERCENT: int = 2
 MIN_GAS_PRICE_INC_PERCENT: int = 5
@@ -59,20 +63,17 @@ MIN_GAS_PRICE_INC_PERCENT: int = 5
 # V2
 BASE_FEE_ADJUSMENT_PERCENT = 50
 TARGET_REWARD_PERCENTILE = 60
-MIN_PRIORITY_FEE: int = 10 ** 9
+MIN_PRIORITY_FEE: int = 10**9
 FEE_INC_PERCENT: int = 12
-MAX_FEE_VALUE: int = 10 ** 18
+MAX_FEE_VALUE: int = 10**18
 MIN_FEE_INC_PERCENT: int = 5
-MAX_TX_CAP: int = 10 ** 18
+MAX_TX_CAP: int = 10**18
 HARD_REPLACE_START_INDEX = 3
 HARD_REPLACE_TIP_OFFSET = 10
 
 
 def get_params() -> List[str]:
-    return list(filter(
-        lambda v: not v.startswith('__') and v in os.environ,
-        globals()
-    ))
+    return list(filter(lambda v: not v.startswith('__') and v in os.environ, globals()))
 
 
 for v in get_params():

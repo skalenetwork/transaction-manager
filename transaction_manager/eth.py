@@ -34,7 +34,7 @@ from .config import (
     DISABLE_GAS_ESTIMATION,
     GAS_MULTIPLIER,
     MAX_WAITING_TIME,
-    TARGET_REWARD_PERCENTILE
+    TARGET_REWARD_PERCENTILE,
 )
 from .resources import stdc, w3 as gw3
 from .structures import Tx
@@ -57,14 +57,16 @@ class EstimateGasRevertError(Exception):
 REVERT_CODES = [
     # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1474.md#error-codes
     -32601,  # Method not found
-    -32603  # Invalid params
+    -32603,  # Invalid params
 ]
 
 
 def is_replacement_underpriced(err: Exception) -> bool:
-    return isinstance(err, ValueError) and \
-        isinstance(err.args[0], dict) and \
-        err.args[0].get('message') == 'replacement transaction underpriced'
+    return (
+        isinstance(err, ValueError)
+        and isinstance(err.args[0], dict)
+        and err.args[0].get('message') == 'replacement transaction underpriced'
+    )
 
 
 def is_nonce_too_low(err: Exception) -> bool:
@@ -73,7 +75,7 @@ def is_nonce_too_low(err: Exception) -> bool:
 
 class Eth:
     def __init__(self, web3: Optional[Web3] = None) -> None:
-        self.w3: Web3 = web3 or gw3
+        self.w3: Web3 = web3 or gw3()
 
     @property
     def block_gas_limit(self) -> int:
@@ -100,20 +102,13 @@ class Eth:
         'data',
         'gasPrice',
         'maxFeePerGas',
-        'maxPriorityFeePerGas'
+        'maxPriorityFeePerGas',
     ]
 
     def get_fee_history(self) -> FeeHistory:
-        return self.w3.eth.fee_history(
-            1,
-            'latest',
-            [50, TARGET_REWARD_PERCENTILE]
-        )
+        return self.w3.eth.fee_history(1, 'latest', [50, TARGET_REWARD_PERCENTILE])
 
-    def get_estimated_base_fee(
-        self,
-        history: Optional[FeeHistory] = None
-    ) -> int:
+    def get_estimated_base_fee(self, history: Optional[FeeHistory] = None) -> int:
         history = history or self.get_fee_history()
         return history['baseFeePerGas'][-1]
 
@@ -125,8 +120,7 @@ class Eth:
     def convert_tx(cls, tx: Tx) -> Dict:
         raw_tx = tx.raw_tx
         etx = {attr: raw_tx[attr] for attr in cls.TX_ATTRS}
-        if etx.get('maxPriorityFeePerGas') is not None or \
-                etx.get('maxFeePerGas') is not None:
+        if etx.get('maxPriorityFeePerGas') is not None or etx.get('maxFeePerGas') is not None:
             etx['type'] = 2
             etx.pop('gasPrice', None)
         else:
@@ -154,18 +148,17 @@ class Eth:
         logger.info('Estimating gas for %s', etx)
 
         try:
-            estimated = self.w3.eth.estimate_gas(
-                cast(TxParams, etx),
-                block_identifier='latest'
-            )
+            estimated = self.w3.eth.estimate_gas(cast(TxParams, etx), block_identifier='latest')
         except ContractLogicError as e:
             logger.exception('Estimate gas reverted with ContractLogicError')
             raise EstimateGasRevertError(e)
         except ValueError as e:
             logger.exception('Estimate gas reverted with ValueError')
-            if len(e.args) > 0 and \
-                    isinstance(e.args[0], dict) and \
-                    e.args[0].get('code') in REVERT_CODES:
+            if (
+                len(e.args) > 0
+                and isinstance(e.args[0], dict)
+                and e.args[0].get('code') in REVERT_CODES
+            ):
                 raise EstimateGasRevertError(e)
             else:
                 raise
@@ -175,19 +168,14 @@ class Eth:
         logger.info('Multiplied gas: %s', gas)
         gas_limit = self.block_gas_limit
         if gas > gas_limit:
-            logger.warning(
-                'Estimated gas is to high. Defaulting to %s',
-                gas_limit
-            )
+            logger.warning('Estimated gas is to high. Defaulting to %s', gas_limit)
             gas = gas_limit
         gas = int(gas)
         logger.info('Estimation result %s of gas', gas)
         return gas
 
     def send_tx(self, signed_tx: Dict) -> str:
-        tx_hash = self.w3.eth.send_raw_transaction(
-            signed_tx['rawTransaction']
-        ).hex()
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx['rawTransaction']).hex()
         return tx_hash
 
     def get_nonce(self, address: str) -> int:
@@ -198,20 +186,17 @@ class Eth:
         self,
         amount: int = CONFIRMATION_BLOCKS,
         max_time: int = MAX_WAITING_TIME,
-        start_block: Optional[int] = None
+        start_block: Optional[int] = None,
     ) -> None:
         current_block = self.w3.eth.block_number
         start_block = start_block or current_block
         current_ts = start_ts = time.time()
-        while current_block - start_block < amount and \
-                current_ts - start_ts < max_time:
+        while current_block - start_block < amount and current_ts - start_ts < max_time:
             time.sleep(1)
             current_block = self.w3.eth.block_number
             current_ts = time.time()
         if current_block - start_block < amount:
-            raise BlockTimeoutError(
-                f'{amount} blocks has not been mined withing {max_time}'
-            )
+            raise BlockTimeoutError(f'{amount} blocks has not been mined withing {max_time}')
 
     def wait_for_receipt(
         self,

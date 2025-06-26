@@ -17,15 +17,44 @@
 #   You should have received a copy of the GNU Affero General Public License
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
+import logging
 import redis
 import statsd  # type: ignore
 
-from skale.utils.web3_utils import init_web3  # type: ignore
+from skale.utils.web3_utils import init_web3, get_endpoint  # type: ignore
 from web3 import Web3
 
-from .config import ALLOWED_TS_DIFF, ENDPOINT, REDIS_URI, STATSD_HOST, STATSD_PORT
+from .config import (
+    ALLOWED_TS_DIFF,
+    ENDPOINT,
+    REDIS_URI,
+    STATSD_HOST,
+    STATSD_PORT,
+    SKALE_NETWORK_TYPE,
+    BOOT_ENDPOINT,
+    LOCAL_SKALED_ENDPOINT_REDIS_KEY,
+)
+
+logger = logging.getLogger(__name__)
 
 cpool: redis.ConnectionPool = redis.ConnectionPool.from_url(REDIS_URI)
 rs: redis.Redis = redis.Redis(connection_pool=cpool)
-w3: Web3 = init_web3(ENDPOINT, ts_diff=ALLOWED_TS_DIFF)
 stdc: statsd.StatsClient = statsd.StatsClient(STATSD_HOST, STATSD_PORT)
+
+
+def w3() -> Web3:
+    endpoint = get_endpoint(endpoints())
+    return init_web3(endpoint, ts_diff=ALLOWED_TS_DIFF)
+
+
+def endpoints() -> list[str]:
+    if SKALE_NETWORK_TYPE == 'skale':
+        return [ENDPOINT]
+
+    endpoints = [BOOT_ENDPOINT]
+    local_skaled_endpoint = rs.get(LOCAL_SKALED_ENDPOINT_REDIS_KEY)
+    if local_skaled_endpoint and isinstance(local_skaled_endpoint, bytes):
+        local_endpoint_str = local_skaled_endpoint.decode('utf-8')
+        logger.info(f'Found local skaled endpoint in Redis: {local_endpoint_str}')
+        endpoints.insert(0, local_endpoint_str)
+    return endpoints

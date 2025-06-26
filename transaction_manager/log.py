@@ -26,7 +26,7 @@ from logging.handlers import RotatingFileHandler
 from typing import List
 from urllib.parse import urlparse
 
-from .config import ENDPOINT, NODE_DATA_PATH, SGX_URL
+from .config import ENDPOINT, BOOT_ENDPOINT, NODE_DATA_PATH, SGX_URL
 
 
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, 'log')
@@ -44,10 +44,12 @@ LOG_FORMAT = '%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s'  
 def compose_hiding_patterns():
     sgx_ip = urlparse(SGX_URL).hostname
     eth_ip = urlparse(ENDPOINT).hostname
+    eth_boot_ip = urlparse(BOOT_ENDPOINT).hostname
     return {
         rf'{sgx_ip}': '[SGX_IP]',
         rf'{eth_ip}': '[ETH_IP]',
-        r'NEK\:\w+': '[SGX_KEY]'
+        rf'{eth_boot_ip}': '[ETH_BOOT_IP]',
+        r'NEK\:\w+': '[SGX_KEY]',
     }
 
 
@@ -81,9 +83,7 @@ def init_logger() -> None:
     formatter = HidingFormatter(LOG_FORMAT, hiding_patterns)
 
     f_handler = RotatingFileHandler(
-        TM_LOG_PATH,
-        maxBytes=LOG_FILE_SIZE_BYTES,
-        backupCount=LOG_BACKUP_COUNT
+        TM_LOG_PATH, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
     )
     f_handler.setFormatter(formatter)
     f_handler.setLevel(logging.INFO)
@@ -95,9 +95,7 @@ def init_logger() -> None:
     handlers.append(stream_handler)
 
     f_handler_debug = RotatingFileHandler(
-        TM_DEBUG_LOG_PATH,
-        maxBytes=LOG_FILE_SIZE_BYTES,
-        backupCount=LOG_BACKUP_COUNT
+        TM_DEBUG_LOG_PATH, maxBytes=LOG_FILE_SIZE_BYTES, backupCount=LOG_BACKUP_COUNT
     )
     f_handler_debug.setFormatter(formatter)
     f_handler_debug.setLevel(logging.DEBUG)
