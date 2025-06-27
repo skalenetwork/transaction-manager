@@ -175,12 +175,12 @@ class Eth:
         return gas
 
     def send_tx(self, signed_tx: Dict) -> str:
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx['rawTransaction']).hex()
+        tx_hash = self.w3.eth.send_raw_transaction(signed_tx['raw_transaction']).hex()
         return tx_hash
 
     def get_nonce(self, address: str) -> int:
-        checksum_addres = self.w3.to_checksum_address(address)
-        return self.w3.eth.get_transaction_count(checksum_addres)
+        checksum_address = self.w3.to_checksum_address(address)
+        return self.w3.eth.get_transaction_count(checksum_address)
 
     def wait_for_blocks(
         self,
