@@ -28,8 +28,7 @@ SGX_URL: Optional[str] = 'https://127.0.0.1:1026'
 ETH_PRIVATE_KEY: Optional[str] = None
 
 ENDPOINT: str = 'http://127.0.0.1:8545'
-BOOT_ENDPOINT: str = 'http://127.0.0.1:8545'
-SKALE_NETWORK_TYPE: str = 'skale'
+BOOT_ENDPOINT: str = ''
 
 LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_mirage_local_endpoint'
 
