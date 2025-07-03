@@ -38,21 +38,17 @@ class WalletInitializationError(Exception):
 
 
 def init_wallet(
-    w3: Web3 = gw3,
+    w3: Web3 | None = None,
     config_filepath: Optional[str] = None,
-    path_to_cert: Optional[str] = None
+    path_to_cert: Optional[str] = None,
 ) -> BaseWallet:
+    w3 = gw3()
     wallet = None
     if SGX_URL:
         path_to_cert = path_to_cert or PATH_TO_SGX_CERT
         logger.info(f'Initializing sgx wallet {SGX_URL}')
         keyname = wait_for_sgx_keyname(config_filepath=config_filepath)
-        wallet = SgxWallet(
-            SGX_URL,
-            w3,
-            key_name=keyname,
-            path_to_cert=path_to_cert
-        )
+        wallet = SgxWallet(SGX_URL, w3, key_name=keyname, path_to_cert=path_to_cert)
     elif ETH_PRIVATE_KEY:
         logger.info('Initializing web3 wallet')
         wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
