@@ -30,7 +30,6 @@ from .config import (
     REDIS_URI,
     STATSD_HOST,
     STATSD_PORT,
-    SKALE_NETWORK_TYPE,
     BOOT_ENDPOINT,
     LOCAL_SKALED_ENDPOINT_REDIS_KEY,
 )
@@ -48,7 +47,7 @@ def w3() -> Web3:
 
 
 def endpoints() -> list[str]:
-    if SKALE_NETWORK_TYPE == 'skale':
+    if BOOT_ENDPOINT == '':
         return [ENDPOINT]
 
     endpoints = [BOOT_ENDPOINT]
