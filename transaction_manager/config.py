@@ -30,7 +30,7 @@ ETH_PRIVATE_KEY: Optional[str] = None
 ENDPOINT: str = 'http://127.0.0.1:8545'
 BOOT_ENDPOINT: str = ''
 
-LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_mirage_local_endpoint'
+LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_fair_local_endpoint'
 
 GAS_MULTIPLIER: float = 1.2
 
