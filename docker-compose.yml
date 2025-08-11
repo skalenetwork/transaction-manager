@@ -29,7 +29,7 @@ services:
   
   redis:
     container_name: redis
-    image: "redis:6.0-alpine"
+    image: "redis:8.0.1-alpine"
     tty: true
     network_mode: host
     restart: unless-stopped
