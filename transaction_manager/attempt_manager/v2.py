@@ -32,7 +32,7 @@ from ..config import (
     MAX_FEE_VALUE,
     MAX_TX_CAP,
     MIN_FEE_INC_PERCENT,
-    MIN_PRIORITY_FEE
+    MIN_PRIORITY_FEE,
 )
 from ..eth import Eth
 from ..resources import stdc
@@ -54,7 +54,7 @@ class AttemptManagerV2(BaseAttemptManager):
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
         max_tx_cap: int = MAX_TX_CAP,
-        base_fee_adjustment_percent: int = BASE_FEE_ADJUSMENT_PERCENT
+        base_fee_adjustment_percent: int = BASE_FEE_ADJUSMENT_PERCENT,
     ) -> None:
         self.eth = eth
         self._current = current
@@ -84,31 +84,25 @@ class AttemptManagerV2(BaseAttemptManager):
         fee_value: int,
         inc: Optional[int] = None,
         min_fee: Optional[int] = None,
-        max_fee: Optional[int] = None
+        max_fee: Optional[int] = None,
     ) -> int:
         max_fee = max_fee or self.max_fee
         min_fee = min_fee or 0
         inc = max(self.min_inc_percent, inc or self.inc_percent)
-        return max(
-            min_fee,
-            min(fee_value * (100 + inc) // 100, max_fee)
-        )
+        return max(min_fee, min(fee_value * (100 + inc) // 100, max_fee))
 
     @made
     def replace(self, tx: Tx, replace_attempt: int = 0) -> None:
         tip = self.inc_fee_value(
             self.current.fee.max_priority_fee_per_gas,  # type: ignore
-            inc=self.min_inc_percent
+            inc=self.min_inc_percent,
         )
         gap = self.inc_fee_value(
             self.current.fee.max_fee_per_gas,  # type: ignore
-            inc=self.min_inc_percent
+            inc=self.min_inc_percent,
         )
         if gap == self.max_fee:
-            logger.warning(
-                'Next fee %d is not allowed. Defaulting to %d',
-                gap, self.max_fee
-            )
+            logger.warning('Next fee %d is not allowed. Defaulting to %d', gap, self.max_fee)
 
         # To prevent stucked legacy transactions
         if replace_attempt >= HARD_REPLACE_START_INDEX and tip + HARD_REPLACE_TIP_OFFSET < gap:
@@ -119,29 +113,25 @@ class AttemptManagerV2(BaseAttemptManager):
         tx.fee = self._current.fee = fee  # type: ignore
 
     def next_fee_value(
-        self,
-        fee_value: int,
-        min_fee: Optional[int] = None,
-        max_fee: Optional[int] = None
+        self, fee_value: int, min_fee: Optional[int] = None, max_fee: Optional[int] = None
     ) -> int:
         return self.inc_fee_value(fee_value, min_fee=min_fee, max_fee=max_fee)
 
     def next_waiting_time(self, attempt_index: int) -> int:
-        return self.base_waiting_time + 10 * (attempt_index ** 2)
+        return self.base_waiting_time + 10 * (attempt_index**2)
 
     def max_allowed_fee(self, gas: int, value: int) -> int:
         balance = self.eth.get_balance(self.source)
         return max(0, (balance - value)) // gas
 
-    def calculate_initial_fee(
-        self,
-        estimated_base_fee: int,
-        good_tip: int
-    ) -> Fee:
+    def calculate_initial_fee(self, estimated_base_fee: int, good_tip: int) -> Fee:
         tip = max(self.min_priority_fee, good_tip)
         raw_gap = max(tip, estimated_base_fee)
         gap = (100 + self.base_fee_adjustment_percent) * raw_gap // 100
         return Fee(max_priority_fee_per_gas=tip, max_fee_per_gas=gap)
+
+    def update_eth(self, eth: Eth) -> None:
+        self.eth = eth
 
     def make(self, tx: Tx) -> None:
         last = self.current
@@ -160,11 +150,11 @@ class AttemptManagerV2(BaseAttemptManager):
             next_index = last.index + 1
             tip = self.next_fee_value(
                 last.fee.max_priority_fee_per_gas,  # type: ignore
-                min_fee=good_tip
+                min_fee=good_tip,
             )
             gap = self.next_fee_value(
                 last.fee.max_fee_per_gas,  # type: ignore
-                min_fee=estimated_base_fee
+                min_fee=estimated_base_fee,
             )
             stdc.gauge('tm.max_priority_fee', tip)
             stdc.gauge('tm.max_fee_per_gas', gap)
@@ -180,17 +170,11 @@ class AttemptManagerV2(BaseAttemptManager):
         tx.gas = max(estimated_gas, tx.gas or 0)
         if tx.gas > estimated_gas:
             allowed_fee = self.max_allowed_fee(tx.gas, tx.value)
-            if allowed_fee < next_fee.max_fee_per_gas:   # type: ignore
-                logger.warning(
-                    'Suggested fee exceeds allowance. Defaulting to %d',
-                    estimated_gas
-                )
+            if allowed_fee < next_fee.max_fee_per_gas:  # type: ignore
+                logger.warning('Suggested fee exceeds allowance. Defaulting to %d', estimated_gas)
                 tx.gas = estimated_gas
             else:
-                logger.info(
-                    'Estimated gas will be ignored in favor of %d',
-                    tx.gas
-                )
+                logger.info('Estimated gas will be ignored in favor of %d', tx.gas)
 
         self._current = Attempt(
             tx_id=tx.tx_id,
@@ -198,5 +182,5 @@ class AttemptManagerV2(BaseAttemptManager):
             index=next_index,
             fee=next_fee,
             wait_time=next_wait_time,
-            gas=tx.gas
+            gas=tx.gas,
         )

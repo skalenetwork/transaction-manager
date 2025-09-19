@@ -1,2 +1,2 @@
-skale.py==7.1.dev3
+skale.py==7.4.dev5
 statsd==4.0.1

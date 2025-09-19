@@ -36,11 +36,7 @@ def run_proc():
     eth = Eth()
     pool = TxPool()
     wallet = init_wallet()
-    attempt_manager = AttemptManagerV2(
-        eth,
-        RedisAttemptStorage(),
-        wallet.address
-    )
+    attempt_manager = AttemptManagerV2(eth, RedisAttemptStorage(), wallet.address)
 
     proc = Processor(eth, pool, attempt_manager, wallet)
     logger.info('Starting transaction processor')
