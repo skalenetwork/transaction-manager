@@ -194,6 +194,6 @@ def test_confirm(proc, w3, rdp, tpool, wallet):
 def test_processor_eth_update(proc, tpool, eth, trs, w3, wallet, rdp):
     push_tx(w3, rdp, tpool, wallet)
     eth_before = proc.eth
-    proc.run()
+    proc.process_next()
     eth_after = proc.eth
     assert eth_before is not eth_after
