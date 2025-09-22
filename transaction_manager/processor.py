@@ -24,6 +24,7 @@ from typing import Generator, Optional, Tuple
 
 from skale.wallets import BaseWallet  # type: ignore
 
+from .wallet import init_wallet
 from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
 from .eth import EstimateGasRevertError, Eth, is_replacement_underpriced, ReceiptTimeoutError
@@ -187,6 +188,7 @@ class Processor:
         self.attempt_manager.fetch()
         if tx is not None:
             self.eth = Eth()
+            self.wallet = init_wallet()
             self.attempt_manager.update_eth(self.eth)
             with self.acquire_tx(tx) as tx:
                 logger.info('Previous attempt %s', self.attempt_manager.current)
