@@ -22,6 +22,7 @@ from abc import ABCMeta, abstractmethod
 from functools import wraps
 from typing import Any, Callable, cast, Optional, TypeVar
 
+from ..eth import Eth
 from ..structures import Attempt, Tx
 
 logger = logging.getLogger(__name__)
@@ -40,6 +41,7 @@ def made(func: F) -> F:
             return func(self, *args, **kwargs)
         else:
             raise NoCurrentAttemptError('Current attempt is not set')
+
     return cast(F, wrapper)
 
 
@@ -63,4 +65,8 @@ class BaseAttemptManager(metaclass=ABCMeta):
 
     @abstractmethod
     def replace(self, tx: Tx, replace_attempt: int) -> None:  # pragma: no cover
+        pass
+
+    @abstractmethod
+    def update_eth(self, eth: Eth) -> None:  # pragma: no cover
         pass

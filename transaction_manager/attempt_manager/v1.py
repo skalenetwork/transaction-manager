@@ -29,7 +29,7 @@ from ..config import (
     GAS_PRICE_INC_PERCENT,
     GRAD_GAS_PRICE_INC_PERCENT,
     MAX_GAS_PRICE,
-    MIN_GAS_PRICE_INC_PERCENT
+    MIN_GAS_PRICE_INC_PERCENT,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,7 +46,7 @@ class AttemptManagerV1(BaseAttemptManager):
         base_waiting_time: int = BASE_WAITING_TIME,
         min_gas_price_inc: int = MIN_GAS_PRICE_INC_PERCENT,
         gas_price_inc_percent: int = GAS_PRICE_INC_PERCENT,
-        grad_gas_price_inc_percent: int = GRAD_GAS_PRICE_INC_PERCENT
+        grad_gas_price_inc_percent: int = GRAD_GAS_PRICE_INC_PERCENT,
     ) -> None:
         self.eth = eth
         self.storage = storage
@@ -70,46 +70,35 @@ class AttemptManagerV1(BaseAttemptManager):
         self.storage.save(self.current)  # type: ignore
 
     def next_waiting_time(self, attempt_index: int) -> int:
-        return self.base_waiting_time + 10 * (attempt_index ** 2)
+        return self.base_waiting_time + 10 * (attempt_index**2)
 
-    def inc_gas_price(
-        self,
-        gas_price,
-        inc: Optional[int] = None
-    ) -> int:
+    def inc_gas_price(self, gas_price, inc: Optional[int] = None) -> int:
         inc = inc or self.gas_price_inc_percent
-        return max(
-            gas_price * (100 + inc) // 100,
-            gas_price + self.min_gas_price_inc
-        )
+        return max(gas_price * (100 + inc) // 100, gas_price + self.min_gas_price_inc)
 
     @made
     def replace(self, tx, replace_attempt: int = 0) -> None:
         ngp = self.inc_gas_price(
             self.current.fee.gas_price,  # type: ignore
-            inc=self.grad_gas_price_inc_percent)
+            inc=self.grad_gas_price_inc_percent,
+        )
         if ngp > self.max_gas_price:
-            logger.warning(
-                f'Next gas {ngp} price is not allowed. '
-                f'Defaulting to {MAX_GAS_PRICE}'
-            )
+            logger.warning(f'Next gas {ngp} price is not allowed. Defaulting to {MAX_GAS_PRICE}')
             ngp = self.max_gas_price
         fee = Fee(gas_price=ngp)  # type: ignore
         tx.fee = self._current.fee = fee  # type: ignore
 
-    def next_gas_price(
-        self,
-        last_gas_price: int,
-        average_gas_price: int
-    ) -> int:
+    def next_gas_price(self, last_gas_price: int, average_gas_price: int) -> int:
         next_gas_price = self.inc_gas_price(last_gas_price)
         if next_gas_price > self.max_gas_price:
             logger.warning(
-                f'Next gas {next_gas_price} price is not allowed. '
-                f'Defaulting to {MAX_GAS_PRICE}'
+                f'Next gas {next_gas_price} price is not allowed. Defaulting to {MAX_GAS_PRICE}'
             )
             next_gas_price = self.max_gas_price
         return max(average_gas_price, next_gas_price)
+
+    def update_eth(self, eth: Eth) -> None:
+        self.eth = eth
 
     def make(self, tx: Tx) -> None:
         last = self.current
@@ -142,5 +131,5 @@ class AttemptManagerV1(BaseAttemptManager):
             index=next_index,
             fee=fee,
             wait_time=next_wait_time,
-            gas=gas
+            gas=gas,
         )

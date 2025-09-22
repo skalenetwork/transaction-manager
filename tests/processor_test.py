@@ -24,18 +24,11 @@ def proc_v1(tpool, eth, trs, attempt_manager_v1, wallet):
 
 def make_tx(w3, wallet, failed=False):
     tester_abi = get_tester_abi()
-    tester = w3.eth.contract(
-        abi=tester_abi['abi'],
-        address=tester_abi['address']
-    )
+    tester = w3.eth.contract(abi=tester_abi['abi'], address=tester_abi['address'])
     number = 3 if failed else 4
-    return tester.functions.setOnlyEven(
-        number
-    ).build_transaction({
-        'gasPrice': w3.eth.gas_price,
-        'gas': DEFAULT_GAS,
-        'from': wallet.address
-    })
+    return tester.functions.setOnlyEven(number).build_transaction(
+        {'gasPrice': w3.eth.gas_price, 'gas': DEFAULT_GAS, 'from': wallet.address}
+    )
 
 
 def push_tx(w3, rdp, tpool, wallet, failed=False):
@@ -106,9 +99,7 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     tx.nonce = 0
     proc.attempt_manager.make(tx)
 
-    proc.eth.send_tx = mock.Mock(
-        side_effect=ValueError('unknown error')
-    )
+    proc.eth.send_tx = mock.Mock(side_effect=ValueError('unknown error'))
     with pytest.raises(SendingError):
         proc.send(tx)
     # Test that attempt was not saved if it was neither sent or replaced
@@ -117,10 +108,7 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     assert tx.hashes == []
 
     proc.eth.send_tx = mock.Mock(
-        side_effect=ValueError({
-                'code': -32000,
-                'message': 'replacement transaction underpriced'
-            })
+        side_effect=ValueError({'code': -32000, 'message': 'replacement transaction underpriced'})
     )
     with pytest.raises(SendingError):
         proc.send(tx)
@@ -201,3 +189,11 @@ def test_confirm(proc, w3, rdp, tpool, wallet):
     # Make sure next time it is confirmed instantly
     with in_time(0.1):
         proc.confirm(tx)
+
+
+def test_processor_eth_update(proc, tpool, eth, trs, w3, wallet, rdp):
+    push_tx(w3, rdp, tpool, wallet)
+    eth_before = proc.eth
+    proc.process_next()
+    eth_after = proc.eth
+    assert eth_before is not eth_after
