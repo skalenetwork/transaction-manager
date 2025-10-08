@@ -39,7 +39,7 @@ jobs:
         run: uv run ruff check
 
       - name: Mypy check
-        run: mypy transaction_manager
+        run: uv run mypy transaction_manager
 
       - name: Run test containers
         run: ./scripts/run-test-containers.sh && sleep 60

@@ -34,19 +34,16 @@ class NoNextTransactionError(Exception):
 
 
 class TxPool:
-    def __init__(
-        self, name: str = 'transactions',
-        rs: redis.Redis = grs
-    ) -> None:
+    def __init__(self, name: str = 'transactions', rs: redis.Redis = grs) -> None:
         self.rs: redis.Redis = rs
         self.name: str = name
 
     @property
     def size(self) -> int:
-        return self.rs.zcard(self.name)
+        return self.rs.zcard(self.name)  # type: ignore[return-value]
 
     def to_list(self) -> List[bytes]:
-        return self.rs.zrange(self.name, 0, -1)
+        return self.rs.zrange(self.name, 0, -1)  # type: ignore[return-value]
 
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
@@ -55,7 +52,7 @@ class TxPool:
         logger.info('Received record %s', r)
         tx = None
         try:
-            tx = Tx.from_bytes(tx_id, r)
+            tx = Tx.from_bytes(tx_id, r)  # type: ignore[arg-type]
             if tx is None:
                 logger.error('Tx %s has no record', tx_id)
         except InvalidFormatError:
@@ -66,13 +63,9 @@ class TxPool:
     def get_next_id(self) -> Optional[bytes]:
         if self.size == 0:
             return None
-        return self.rs.zrange(self.name, 0, 0)[0]
+        return self.rs.zrange(self.name, 0, 0)[0]  # type: ignore[index]
 
-    def _add_record(
-        self, tx_id: bytes,
-        score: int,
-        tx_record: bytes
-    ) -> None:
+    def _add_record(self, tx_id: bytes, score: int, tx_record: bytes) -> None:
         pipe = self.rs.pipeline()
         pipe.zadd(self.name, {tx_id: score})
         pipe.set(tx_id, tx_record, ex=TXRECORD_EXPIRATION)
