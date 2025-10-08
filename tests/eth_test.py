@@ -2,15 +2,14 @@ import time
 
 import pytest
 
+from tests.utils.account import send_eth
+from tests.utils.timing import in_time
 from transaction_manager.eth import (
-    BlockTimeoutError,
     MAX_WAITING_TIME,
+    BlockTimeoutError,
     ReceiptTimeoutError,
 )
 from transaction_manager.structures import Tx, TxStatus
-
-from tests.utils.account import send_eth
-from tests.utils.timing import in_time
 
 
 def test_eth_fee_history(eth):

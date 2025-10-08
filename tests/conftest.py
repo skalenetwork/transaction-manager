@@ -1,10 +1,10 @@
 import pytest
 import redis
-
-from web3 import Web3
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
+from web3 import Web3
 
+from tests.utils.account import CERT_DIR, HOST_CONFIG_PATH
 from transaction_manager.attempt_manager import (
     AttemptManagerV1,
     AttemptManagerV2,
@@ -15,8 +15,6 @@ from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
 from transaction_manager.wallet import init_wallet
-from tests.utils.account import CERT_DIR, HOST_CONFIG_PATH
-
 
 ETH_AMOUNT_FOR_TESTS = 3
 

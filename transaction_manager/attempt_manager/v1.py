@@ -20,10 +20,6 @@
 import logging
 from typing import Optional
 
-from .base import BaseAttemptManager, made
-from .storage import BaseAttemptStorage
-from ..eth import Eth
-from ..structures import Attempt, Fee, Tx
 from ..config import (
     BASE_WAITING_TIME,
     GAS_PRICE_INC_PERCENT,
@@ -31,6 +27,10 @@ from ..config import (
     MAX_GAS_PRICE,
     MIN_GAS_PRICE_INC_PERCENT,
 )
+from ..eth import Eth
+from ..structures import Attempt, Fee, Tx
+from .base import BaseAttemptManager, made
+from .storage import BaseAttemptStorage
 
 logger = logging.getLogger(__name__)
 

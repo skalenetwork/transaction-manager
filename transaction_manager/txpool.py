@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-
 from typing import List, Optional
 
 import redis
@@ -26,7 +25,6 @@ import redis
 from .config import TXRECORD_EXPIRATION
 from .resources import rs as grs
 from .structures import InvalidFormatError, Tx
-
 
 logger = logging.getLogger(__name__)
 

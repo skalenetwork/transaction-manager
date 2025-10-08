@@ -21,8 +21,9 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
+from ..resources import redis
+from ..resources import rs as grs
 from ..structures import Attempt
-from ..resources import rs as grs, redis
 
 
 class BaseAttemptStorage(metaclass=ABCMeta):

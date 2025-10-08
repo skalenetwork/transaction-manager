@@ -1,13 +1,13 @@
 from unittest import mock
+
 import pytest
 
+from tests.utils.contracts import get_tester_abi
+from tests.utils.timing import in_time
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
 from transaction_manager.eth import EstimateGasRevertError
 from transaction_manager.processor import Processor, SendingError
 from transaction_manager.structures import TxStatus
-
-from tests.utils.contracts import get_tester_abi
-from tests.utils.timing import in_time
 
 DEFAULT_GAS = 20000
 

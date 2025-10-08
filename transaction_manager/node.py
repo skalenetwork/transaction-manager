@@ -21,7 +21,6 @@ import json
 import logging
 import os
 import time
-
 from typing import Optional
 
 from .config import NODE_DATA_PATH

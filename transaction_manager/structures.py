@@ -24,12 +24,7 @@ from dataclasses import asdict, dataclass, field
 from enum import Enum
 from typing import Dict, List, Optional
 
-from .config import (
-    DEFAULT_ID_LEN,
-    GAS_MULTIPLIER,
-    IMA_ID_SUFFIX,
-    MAX_RESUBMIT_AMOUNT
-)
+from .config import DEFAULT_ID_LEN, GAS_MULTIPLIER, IMA_ID_SUFFIX, MAX_RESUBMIT_AMOUNT
 
 logger = logging.getLogger(__name__)
 

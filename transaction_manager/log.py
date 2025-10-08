@@ -26,8 +26,7 @@ from logging.handlers import RotatingFileHandler
 from typing import List
 from urllib.parse import urlparse
 
-from .config import ENDPOINT, BOOT_ENDPOINT, NODE_DATA_PATH, SGX_URL
-
+from .config import BOOT_ENDPOINT, ENDPOINT, NODE_DATA_PATH, SGX_URL
 
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, 'log')
 TM_LOG_PATH = os.path.join(LOG_FOLDER, 'tm.log')
