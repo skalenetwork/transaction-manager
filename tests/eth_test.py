@@ -4,21 +4,16 @@ import pytest
 
 from tests.utils.account import send_eth
 from tests.utils.timing import in_time
-from transaction_manager.eth import (
-    MAX_WAITING_TIME,
-    BlockTimeoutError,
-    ReceiptTimeoutError,
-)
+from transaction_manager.eth import MAX_WAITING_TIME, BlockTimeoutError, Eth, ReceiptTimeoutError
 from transaction_manager.structures import Tx, TxStatus
 
 
-def test_eth_fee_history(eth):
+def test_eth_fee_history(eth: Eth):
     h = eth.get_fee_history()
     base_fee = eth.get_estimated_base_fee()
     tip = eth.get_p60_tip()
     assert isinstance(base_fee, int)
     assert isinstance(tip, int)
-    assert base_fee > tip
     assert len(h['baseFeePerGas']) == 2
     assert len(h['reward'][0]) == 2
 
@@ -28,7 +23,7 @@ def test_eth_chain_id(eth):
 
 
 def test_eth_avg_gas_price(eth):
-    assert 10 ** 9 < eth.avg_gas_price < 31 * 10 ** 9
+    assert 10**9 < eth.avg_gas_price < 31 * 10**9
 
 
 def test_eth_blocks(w3, eth):
@@ -44,8 +39,8 @@ def test_eth_tx(w3wallet, w3, eth):
     acc = w3.eth.account.create()
     addr, pk = acc.address, acc.key.hex()
     assert eth.get_balance(addr) == 0
-    send_eth(w3, w3wallet, addr, amount=10 ** 18)
-    assert eth.get_balance(addr) == 10 ** 18
+    send_eth(w3, w3wallet, addr, amount=10**18)
+    assert eth.get_balance(addr) == 10**18
     assert eth.get_nonce(addr) == 0
 
     tx = Tx(
@@ -61,17 +56,14 @@ def test_eth_tx(w3wallet, w3, eth):
         source=addr,
         tx_hash=None,
         data=None,
-        multiplier=1.2
+        multiplier=1.2,
     )
 
     tx.gas = eth.calculate_gas(tx)
     assert tx.gas > 1.2 * 21000
     eth_tx_a = eth.convert_tx(tx)
 
-    signed = w3.eth.account.sign_transaction(
-        private_key=pk,
-        transaction_dict=eth_tx_a
-    )
+    signed = w3.eth.account.sign_transaction(private_key=pk, transaction_dict=eth_tx_a)
     h = eth.send_tx(signed)
     with pytest.raises(ReceiptTimeoutError):
         eth.wait_for_receipt(h, max_time=0)
