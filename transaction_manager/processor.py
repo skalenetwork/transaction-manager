@@ -24,13 +24,13 @@ from typing import Generator, Optional, Tuple
 
 from skale.wallets import BaseWallet  # type: ignore
 
-from .wallet import init_wallet
 from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
-from .eth import EstimateGasRevertError, Eth, is_replacement_underpriced, ReceiptTimeoutError
+from .eth import EstimateGasRevertError, Eth, ReceiptTimeoutError, is_replacement_underpriced
 from .resources import stdc
 from .structures import Tx, TxStatus
 from .txpool import TxPool
+from .wallet import init_wallet
 
 logger = logging.getLogger(__name__)
 

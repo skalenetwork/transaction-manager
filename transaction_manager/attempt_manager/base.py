@@ -20,7 +20,7 @@
 import logging
 from abc import ABCMeta, abstractmethod
 from functools import wraps
-from typing import Any, Callable, cast, Optional, TypeVar
+from typing import Any, Callable, Optional, TypeVar, cast
 
 from ..eth import Eth
 from ..structures import Attempt, Tx

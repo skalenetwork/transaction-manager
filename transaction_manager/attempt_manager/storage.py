@@ -21,8 +21,9 @@
 from abc import ABCMeta, abstractmethod
 from typing import Optional
 
+from ..resources import redis
+from ..resources import rs as grs
 from ..structures import Attempt
-from ..resources import rs as grs, redis
 
 
 class BaseAttemptStorage(metaclass=ABCMeta):
@@ -42,7 +43,7 @@ class RedisAttemptStorage(BaseAttemptStorage):
         attempt_bytes = self.rs.get(b'last_attempt')
         if not attempt_bytes:
             return None
-        return Attempt.from_bytes(attempt_bytes)
+        return Attempt.from_bytes(attempt_bytes)  # type: ignore[arg-type]
 
     def save(self, attempt: Attempt) -> None:
         self.rs.set(b'last_attempt', attempt.to_bytes())

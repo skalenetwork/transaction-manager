@@ -20,9 +20,6 @@
 import logging
 from typing import Optional
 
-from .base import BaseAttemptManager, made
-from .storage import BaseAttemptStorage
-
 from ..config import (
     BASE_FEE_ADJUSMENT_PERCENT,
     BASE_WAITING_TIME,
@@ -37,6 +34,8 @@ from ..config import (
 from ..eth import Eth
 from ..resources import stdc
 from ..structures import Attempt, Fee, Tx
+from .base import BaseAttemptManager, made
+from .storage import BaseAttemptStorage
 
 logger = logging.getLogger(__name__)
 

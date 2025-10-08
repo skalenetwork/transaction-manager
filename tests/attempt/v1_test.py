@@ -1,10 +1,8 @@
 import pytest
 
-from transaction_manager.attempt_manager.base import NoCurrentAttemptError
 from transaction_manager.attempt_manager import AttemptManagerV1
-from transaction_manager.config import (
-    GAS_PRICE_INC_PERCENT, GRAD_GAS_PRICE_INC_PERCENT
-)
+from transaction_manager.attempt_manager.base import NoCurrentAttemptError
+from transaction_manager.config import GAS_PRICE_INC_PERCENT, GRAD_GAS_PRICE_INC_PERCENT
 from transaction_manager.structures import Attempt, Fee, Tx, TxStatus
 
 

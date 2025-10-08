@@ -144,3 +144,5 @@ tests/tester-contract/typechain
 tests/tester-contract/cache
 tests/tester-contract/artifacts
 tests/tester-contract/abi.json
+
+uv.lock
