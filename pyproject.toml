@@ -15,6 +15,7 @@ test = [
 
 [tool.ruff]
 line-length = 100
+exclude = ["helper-scripts", "hardhat-node"]
 
 [tool.ruff.lint]
 select = ["E", "W", "F", "I"]
