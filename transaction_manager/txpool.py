@@ -40,10 +40,10 @@ class TxPool:
 
     @property
     def size(self) -> int:
-        return self.rs.zcard(self.name)  # type: ignore[return-value]
+        return self.rs.zcard(self.name)
 
     def to_list(self) -> List[bytes]:
-        return self.rs.zrange(self.name, 0, -1)  # type: ignore[return-value]
+        return self.rs.zrange(self.name, 0, -1)
 
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
@@ -52,7 +52,7 @@ class TxPool:
         logger.info('Received record %s', r)
         tx = None
         try:
-            tx = Tx.from_bytes(tx_id, r)  # type: ignore[arg-type]
+            tx = Tx.from_bytes(tx_id, r)
             if tx is None:
                 logger.error('Tx %s has no record', tx_id)
         except InvalidFormatError:
@@ -63,7 +63,7 @@ class TxPool:
     def get_next_id(self) -> Optional[bytes]:
         if self.size == 0:
             return None
-        return self.rs.zrange(self.name, 0, 0)[0]  # type: ignore[index]
+        return self.rs.zrange(self.name, 0, 0)[0]
 
     def _add_record(self, tx_id: bytes, score: int, tx_record: bytes) -> None:
         pipe = self.rs.pipeline()
@@ -89,9 +89,9 @@ class TxPool:
             tx_id = self.get_next_id()
             logger.debug('Received %s from pool', tx_id)
             tx = self.get(tx_id)
-            if tx is None:
+            if tx is None and tx_id is not None:
                 logger.error('Received malformed tx %s. Going to remove')
-                self.drop(tx_id)  # type: ignore
+                self.drop(tx_id)
         return tx
 
     def release(self, tx: Tx) -> None:

@@ -5,7 +5,7 @@ requires-python = ">=3.13"
 dependencies = ["skale.py==7.5dev1", "statsd==4.0.1"]
 
 [project.optional-dependencies]
-dev = ["ruff==0.14.0", "mypy==1.18.2"]
+dev = ["ruff==0.14.0", "mypy==1.18.2", "types-redis==4.6.0.11"]
 test = [
     "pytest==8.4.2",
     "pytest-cov==7.0.0",
