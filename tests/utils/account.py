@@ -1,8 +1,8 @@
 import os
+
 from eth_typing.evm import ChecksumAddress
 from skale.wallets import BaseWallet  # type: ignore
 from web3 import Web3
-
 
 SKALE_DIR = os.getenv('SKALE_DIR')
 HOST_CONFIG_PATH = os.path.join(SKALE_DIR, 'node_data', 'node_config.json')

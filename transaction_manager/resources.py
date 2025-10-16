@@ -18,20 +18,20 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
+
 import redis
 import statsd  # type: ignore
-
-from skale.utils.web3_utils import init_web3, get_endpoint  # type: ignore
+from skale.utils.web3_utils import get_endpoint, init_web3  # type: ignore
 from web3 import Web3
 
 from .config import (
     ALLOWED_TS_DIFF,
+    BOOT_ENDPOINT,
     ENDPOINT,
+    LOCAL_SKALED_ENDPOINT_REDIS_KEY,
     REDIS_URI,
     STATSD_HOST,
     STATSD_PORT,
-    BOOT_ENDPOINT,
-    LOCAL_SKALED_ENDPOINT_REDIS_KEY,
 )
 
 logger = logging.getLogger(__name__)

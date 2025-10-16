@@ -20,7 +20,7 @@
 import logging
 import time
 from functools import cached_property
-from typing import cast, Dict, Optional
+from typing import Dict, Optional, cast
 
 from eth_typing.evm import HexStr
 from web3 import Web3
@@ -36,7 +36,8 @@ from .config import (
     MAX_WAITING_TIME,
     TARGET_REWARD_PERCENTILE,
 )
-from .resources import stdc, w3 as gw3
+from .resources import stdc
+from .resources import w3 as gw3
 from .structures import Tx
 
 logger = logging.getLogger(__name__)

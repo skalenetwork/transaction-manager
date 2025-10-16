@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   sgx:
     image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}

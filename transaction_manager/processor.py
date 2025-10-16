@@ -26,15 +26,11 @@ from skale.wallets import BaseWallet  # type: ignore
 
 from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
-from .eth import (
-    EstimateGasRevertError,
-    Eth,
-    is_replacement_underpriced,
-    ReceiptTimeoutError
-)
+from .eth import EstimateGasRevertError, Eth, ReceiptTimeoutError, is_replacement_underpriced
 from .resources import stdc
 from .structures import Tx, TxStatus
 from .txpool import TxPool
+from .wallet import init_wallet
 
 logger = logging.getLogger(__name__)
 
@@ -53,11 +49,7 @@ class WaitTimeoutError(Exception):
 
 class Processor:
     def __init__(
-        self,
-        eth: Eth,
-        pool: TxPool,
-        attempt_manager: BaseAttemptManager,
-        wallet: BaseWallet
+        self, eth: Eth, pool: TxPool, attempt_manager: BaseAttemptManager, wallet: BaseWallet
     ) -> None:
         self.eth: Eth = eth
         self.attempt_manager = attempt_manager
@@ -103,23 +95,14 @@ class Processor:
             logger.warning(f'Tx {tx.tx_id} has not any receipt')
             return None
         try:
-            logger.info(
-                'Waiting for %s, with hash %s, timeout %d',
-                tx.tx_id, tx.tx_hash, max_time
-            )
-            self.eth.wait_for_receipt(
-                tx_hash=tx.tx_hash,
-                max_time=max_time
-            )
+            logger.info('Waiting for %s, with hash %s, timeout %d', tx.tx_id, tx.tx_hash, max_time)
+            self.eth.wait_for_receipt(tx_hash=tx.tx_hash, max_time=max_time)
         except ReceiptTimeoutError as err:
             logger.info(f'{tx.tx_id} is not mined within {max_time}')
             tx.status = TxStatus.TIMEOUT
             raise WaitTimeoutError(err)
 
-        rstatus = self.eth.wait_for_receipt(
-            tx_hash=tx.tx_hash,
-            max_time=max_time
-        )
+        rstatus = self.eth.wait_for_receipt(tx_hash=tx.tx_hash, max_time=max_time)
         if rstatus is not None:
             logger.info('Setting tx %s as mined', tx.tx_id)
             tx.set_as_mined()
@@ -127,15 +110,9 @@ class Processor:
         return rstatus
 
     def confirm(self, tx: Tx) -> None:
-        logger.info(
-            'Tx %s: confirming within %d blocks',
-            tx.tx_id, CONFIRMATION_BLOCKS
-        )
+        logger.info('Tx %s: confirming within %d blocks', tx.tx_id, CONFIRMATION_BLOCKS)
         start_block = self.eth.get_tx_block(tx.tx_hash)  # type: ignore
-        self.eth.wait_for_blocks(
-            amount=CONFIRMATION_BLOCKS,
-            start_block=start_block
-        )
+        self.eth.wait_for_blocks(amount=CONFIRMATION_BLOCKS, start_block=start_block)
         h, r = self.get_exec_data(tx)
         if h is None or r not in (0, 1):
             tx.status = TxStatus.UNCONFIRMED
@@ -178,7 +155,7 @@ class Processor:
 
         rstatus = self.wait(
             tx,
-            self.attempt_manager.current.wait_time  # type: ignore
+            self.attempt_manager.current.wait_time,  # type: ignore
         )
         if rstatus is not None:
             self.confirm(tx)
@@ -210,9 +187,11 @@ class Processor:
         tx = self.pool.fetch_next()
         self.attempt_manager.fetch()
         if tx is not None:
+            self.eth = Eth()
+            self.wallet = init_wallet()
+            self.attempt_manager.update_eth(self.eth)
             with self.acquire_tx(tx) as tx:
-                logger.info(
-                    'Previous attempt %s', self.attempt_manager.current)
+                logger.info('Previous attempt %s', self.attempt_manager.current)
                 with stdc.timer('tm.transaction.time'):
                     self.process(tx)
 
