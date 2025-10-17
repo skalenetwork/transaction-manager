@@ -168,8 +168,10 @@ class AttemptManagerV2(BaseAttemptManager):
         logger.info('Estimated gas %d', estimated_gas)
         tx.gas = max(estimated_gas, tx.gas or 0)
         if tx.gas > estimated_gas:
-            allowed_fee = self.max_allowed_fee(tx.gas, tx.value)
-            if allowed_fee < next_fee.max_fee_per_gas:  # type: ignore
+            # maximum fee that we can allow for tx.gas, tx.value and tx.source balance
+            max_allowed_fee_for_suggested_gas = self.max_allowed_fee(tx.gas, tx.value)
+            # if account balance is not enough to cover suggested gas with chosen gas price
+            if next_fee.max_fee_per_gas > max_allowed_fee_for_suggested_gas:  # type: ignore
                 logger.warning('Suggested fee exceeds allowance. Defaulting to %d', estimated_gas)
                 tx.gas = estimated_gas
             else:
