@@ -1,2 +1,0 @@
-skale.py==7.1.dev3
-statsd==4.0.1

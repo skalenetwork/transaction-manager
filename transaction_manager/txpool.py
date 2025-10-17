@@ -18,7 +18,6 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-
 from typing import List, Optional
 
 import redis
@@ -26,7 +25,6 @@ import redis
 from .config import TXRECORD_EXPIRATION
 from .resources import rs as grs
 from .structures import InvalidFormatError, Tx
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,10 +34,7 @@ class NoNextTransactionError(Exception):
 
 
 class TxPool:
-    def __init__(
-        self, name: str = 'transactions',
-        rs: redis.Redis = grs
-    ) -> None:
+    def __init__(self, name: str = 'transactions', rs: redis.Redis = grs) -> None:
         self.rs: redis.Redis = rs
         self.name: str = name
 
@@ -70,11 +65,7 @@ class TxPool:
             return None
         return self.rs.zrange(self.name, 0, 0)[0]
 
-    def _add_record(
-        self, tx_id: bytes,
-        score: int,
-        tx_record: bytes
-    ) -> None:
+    def _add_record(self, tx_id: bytes, score: int, tx_record: bytes) -> None:
         pipe = self.rs.pipeline()
         pipe.zadd(self.name, {tx_id: score})
         pipe.set(tx_id, tx_record, ex=TXRECORD_EXPIRATION)
@@ -98,9 +89,9 @@ class TxPool:
             tx_id = self.get_next_id()
             logger.debug('Received %s from pool', tx_id)
             tx = self.get(tx_id)
-            if tx is None:
+            if tx is None and tx_id is not None:
                 logger.error('Received malformed tx %s. Going to remove')
-                self.drop(tx_id)  # type: ignore
+                self.drop(tx_id)
         return tx
 
     def release(self, tx: Tx) -> None:

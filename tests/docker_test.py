@@ -1,20 +1,16 @@
 import json
 import random
 import time
-from concurrent.futures import as_completed, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from functools import wraps
 
 import pytest
 from skale.transactions.exceptions import TransactionNotMinedError
 from skale.wallets import RedisWalletAdapter
 
-from transaction_manager.config import (
-    HARD_REPLACE_TIP_OFFSET,
-    TARGET_REWARD_PERCENTILE
-)
-from transaction_manager.structures import TxStatus
 from tests.utils.contracts import get_tester_abi
-
+from transaction_manager.config import HARD_REPLACE_TIP_OFFSET, TARGET_REWARD_PERCENTILE
+from transaction_manager.structures import TxStatus
 
 DEFAULT_GAS = 20000
 TX_NUMBER = 10
