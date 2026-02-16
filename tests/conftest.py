@@ -6,6 +6,7 @@ from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
 from web3 import Web3
 
+import transaction_manager.settings  # noqa: F401
 from tests.utils.account import CERT_DIR, HOST_CONFIG_PATH
 from transaction_manager.attempt_manager import (
     AttemptManagerV1,
