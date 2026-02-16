@@ -43,7 +43,7 @@ def init_wallet(
     path_to_cert: Optional[str] = None,
 ) -> BaseWallet:
     w3 = gw3()
-    wallet = None
+    wallet: BaseWallet | None = None
     st = get_node_settings()
     sgx_url = str(st.sgx_url)
     if sgx_url:

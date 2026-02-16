@@ -23,6 +23,7 @@ from functools import lru_cache
 from pathlib import Path
 from typing import List, Optional
 
+from eth_typing import HexStr
 from skale_core.settings import (  # type: ignore
     ActiveSettings,
     FairSettings,
@@ -32,7 +33,7 @@ from skale_core.settings import (  # type: ignore
 
 REDIS_URI: str = 'redis://@127.0.0.1:6379'
 
-ETH_PRIVATE_KEY: Optional[str] = None
+ETH_PRIVATE_KEY: Optional[HexStr] = None
 
 LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_fair_local_endpoint'
 
