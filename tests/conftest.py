@@ -4,6 +4,7 @@ import pytest
 import redis
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
+from skale_core.settings import FairSettings, InternalSettings, SkaleSettings
 from web3 import Web3
 
 import transaction_manager.settings  # noqa: F401
@@ -55,6 +56,16 @@ def attempt_manager_v1(eth, attempt_storage, wallet):
 
 @pytest.fixture
 def w3() -> Web3:
+    print('-------')
+    print('-------')
+    print('-------')
+
+    print(InternalSettings.model_config)
+
+    print('-------')
+    print('-------')
+    print('-------')
+
     return gw3()
 
 
