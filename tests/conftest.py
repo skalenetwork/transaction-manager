@@ -1,3 +1,5 @@
+import os
+
 import pytest
 import redis
 from skale.utils.account_tools import send_eth
@@ -10,11 +12,13 @@ from transaction_manager.attempt_manager import (
     AttemptManagerV2,
     RedisAttemptStorage,
 )
-from transaction_manager.config import ETH_PRIVATE_KEY, SGX_URL
+from transaction_manager.config import ETH_PRIVATE_KEY
 from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
 from transaction_manager.wallet import init_wallet
+
+SGX_URL = os.environ.get('SGX_URL', '')
 
 ETH_AMOUNT_FOR_TESTS = 3
 
