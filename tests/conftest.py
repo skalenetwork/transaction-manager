@@ -19,13 +19,17 @@ from transaction_manager.attempt_manager import (
     AttemptManagerV2,
     RedisAttemptStorage,
 )
-from transaction_manager.config import ETH_PRIVATE_KEY, INTERNAL_SETTINGS_PATH, NODE_SETTINGS_PATH
+from transaction_manager.config import (
+    ETH_PRIVATE_KEY,
+    INTERNAL_SETTINGS_PATH,
+    NODE_SETTINGS_PATH,
+    get_node_settings,
+)
 from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
 from transaction_manager.wallet import init_wallet
 
-SGX_URL = os.environ.get('SGX_URL', '')
 
 ETH_AMOUNT_FOR_TESTS = 3
 
@@ -108,7 +112,8 @@ def w3wallet(w3):
 
 @pytest.fixture
 def wallet(w3, w3wallet):
-    if SGX_URL:
+    st = get_node_settings()
+    if st.sgx_url:
         w = init_wallet(w3, config_filepath=HOST_CONFIG_PATH, path_to_cert=CERT_DIR)
     else:
         return w3wallet

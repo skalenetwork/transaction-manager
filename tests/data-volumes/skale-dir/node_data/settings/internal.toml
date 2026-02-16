@@ -1,3 +1,0 @@
-node_type = 'skale'
-node_mode = 'active'
-skale_dir_host = './skale-data/'
