@@ -4,7 +4,7 @@ import pytest
 import redis
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
-from skale_core.settings import FairSettings, InternalSettings, SkaleSettings
+from skale_core.settings import InternalSettings
 from web3 import Web3
 
 import transaction_manager.settings  # noqa: F401
