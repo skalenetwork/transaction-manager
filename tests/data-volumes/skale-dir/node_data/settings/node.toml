@@ -10,3 +10,6 @@ tg_chat_id = '-1231232'
 node_version = '0.0.0'
 block_device = '/dev/sda'
 docker_lvmpy_version = '0.0.0'
+
+manager_contracts = '0x0'
+ima_contracts = '0x0'

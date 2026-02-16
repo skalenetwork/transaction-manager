@@ -39,7 +39,7 @@ LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_fair_local_endpoint'
 
 GAS_MULTIPLIER: float = 1.2
 
-NODE_DATA_PATH = Path('/skale_node_data')
+NODE_DATA_PATH = Path(os.getenv('NODE_DATA_PATH', '/skale_node_data'))
 SETTINGS_FOLDER_PATH: Path = NODE_DATA_PATH / 'settings'
 NODE_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'node.toml'
 INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
