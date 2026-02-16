@@ -1,4 +1,3 @@
-import os
 import pathlib
 
 import pytest
@@ -29,7 +28,6 @@ from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
 from transaction_manager.wallet import init_wallet
-
 
 ETH_AMOUNT_FOR_TESTS = 3
 
