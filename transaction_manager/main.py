@@ -20,6 +20,8 @@
 import logging
 import time
 
+import transaction_manager.settings  # noqa: F401
+
 from . import config
 from .attempt_manager import AttemptManagerV2, RedisAttemptStorage
 from .eth import Eth

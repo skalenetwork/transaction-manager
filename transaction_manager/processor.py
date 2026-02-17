@@ -64,10 +64,10 @@ class Processor:
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
             etx = self.eth.convert_tx(tx)
-            signed = self.wallet.sign(etx)
+            signed = self.wallet.sign(etx)  # type: ignore[arg-type]
             logger.info('Sending transaction %s', tx)
             try:
-                tx_hash = self.eth.send_tx(signed)
+                tx_hash = self.eth.send_tx(signed)  # type: ignore[arg-type]
             except Exception as e:
                 logger.info(f'Sending failed with error {err}')
                 err = e

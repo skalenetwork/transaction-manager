@@ -12,7 +12,6 @@ jobs:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: ${{ secrets.ENDPOINT }}
       CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      SGX_URL: ""
 
     steps:
       - uses: actions/checkout@v5

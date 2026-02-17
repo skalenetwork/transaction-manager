@@ -1,16 +1,21 @@
+
 import pytest
 import redis
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
 from web3 import Web3
 
+import transaction_manager.settings  # noqa: F401
 from tests.utils.account import CERT_DIR, HOST_CONFIG_PATH
 from transaction_manager.attempt_manager import (
     AttemptManagerV1,
     AttemptManagerV2,
     RedisAttemptStorage,
 )
-from transaction_manager.config import ETH_PRIVATE_KEY, SGX_URL
+from transaction_manager.config import (
+    ETH_PRIVATE_KEY,
+    get_node_settings,
+)
 from transaction_manager.eth import Eth
 from transaction_manager.resources import w3 as gw3
 from transaction_manager.txpool import TxPool
@@ -67,7 +72,8 @@ def w3wallet(w3):
 
 @pytest.fixture
 def wallet(w3, w3wallet):
-    if SGX_URL:
+    st = get_node_settings()
+    if st.sgx_url:
         w = init_wallet(w3, config_filepath=HOST_CONFIG_PATH, path_to_cert=CERT_DIR)
     else:
         return w3wallet

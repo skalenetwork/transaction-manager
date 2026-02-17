@@ -26,7 +26,7 @@ from logging.handlers import RotatingFileHandler
 from typing import List
 from urllib.parse import urlparse
 
-from .config import BOOT_ENDPOINT, ENDPOINT, NODE_DATA_PATH, SGX_URL
+from .config import NODE_DATA_PATH, get_node_settings
 
 LOG_FOLDER = os.path.join(NODE_DATA_PATH, 'log')
 TM_LOG_PATH = os.path.join(LOG_FOLDER, 'tm.log')
@@ -41,13 +41,17 @@ LOG_FORMAT = '%(asctime)s [%(levelname)s] [%(module)s:%(lineno)d] %(message)s'  
 
 
 def compose_hiding_patterns():
-    sgx_ip = urlparse(SGX_URL).hostname
-    eth_ip = urlparse(ENDPOINT).hostname
-    eth_boot_ip = urlparse(BOOT_ENDPOINT).hostname
+    st = get_node_settings()
+
+    sgx_url = str(st.sgx_url)
+    sgx_ip = urlparse(sgx_url).hostname
+
+    eth_url = str(st.endpoint)
+    eth_ip = urlparse(eth_url).hostname
+
     return {
         rf'{sgx_ip}': '[SGX_IP]',
         rf'{eth_ip}': '[ETH_IP]',
-        rf'{eth_boot_ip}': '[ETH_BOOT_IP]',
         r'NEK\:\w+': '[SGX_KEY]',
     }
 
