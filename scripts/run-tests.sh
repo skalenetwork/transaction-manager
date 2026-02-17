@@ -10,7 +10,7 @@ export ETH_PRIVATE_KEY=$ETH_PRIVATE_KEY
 export PYTHONPATH=${PYTHONPATH}:$PROJECT_DIR
 export PYTHONUNBUFFERED=1
 
-uv run pytest -s --log-cli-level=INFO $PROJECT_DIR/tests/ \
+uv run pytest $PROJECT_DIR/tests/ \
     --ignore $PROJECT_DIR/tests/docker_test.py \
         --cov-report term-missing \
             --cov $PROJECT_DIR/transaction_manager $@

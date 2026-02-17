@@ -6,6 +6,7 @@ PROJECT_DIR=$(dirname $DIR)
 export ETH_PRIVATE_KEY=$ETH_PRIVATE_KEY
 export PYTHONPATH=${PYTHONPATH}:$PROJECT_DIR
 export SKALE_DIR=${PROJECT_DIR}/tests/data-volumes/skale-dir
+export NODE_DATA_PATH=$SKALE_DIR/node_data
 export PYTHONUNBUFFERED=1
 
-uv run pytest -s --log-cli-level=INFO $PROJECT_DIR/tests/docker_test.py $@
+uv run pytest $PROJECT_DIR/tests/docker_test.py $@
