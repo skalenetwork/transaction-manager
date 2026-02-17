@@ -39,13 +39,13 @@ shutdown_containers() {
 
 cleanup_skale_dir() {
     if [ -d $SKALE_DIR ]; then
-        sudo rm -r --interactive=never $SKALE_DIR
+        sudo rm -rf $SKALE_DIR
     fi
 }
 
 cleanup_redis_dir() {
     if [ -d $REDIS_DIR ]; then
-        sudo rm -r --interactive=never $REDIS_DIR
+        sudo rm -rf $REDIS_DIR
     fi
 }
 
