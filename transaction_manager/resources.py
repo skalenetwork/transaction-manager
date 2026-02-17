@@ -26,12 +26,11 @@ from web3 import Web3
 
 from .config import (
     ALLOWED_TS_DIFF,
-    BOOT_ENDPOINT,
-    ENDPOINT,
     LOCAL_SKALED_ENDPOINT_REDIS_KEY,
     REDIS_URI,
     STATSD_HOST,
     STATSD_PORT,
+    get_node_settings,
 )
 
 logger = logging.getLogger(__name__)
@@ -47,14 +46,12 @@ def w3() -> Web3:
 
 
 def endpoints() -> list[str]:
-    if BOOT_ENDPOINT == '':
-        return [ENDPOINT]
-
-    endpoints = [BOOT_ENDPOINT]
+    st = get_node_settings()
+    eps = [str(st.endpoint)]
     local_skaled_endpoint = rs.get(LOCAL_SKALED_ENDPOINT_REDIS_KEY)
     if local_skaled_endpoint and isinstance(local_skaled_endpoint, bytes):
         local_endpoint_str = local_skaled_endpoint.decode('utf-8')
         logger.info(f'Found local skaled endpoint in Redis: {local_endpoint_str}')
-        endpoints.insert(0, local_endpoint_str)
-    logger.info(f'Returning a list of endpoints: {endpoints}')
-    return endpoints
+        eps.insert(0, local_endpoint_str)
+    logger.info(f'Returning a list of endpoints: {eps}')
+    return eps

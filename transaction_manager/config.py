@@ -19,22 +19,30 @@
 
 import os
 import sys
+from functools import lru_cache
+from pathlib import Path
 from typing import List, Optional
+
+from eth_typing import HexStr
+from skale_core.settings import (  # type: ignore
+    ActiveSettings,
+    FairSettings,
+    SkaleSettings,
+    get_settings,
+)
 
 REDIS_URI: str = 'redis://@127.0.0.1:6379'
 
-SGX_URL: Optional[str] = 'https://127.0.0.1:1026'
-
-ETH_PRIVATE_KEY: Optional[str] = None
-
-ENDPOINT: str = 'http://127.0.0.1:8545'
-BOOT_ENDPOINT: str = ''
+ETH_PRIVATE_KEY: Optional[HexStr] = None
 
 LOCAL_SKALED_ENDPOINT_REDIS_KEY = 'node_config_fair_local_endpoint'
 
 GAS_MULTIPLIER: float = 1.2
 
-NODE_DATA_PATH = '/skale_node_data'
+NODE_DATA_PATH = Path(os.getenv('NODE_DATA_PATH', '/skale_node_data'))
+SETTINGS_FOLDER_PATH: Path = NODE_DATA_PATH / 'settings'
+NODE_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'node.toml'
+INTERNAL_SETTINGS_PATH: Path = SETTINGS_FOLDER_PATH / 'internal.toml'
 
 # General
 RESTART_TIMEOUT: int = 3
@@ -82,3 +90,8 @@ for v in get_params():
     else:
         casted = os.environ[v]
     globals()[v] = casted
+
+
+@lru_cache
+def get_node_settings() -> ActiveSettings:
+    return get_settings((SkaleSettings, FairSettings))  # type: ignore[return-value]
