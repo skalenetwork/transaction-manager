@@ -1,14 +1,8 @@
-import pathlib
 
 import pytest
 import redis
 from skale.utils.account_tools import send_eth
 from skale.wallets import RedisWalletAdapter, SgxWallet, Web3Wallet
-from skale_core.settings import (
-    SkaleSettings,
-    write_internal_settings_file,
-    write_node_settings_file,
-)
 from web3 import Web3
 
 import transaction_manager.settings  # noqa: F401
@@ -20,8 +14,6 @@ from transaction_manager.attempt_manager import (
 )
 from transaction_manager.config import (
     ETH_PRIVATE_KEY,
-    INTERNAL_SETTINGS_PATH,
-    NODE_SETTINGS_PATH,
     get_node_settings,
 )
 from transaction_manager.eth import Eth
