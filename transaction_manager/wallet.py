@@ -46,7 +46,7 @@ def init_wallet(
     wallet: BaseWallet | None = None
     st = get_node_settings()
     sgx_url = str(st.sgx_url)
-    if sgx_url:
+    if False:  # todo: tmp check
         path_to_cert = path_to_cert or PATH_TO_SGX_CERT
         logger.info(f'Initializing sgx wallet {sgx_url}')
         keyname = wait_for_sgx_keyname(config_filepath=config_filepath)

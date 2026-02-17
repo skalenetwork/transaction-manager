@@ -25,6 +25,10 @@ create_redis_dir() {
     cp tests/utils/redis.conf $REDIS_DIR/redis-config
 }
 
+copy_settings_files() {
+    cp -r $PROJECT_DIR/tests/settings $SKALE_DIR/node_data/settings/
+}
+
 build() {
     docker compose build --force-rm $@
 }
@@ -65,6 +69,7 @@ cleanup_skale_dir
 cleanup_redis_dir
 create_skale_dir
 create_redis_dir
+copy_settings_files
 build tm
 
 if [ -z ${SGX_URL} ]; then

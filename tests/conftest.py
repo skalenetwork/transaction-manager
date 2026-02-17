@@ -61,36 +61,6 @@ def attempt_manager_v1(eth, attempt_storage, wallet):
     return AttemptManagerV1(eth, attempt_storage, wallet.address)
 
 
-@pytest.fixture(autouse=True)
-def settings():
-    write_internal_settings_file(
-        path=INTERNAL_SETTINGS_PATH,
-        data={'node_type': 'skale', 'node_mode': 'active', 'skale_dir_host': './skale-data/'},
-    )
-    write_node_settings_file(
-        path=NODE_SETTINGS_PATH,
-        settings_type=SkaleSettings,
-        data={
-            'env_type': 'devnet',
-            'endpoint': 'http://127.0.0.1:8545',
-            'sgx_url': 'https://localhost:1026',
-            'container_stop_timeout': 1,
-            'tg_api_key': '123',
-            'tg_chat_id': '-1231232',
-            'node_version': '0.0.0',
-            'block_device': '/dev/sda',
-            'docker_lvmpy_version': '0.0.0',
-            'manager_contracts': '0x0',
-            'ima_contracts': '0x0',
-        },
-    )
-    try:
-        yield
-    finally:
-        pathlib.Path(INTERNAL_SETTINGS_PATH).unlink(missing_ok=True)
-        pathlib.Path(NODE_SETTINGS_PATH).unlink(missing_ok=True)
-
-
 @pytest.fixture
 def w3() -> Web3:
     return gw3()
