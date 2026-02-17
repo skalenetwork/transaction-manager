@@ -46,14 +46,14 @@ def init_wallet(
     wallet: BaseWallet | None = None
     st = get_node_settings()
     sgx_url = str(st.sgx_url)
-    if False:  # todo: tmp check
+    if ETH_PRIVATE_KEY:
+        logger.info('Initializing web3 wallet')
+        wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
+    else:
         path_to_cert = path_to_cert or PATH_TO_SGX_CERT
         logger.info(f'Initializing sgx wallet {sgx_url}')
         keyname = wait_for_sgx_keyname(config_filepath=config_filepath)
         wallet = SgxWallet(sgx_url, w3, key_name=keyname, path_to_cert=path_to_cert)
-    elif ETH_PRIVATE_KEY:
-        logger.info('Initializing web3 wallet')
-        wallet = Web3Wallet(ETH_PRIVATE_KEY, w3)
     if not wallet:
         logger.warning('Both sgx_url and ETH_PRIVATE_KEY was not provided')
         raise WalletInitializationError('Failed to initialize wallet')
