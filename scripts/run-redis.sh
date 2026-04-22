@@ -24,7 +24,7 @@ shutdown_container() {
 
 cleanup_redis_dir() {
     if [ -d $REDIS_DIR ]; then
-        rm -r --interactive=never $REDIS_DIR
+        rm -rf $REDIS_DIR
     fi
 }
 

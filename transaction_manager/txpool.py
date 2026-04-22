@@ -24,7 +24,7 @@ import redis
 
 from .config import TXRECORD_EXPIRATION
 from .resources import rs as grs
-from .structures import InvalidFormatError, Tx
+from .structures import InvalidFormatError, Tx, TxStatus
 
 logger = logging.getLogger(__name__)
 
@@ -58,6 +58,8 @@ class TxPool:
         except InvalidFormatError:
             logger.error('Invalid record for %s %s', tx_id, r)
             tx = None
+        if tx and tx.status == TxStatus.PROPOSED and tx.attempts == 0:
+            tx.gas = None
         return tx
 
     def get_next_id(self) -> Optional[bytes]:

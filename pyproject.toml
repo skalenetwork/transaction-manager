@@ -1,8 +1,8 @@
 [project]
 name = "transaction-manager"
-version = "3.1.0"
+version = "3.2.0"
 requires-python = ">=3.13"
-dependencies = ["skale.py==7.5dev1", "statsd==4.0.1"]
+dependencies = ["skale.py==7.13.dev1", "statsd==4.0.1"]
 
 [project.optional-dependencies]
 dev = ["ruff==0.14.0", "mypy==1.18.2", "types-redis==4.6.0.11"]
@@ -22,6 +22,9 @@ select = ["E", "W", "F", "I"]
 
 [tool.ruff.format]
 quote-style = "single"
+
+[tool.uv]
+prerelease = "allow"
 
 [tool.mypy]
 python_version = "3.13"

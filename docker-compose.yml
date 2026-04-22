@@ -6,7 +6,7 @@ services:
     network_mode: host
     volumes:
       - ${SGX_DIR}:/usr/src/sdk/sgx_data
-      -  /dev/urandom:/dev/random
+      - /dev/urandom:/dev/random
     logging:
       driver: json-file
       options:
@@ -24,7 +24,7 @@ services:
     tty: true
     environment:
       PRIVATE_KEY: ${ETH_PRIVATE_KEY}
-  
+
   redis:
     container_name: redis
     image: "redis:8.0.1-alpine"
@@ -48,7 +48,6 @@ services:
       dockerfile: Dockerfile
     tty: true
     environment:
-      SGX_URL: ${SGX_URL}
       ETH_PRIVATE_KEY: ${ETH_PRIVATE_KEY}
       ENDPOINT: ${ENDPOINT}
       NODE_DATA_PATH: /skale_node_data
