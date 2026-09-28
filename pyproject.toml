@@ -1,6 +1,6 @@
 [project]
 name = "transaction-manager"
-version = "3.2.1"
+version = "3.3.0"
 requires-python = ">=3.13"
 dependencies = ["skale.py==7.13.dev1", "statsd==4.0.1"]
 
@@ -27,7 +27,7 @@ quote-style = "single"
 prerelease = "allow"
 
 [tool.mypy]
-python_version = "3.13"
+python_version = "3.14"
 warn_unused_configs = true
 ignore_missing_imports = true
 # todo: uncomment when types are added to all modules
