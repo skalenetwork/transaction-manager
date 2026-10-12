@@ -1,21 +1,29 @@
-FROM python:3.13.8-slim-trixie AS builder
+FROM python:3.14-slim-trixie AS builder
 
-RUN apt update && apt install -y --no-install-recommends build-essential libssl-dev --yes
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential libssl-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /usr/local/bin/uv
 
-RUN mkdir app
 WORKDIR /app
 
 COPY pyproject.toml ./
-RUN uv pip install --prerelease=allow --system --no-cache .
+RUN uv sync --no-cache --no-dev --no-install-project --python /usr/local/bin/python
 
 
-FROM python:3.13.8-slim-trixie
+FROM python:3.14-slim-trixie
 
-COPY --from=builder /usr/local/lib/python3.13/site-packages /usr/local/lib/python3.13/site-packages
-COPY --from=builder /usr/local/bin /usr/local/bin
-COPY transaction_manager transaction_manager
+ENV PATH="/app/.venv/bin:${PATH}" \
+    PYTHONPATH="/app" \
+    PYTHONUNBUFFERED=1
 
-ENV PYTHONPATH="/app"
-CMD ["python3", "-m", "transaction_manager.main"]
+WORKDIR /app
+
+COPY --from=builder /app/.venv /app/.venv
+COPY transaction_manager ./transaction_manager
+
+CMD ["python", "-m", "transaction_manager.main"]

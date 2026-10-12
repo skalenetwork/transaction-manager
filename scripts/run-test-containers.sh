@@ -57,6 +57,25 @@ gen_sgx_key() {
     python3 tests/gen_sgx.py
 }
 
+wait_for_hnode() {
+    local retries=60
+    local rpc_url="http://127.0.0.1:8545"
+    local rpc_request='{"jsonrpc":"2.0","method":"eth_chainId","params":[],"id":1}'
+
+    until curl --fail --silent \
+        --header "Content-Type: application/json" \
+        --data "$rpc_request" \
+        "$rpc_url" | grep --quiet '"result"'; do
+        retries=$((retries - 1))
+        if [ "$retries" -eq 0 ]; then
+            echo "Hardhat node did not become ready at $rpc_url" >&2
+            docker logs hnode --tail 100 >&2
+            return 1
+        fi
+        sleep 1
+    done
+}
+
 deploy_test_contract() {
     cd tests/tester-contract/
     yarn install
@@ -79,4 +98,5 @@ else
     gen_sgx_key
 fi
 
+wait_for_hnode
 deploy_test_contract
