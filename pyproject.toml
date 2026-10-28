@@ -1,6 +1,6 @@
 [project]
 name = "transaction-manager"
-version = "3.3.0"
+version = "3.4.0"
 requires-python = ">=3.14"
 dependencies = ["skale.py==8.0dev0", "statsd==4.0.1"]
 
