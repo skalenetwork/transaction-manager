@@ -6,7 +6,7 @@ dependencies = ["skale.py==8.0dev0", "statsd==4.0.1"]
 
 [project.optional-dependencies]
 dev = ["ruff==0.17.3", "mypy==2.4.0"]
-test = ["pytest==9.2.0", "pytest-cov==7.1.0"]
+test = ["pytest==9.2.0"]
 
 [tool.ruff]
 line-length = 100
