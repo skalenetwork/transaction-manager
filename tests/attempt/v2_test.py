@@ -82,15 +82,15 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     # Id should be the same
     assert current.tx_id == tx.tx_id == a_id
     # Tip should be equal to good reward
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip   # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
     # Gap should be 150 % of estimated_base_fee
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
     # Gas should be estimated
     assert tx.gas == current.gas and tx.gas > 0
     # Index should be estimated
     assert current.index == 1
     # Index should be estimated
-    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
+    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)
 
     a_sent_fee = tx.fee
 
@@ -119,15 +119,15 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     # Id should be the same
     assert current.tx_id == tx.tx_id == b_id
     # Tip should be equal to good reward
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip   # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
     # Gap should be 150 % of estimated_base_fee
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
     # Gas should be estimated
     assert tx.gas == current.gas and tx.gas == initial_gas
     # Since it's another attempt index should be 2
     assert current.index == 2
     # Index should be estimated
-    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
+    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)
 
     # Test next attempt with transaction that was already sent
     tx = Tx(
@@ -153,15 +153,15 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     # Id should be the same
     assert current.tx_id == tx.tx_id == a_id
     # Tip should be equal to good reward
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip   # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
     # Gap should be 150 % of estimated_base_fee
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
     # Gas should be estimated
     assert tx.gas == current.gas and tx.gas > 0
     # Since nonce was increased index should be 1
     assert current.index == 1
     # Nonce should be equal to getTransactionCount
-    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
+    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)
 
     # Test next attempt with fee that is more than max
     attempt_manager.current.fee.max_priority_fee_per_gas = MAX_FEE_VALUE - 1
@@ -169,11 +169,11 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     attempt_manager.make(tx)
     expected_tip, expected_gap = MAX_FEE_VALUE, MAX_FEE_VALUE
     current = attempt_manager.current
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip   # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
     # Gap should be 150 % of estimated_base_fee
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
     # Nonce should be equal to getTransactionCount
-    assert tx.nonce == attempt_manager.current.nonce == eth.get_nonce(wallet.address)  # noqa
+    assert tx.nonce == attempt_manager.current.nonce == eth.get_nonce(wallet.address)
     # Since it's another attempt index should be 2
     assert current.index == 2
 
@@ -202,14 +202,14 @@ def test_v2_make(w3, history_eth, attempt_manager, account, wallet):
     # Id should be the same
     assert current.tx_id == tx.tx_id == a_id
     # Tip should be equal to good reward
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip   # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
     # Gap should be 150 % of estimated_base_fee
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
     # Gas should be estimated
     assert tx.gas == current.gas and tx.gas > 0
     # Since nonce was increased index should be 1
     assert current.index == 1
-    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)  # noqa
+    assert tx.nonce == current.nonce and tx.nonce == eth.get_nonce(wallet.address)
 
 
 def test_v2_make_low_static_gas(w3, eth, attempt_manager, account, wallet):
@@ -351,16 +351,16 @@ def test_v2_replace(w3, history_eth, attempt_manager, account):
     current = attempt_manager.current
     expected_tip = P60_REWARD * 105 // 100
     expected_gap = (BASE_FEE_VALUE * 150) // 100 * 105 // 100
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip  # noqa
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap  # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == expected_tip
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == expected_gap
 
     # Test replace with max allowed value
     tx.fee.max_priority_fee_per_gas = MAX_FEE_VALUE - 1
     tx.fee.max_fee_per_gas = MAX_FEE_VALUE - 1
     attempt_manager.replace(tx)
     current = attempt_manager.current
-    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == MAX_FEE_VALUE  # noqa
-    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == MAX_FEE_VALUE  # noqa
+    assert tx.fee.max_priority_fee_per_gas == current.fee.max_priority_fee_per_gas == MAX_FEE_VALUE
+    assert tx.fee.max_fee_per_gas == current.fee.max_fee_per_gas == MAX_FEE_VALUE
 
 
 def test_v2_make_with_low_balance(w3, eth, attempt_storage, wallet, account):

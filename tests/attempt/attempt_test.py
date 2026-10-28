@@ -23,7 +23,7 @@ def test_attempt():
     assert Attempt.from_bytes(aa_raw) == aa
 
     raw_before_eip_1559 = (
-        b'{"gas_price": 1000000000, "index": 2, "nonce": 1, "tx_id": "id-aaaa", "wait_time": 30}'  # noqa
+        b'{"gas_price": 1000000000, "index": 2, "nonce": 1, "tx_id": "id-aaaa", "wait_time": 30}'
     )
     attempt = Attempt.from_bytes(raw_before_eip_1559)
     assert attempt.to_bytes() == expected

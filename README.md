@@ -4,170 +4,31 @@
 
 Microservice used to manage sending concurrent transactions to the Ethereum network
 
-## API
+## Usage
 
-### sign_and_send
-
-Takes transaction hash, signs and sends it, returns transaction hash.
-
--   URL: `/sign-and-send`
--   Method: `POST`
-
-**Request body**:
-
-```json
-{
-    "transaction_dict": "TRANSACTION_DICT_STRING",
-}
-```
-
-**Success Response**:
-
-```json
-{
-    "errors": null,
-    "data": {
-        "transaction_hash": "0x..."
-    }
-}
-```
-
-**Error response**:
-
-```json
-{
-    "error": "Error message",
-    "data": null
-}
-```
-
-### sign
-
-Takes transaction hash, signs it, returns signed transaction.
-
--   URL: `/sign`
--   Method: `POST`
-
-**Data Params**:
-
-```json
-{
-    "data": {
-        "transaction_dict": "TRANSACTION_DICT_STRING",
-    }
-}
-```
-
-**Success Response**:
-
-```json
-{
-    "errors": null,
-    "data": {
-        "transaction_hash": "0x..."
-    }
-}
-```
-
-**Error response**:
-
-```json
-{
-    "error": "Error message",
-    "data": null
-}
-```
-
-### address
-
-Returns wallet address.
-
--   URL: `/address`
--   Method: `GET`
-
-**URL Params**:
-
-None.
-
-**Success Response**:
-
-```json
-{
-    "errors": null,
-    "data": {
-        "address": "0x..."
-    }
-}
-```
-
-**Error response**:
-
-```json
-{
-    "error": "Error message",
-    "data": null
-}
-```
-
-### public_key
-
-Returns wallet public key.
-
--   URL: `/public-key`
--   Method: `GET`
-
-**URL Params**:
-
-None.
-
-**Success Response**:
-
-```json
-{
-    "errors": null,
-    "data": {
-        "public_key": "0x..."
-    }
-}
-```
-
-**Error response**:
-
-```json
-{
-    "error": "Error message",
-    "data": null
-}
-```
+Clients submit transactions through Redis with `RedisWalletAdapter` from skale.py.
 
 ## Development
-
-### Run development server
 
 Install dependencies:
 
 ```bash
-pip install -r requirements.txt
-pip install -r requirements-dev.txt
+uv sync --all-extras
 ```
 
-Run server:
+Lint and type check:
 
 ```bash
-export $(grep -v '^#' .env | xargs) && python server.py
+uv run ruff check
+uv run mypy transaction_manager
 ```
 
-Build and run test container
+Run tests (requires `ETH_PRIVATE_KEY`, `ENDPOINT` and Docker):
 
 ```bash
-docker build -t test-tm .
-docker run  --env-file .env-docker -v ~/.skale:/skale_vol -v ~/.skale/node_data:/skale_node_data test-tm
-```
-
-Run `transaction-manager` container locally
-
-```bash
-VERSION=0.0.1-develop.0 && docker run -p 3008:3008 --env-file .env-docker -v ~/.skale:/skale_vol -v ~/.skale/node_data:/skale_node_data skalelabshub/transaction-manager:$VERSION
+./scripts/run-test-containers.sh
+./scripts/run-tests.sh
+./scripts/run-docker-tests.sh
 ```
 
 ## License

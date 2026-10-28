@@ -27,7 +27,6 @@ from ..config import (
     HARD_REPLACE_START_INDEX,
     HARD_REPLACE_TIP_OFFSET,
     MAX_FEE_VALUE,
-    MAX_TX_CAP,
     MIN_FEE_INC_PERCENT,
     MIN_PRIORITY_FEE,
 )
@@ -52,7 +51,6 @@ class AttemptManagerV2(BaseAttemptManager):
         inc_percent: int = FEE_INC_PERCENT,
         min_inc_percent: int = MIN_FEE_INC_PERCENT,
         max_fee: int = MAX_FEE_VALUE,
-        max_tx_cap: int = MAX_TX_CAP,
         base_fee_adjustment_percent: int = BASE_FEE_ADJUSMENT_PERCENT,
     ) -> None:
         self.eth = eth

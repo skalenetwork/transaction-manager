@@ -8,7 +8,6 @@ import pytest
 from skale.transactions.exceptions import TransactionNotMinedError
 from skale.wallets import RedisWalletAdapter
 
-from tests.utils.contracts import get_tester_abi
 from transaction_manager.config import HARD_REPLACE_TIP_OFFSET, TARGET_REWARD_PERCENTILE
 from transaction_manager.structures import TxStatus
 
@@ -38,24 +37,19 @@ def retry_rdp(func):
 
 
 @retry_rdp
-def make_tx(w3, wallet, failed=False):
-    tester_abi = get_tester_abi()
-    tester = w3.eth.contract(
-        abi=tester_abi['abi'],
-        address=tester_abi['address']
-    )
+def make_tx(tester, wallet, failed=False):
     number = 3 if failed else 4
     return tester.functions.setOnlyEven(
         number
     ).build_transaction({
-        'gasPrice': w3.eth.gas_price,
+        'gasPrice': tester.w3.eth.gas_price,
         'gas': DEFAULT_GAS,
         'from': wallet.address
     })
 
 
-def push_tx(w3, rdp, tpool, wallet, failed=False):
-    tx = make_tx(w3, wallet, failed=failed)
+def push_tx(tester, rdp, tpool, wallet, failed=False):
+    tx = make_tx(tester, wallet, failed=failed)
     tx_id = rdp.sign_and_send(tx, priority=6)
     raw_id = tx_id.encode('utf-8')
     return tpool.get(raw_id)
@@ -72,15 +66,14 @@ def wait_for_tx(rdp, tx_id):
     return rdp.get_record(tx_id)
 
 
-def test_processor(tpool, w3, eth, trs, rdp, wallet):
-    tester_abi = get_tester_abi()
-    tx_obj = push_tx(w3, rdp, tpool, wallet)
+def test_processor(tpool, tester, eth, trs, rdp, wallet):
+    tx_obj = push_tx(tester, rdp, tpool, wallet)
     rec = rdp.wait(tx_obj.tx_id, timeout=60)
     assert rec['status'] == 1
     tx = rdp.get_record(tx_obj.tx_id)
     assert tx['status'] == 'SUCCESS'
     assert tx['from'] == wallet.address
-    assert tx['to'] == tester_abi['address']
+    assert tx['to'] == tester.address
     assert tx['nonce'] == eth.get_nonce(wallet.address) - 1
     last_attempt = json.loads(trs.get(b'last_attempt').decode('utf-8'))
     assert tx['nonce'] == last_attempt['nonce']
@@ -107,9 +100,9 @@ def test_processor_many_tx(tpool, eth, w3, trs, rdp):
 
 
 @pytest.mark.skip('Geth only')
-def test_replace_legacy(eth, w3, rdp, tpool, wallet):
+def test_replace_legacy(eth, w3, tester, rdp, tpool, wallet):
     # First transaction is legacy that meant to stuck
-    raw_tx = make_tx(w3, wallet)
+    raw_tx = make_tx(tester, wallet)
     history = w3.eth.fee_history(
         1,
         'latest',
