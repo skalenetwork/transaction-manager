@@ -21,7 +21,7 @@ import logging
 import os
 from typing import Optional
 
-from skale.wallets import BaseWallet, SgxWallet, Web3Wallet  # type: ignore
+from skale.wallets import BaseWallet, SgxWallet, Web3Wallet
 from web3 import Web3
 
 from .config import ETH_PRIVATE_KEY, NODE_DATA_PATH, get_node_settings
@@ -33,17 +33,13 @@ logger = logging.getLogger(__name__)
 PATH_TO_SGX_CERT = os.path.join(NODE_DATA_PATH, 'sgx_certs')
 
 
-class WalletInitializationError(Exception):
-    pass
-
-
 def init_wallet(
     w3: Web3 | None = None,
     config_filepath: Optional[str] = None,
     path_to_cert: Optional[str] = None,
 ) -> BaseWallet:
-    w3 = gw3()
-    wallet: BaseWallet | None = None
+    w3 = w3 or gw3()
+    wallet: BaseWallet
     st = get_node_settings()
     sgx_url = str(st.sgx_url)
     if ETH_PRIVATE_KEY:
@@ -54,8 +50,5 @@ def init_wallet(
         logger.info(f'Initializing sgx wallet {sgx_url}')
         keyname = wait_for_sgx_keyname(config_filepath=config_filepath)
         wallet = SgxWallet(sgx_url, w3, key_name=keyname, path_to_cert=path_to_cert)
-    if not wallet:
-        logger.warning('Both sgx_url and ETH_PRIVATE_KEY was not provided')
-        raise WalletInitializationError('Failed to initialize wallet')
     logger.info(f'Wallet address {wallet.address}')
     return wallet

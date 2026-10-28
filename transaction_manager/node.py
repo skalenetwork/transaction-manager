@@ -30,10 +30,6 @@ logger = logging.getLogger(__name__)
 NODE_CONFIG_FILEPATH = os.path.join(NODE_DATA_PATH, 'node_config.json')
 
 
-def is_config_created() -> bool:
-    return os.path.isfile(NODE_CONFIG_FILEPATH)
-
-
 def get_sgx_keyname(config_filepath: Optional[str] = None) -> str:
     config_filepath = config_filepath or NODE_CONFIG_FILEPATH
     with open(config_filepath, encoding='utf-8') as data_file:

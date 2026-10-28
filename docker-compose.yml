@@ -1,19 +1,4 @@
 services:
-  sgx:
-    image: skalenetwork/sgxwallet_sim:${SGX_WALLET_TAG}
-    container_name: sgx
-    restart: unless-stopped
-    network_mode: host
-    volumes:
-      - ${SGX_DIR}:/usr/src/sdk/sgx_data
-      - /dev/urandom:/dev/random
-    logging:
-      driver: json-file
-      options:
-        max-size: "10m"
-        max-file: "4"
-    command: -s -y
-
   hnode:
     container_name: hnode
     image: "hnode:${TAG:-latest}"
@@ -27,16 +12,12 @@ services:
 
   redis:
     container_name: redis
-    image: "redis:8.0.1-alpine"
+    image: "redis:8.10.3-alpine"
     tty: true
     network_mode: host
     restart: unless-stopped
-    environment:
-      - REDIS_REPLICATION_MODE=master
     command: "redis-server /config/redis.conf"
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ${REDIS_DIR}/redis-data:/data/db
       - ${REDIS_DIR}/redis-config:/config
 
   tm:
@@ -50,7 +31,5 @@ services:
     environment:
       ETH_PRIVATE_KEY: ${ETH_PRIVATE_KEY}
       ENDPOINT: ${ENDPOINT}
-      NODE_DATA_PATH: /skale_node_data
-      ALLOWED_TS_DIFF: 5200
     volumes:
       - ${SKALE_DIR}/node_data:/skale_node_data

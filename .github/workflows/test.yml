@@ -1,47 +1,29 @@
 name: Test
-on: [push, pull_request]
+on: [push]
+
+permissions:
+  contents: read
 
 jobs:
   test:
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: [3.14]
 
     env:
       ETH_PRIVATE_KEY: ${{ secrets.ETH_PRIVATE_KEY }}
       ENDPOINT: ${{ secrets.ENDPOINT }}
-      CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
-      SGX_WALLET_TAG: latest
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: true
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v6
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Set up Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-
-      - name: Enable Yarn
-        run: corepack enable
-
-      - name: Update host dependencies
-        run: sudo apt-get update --fix-missing
-
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v10.3.2
+        with:
+          version: "0.13.6"
 
       - name: Install python dependencies
-        run: |
-          uv sync --prerelease=allow --all-extras
-          uv pip install codecov
+        run: uv sync --all-extras
 
       - name: Checking formatting with ruff
         run: uv run ruff check
@@ -50,10 +32,7 @@ jobs:
         run: uv run mypy transaction_manager
 
       - name: Run test containers
-        run: ./scripts/run-test-containers.sh && sleep 60
-
-      - name: Debug info
-        run: docker ps -a && docker logs hnode --tail 500 && docker inspect hnode
+        run: ./scripts/run-test-containers.sh
 
       - name: Run unit tests
         run: ./scripts/run-tests.sh

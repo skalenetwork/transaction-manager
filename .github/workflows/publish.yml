@@ -3,29 +3,24 @@ on:
   pull_request:
     types: [closed]
     branches:
-      - master
       - develop
       - beta
       - stable
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-24.04
-    strategy:
-      matrix:
-        python-version: [3.14]
     if: github.event.pull_request.merged
     env:
       DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
       DOCKER_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           submodules: true
-      - name: Set up Python 3.14
-        uses: actions/setup-python@v6
-        with:
-          python-version: 3.14
       - name: Build and publish container
         run: |
           export BRANCH=${GITHUB_REF##*/}
@@ -35,19 +30,12 @@ jobs:
           export VERSION=$(bash ./helper-scripts/calculate_version.sh)
           echo "VERSION=$VERSION" >> $GITHUB_ENV
           echo "Version $VERSION"
-          export RELEASE=true
-          echo "RELEASE=$RELEASE" >> $GITHUB_ENV
           export CONTAINER_NAME="transaction-manager"
           bash ./helper-scripts/build_and_publish.sh
-      - name: Checkout code
-        uses: actions/checkout@master
       - name: Create Release
-        id: create_release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ env.VERSION }}
-          release_name: ${{ env.VERSION }}
-          draft: false
-          prerelease: true
+          target_commitish: ${{ github.sha }}
+          name: ${{ env.VERSION }}
+          prerelease: ${{ github.base_ref != 'stable' }}

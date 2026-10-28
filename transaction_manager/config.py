@@ -24,7 +24,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from eth_typing import HexStr
-from skale_core.settings import (  # type: ignore
+from skale_core.settings import (
     ActiveSettings,
     FairSettings,
     SkaleSettings,
@@ -51,7 +51,6 @@ CONFIRMATION_BLOCKS: int = 6
 MAX_RESUBMIT_AMOUNT: int = 10
 MAX_WAITING_TIME: int = 650  # TODO: determine value
 UNDERPRICED_RETRIES = 5
-ALLOWED_TS_DIFF = 300
 DISABLE_GAS_ESTIMATION = False
 TXRECORD_EXPIRATION = 24 * 60 * 60  # 1 day
 DEFAULT_ID_LEN = 19
@@ -60,13 +59,6 @@ IMA_ID_SUFFIX = 'js'
 STATSD_HOST: str = '127.0.0.1'
 STATSD_PORT: int = 8125
 
-# V1
-AVG_GAS_PRICE_INC_PERCENT = 50
-MAX_GAS_PRICE: int = 1000 * 10**9
-GAS_PRICE_INC_PERCENT: int = 10
-GRAD_GAS_PRICE_INC_PERCENT: int = 2
-MIN_GAS_PRICE_INC_PERCENT: int = 5
-
 # V2
 BASE_FEE_ADJUSMENT_PERCENT = 50
 TARGET_REWARD_PERCENTILE = 60
@@ -74,7 +66,6 @@ MIN_PRIORITY_FEE: int = 10**7
 FEE_INC_PERCENT: int = 12
 MAX_FEE_VALUE: int = 10**18
 MIN_FEE_INC_PERCENT: int = 5
-MAX_TX_CAP: int = 10**18
 HARD_REPLACE_START_INDEX = 3
 HARD_REPLACE_TIP_OFFSET = 10
 
@@ -94,4 +85,4 @@ for v in get_params():
 
 @lru_cache
 def get_node_settings() -> ActiveSettings:
-    return get_settings((SkaleSettings, FairSettings))  # type: ignore[return-value]
+    return get_settings((SkaleSettings, FairSettings))
