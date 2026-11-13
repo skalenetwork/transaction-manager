@@ -2,7 +2,7 @@ FROM python:3.14.10-slim-trixie AS builder
 
 ENV UV_COMPILE_BYTECODE=1
 
-COPY --from=ghcr.io/astral-sh/uv:0.13.6 /uv /usr/local/bin/uv
+COPY --from=ghcr.io/astral-sh/uv:0.13.8 /uv /usr/local/bin/uv
 
 WORKDIR /app
 
