@@ -9,6 +9,8 @@ services:
     tty: true
     environment:
       PRIVATE_KEY: ${ETH_PRIVATE_KEY}
+      AUTO_MINING: 0
+      MINING_INTERVAL_MS: 1000
 
   redis:
     container_name: redis
