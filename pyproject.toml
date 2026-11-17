@@ -2,7 +2,7 @@
 name = "transaction-manager"
 version = "3.4.0"
 requires-python = ">=3.14"
-dependencies = ["skale.py==8.0dev0", "statsd==4.0.1"]
+dependencies = ["skale.py==8.0dev3", "statsd==4.0.1"]
 
 [project.optional-dependencies]
 dev = ["ruff==0.17.5", "mypy==2.4.1"]
