@@ -18,7 +18,7 @@
 #   along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 import logging
-from typing import List, Optional
+from typing import List, Optional, cast
 
 import redis
 
@@ -27,10 +27,6 @@ from .resources import rs as grs
 from .structures import InvalidFormatError, Tx, TxStatus
 
 logger = logging.getLogger(__name__)
-
-
-class NoNextTransactionError(Exception):
-    pass
 
 
 class TxPool:
@@ -43,12 +39,12 @@ class TxPool:
         return self.rs.zcard(self.name)
 
     def to_list(self) -> List[bytes]:
-        return self.rs.zrange(self.name, 0, -1)
+        return cast(List[bytes], self.rs.zrange(self.name, 0, -1))
 
     def get(self, tx_id: Optional[bytes]) -> Optional[Tx]:
         if tx_id is None:
             return None
-        r = self.rs.get(tx_id) or b''
+        r = cast(Optional[bytes], self.rs.get(tx_id)) or b''
         logger.info('Received record %s', r)
         tx = None
         try:
@@ -65,7 +61,7 @@ class TxPool:
     def get_next_id(self) -> Optional[bytes]:
         if self.size == 0:
             return None
-        return self.rs.zrange(self.name, 0, 0)[0]
+        return cast(bytes, self.rs.zrange(self.name, 0, 0)[0])
 
     def _add_record(self, tx_id: bytes, score: int, tx_record: bytes) -> None:
         pipe = self.rs.pipeline()
@@ -92,7 +88,7 @@ class TxPool:
             logger.debug('Received %s from pool', tx_id)
             tx = self.get(tx_id)
             if tx is None and tx_id is not None:
-                logger.error('Received malformed tx %s. Going to remove')
+                logger.error('Received malformed tx %s. Going to remove', tx_id)
                 self.drop(tx_id)
         return tx
 

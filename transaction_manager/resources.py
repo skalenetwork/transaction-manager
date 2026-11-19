@@ -20,12 +20,11 @@
 import logging
 
 import redis
-import statsd  # type: ignore
-from skale.utils.web3_utils import get_endpoint, init_web3  # type: ignore
+import statsd
+from skale.utils.web3_utils import get_endpoint, init_web3
 from web3 import Web3
 
 from .config import (
-    ALLOWED_TS_DIFF,
     LOCAL_SKALED_ENDPOINT_REDIS_KEY,
     REDIS_URI,
     STATSD_HOST,
@@ -42,7 +41,7 @@ stdc: statsd.StatsClient = statsd.StatsClient(STATSD_HOST, STATSD_PORT)
 
 def w3() -> Web3:
     endpoint = get_endpoint(endpoints())
-    return init_web3(endpoint, ts_diff=ALLOWED_TS_DIFF)
+    return init_web3(endpoint)
 
 
 def endpoints() -> list[str]:

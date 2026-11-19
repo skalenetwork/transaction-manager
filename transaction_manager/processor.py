@@ -22,7 +22,7 @@ import time
 from contextlib import contextmanager
 from typing import Generator, Optional, Tuple
 
-from skale.wallets import BaseWallet  # type: ignore
+from skale.wallets import BaseWallet
 
 from .attempt_manager import BaseAttemptManager
 from .config import CONFIRMATION_BLOCKS, UNDERPRICED_RETRIES
@@ -64,13 +64,13 @@ class Processor:
         while tx_hash is None and retry < UNDERPRICED_RETRIES:
             logger.info('Signing tx %s, retry %d', tx.tx_id, retry)
             etx = self.eth.convert_tx(tx)
-            signed = self.wallet.sign(etx)  # type: ignore[arg-type]
+            signed = self.wallet.sign(etx)
             logger.info('Sending transaction %s', tx)
             try:
-                tx_hash = self.eth.send_tx(signed)  # type: ignore[arg-type]
+                tx_hash = self.eth.send_tx(signed)
             except Exception as e:
-                logger.info(f'Sending failed with error {err}')
                 err = e
+                logger.info('Sending failed with error %s', err)
                 if is_replacement_underpriced(err):
                     logger.info('Replacement fee is too low. Increasing')
                     self.attempt_manager.replace(tx, replace_attempt=retry)
@@ -96,17 +96,14 @@ class Processor:
             return None
         try:
             logger.info('Waiting for %s, with hash %s, timeout %d', tx.tx_id, tx.tx_hash, max_time)
-            self.eth.wait_for_receipt(tx_hash=tx.tx_hash, max_time=max_time)
+            rstatus = self.eth.wait_for_receipt(tx_hash=tx.tx_hash, max_time=max_time)
         except ReceiptTimeoutError as err:
             logger.info(f'{tx.tx_id} is not mined within {max_time}')
             tx.status = TxStatus.TIMEOUT
             raise WaitTimeoutError(err)
-
-        rstatus = self.eth.wait_for_receipt(tx_hash=tx.tx_hash, max_time=max_time)
-        if rstatus is not None:
-            logger.info('Setting tx %s as mined', tx.tx_id)
-            tx.set_as_mined()
-            self.pool.save(tx)
+        logger.info('Setting tx %s as mined', tx.tx_id)
+        tx.set_as_mined()
+        self.pool.save(tx)
         return rstatus
 
     def confirm(self, tx: Tx) -> None:

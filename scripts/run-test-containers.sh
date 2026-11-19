@@ -12,15 +12,12 @@ cd $PROJECT_DIR
 
 export SKALE_DIR=./tests/data-volumes/skale-dir
 export REDIS_DIR=./tests/data-volumes/redis-dir
-export SGX_DIR=./tests/data-volumes/skale-dir/node_data/sgx-dir
-export PYTHONPATH=${PYTHONPATH}:${PROJECT_DIR}
 
 create_skale_dir() {
     mkdir -p $SKALE_DIR/node_data/log
 }
 
 create_redis_dir() {
-    mkdir -p $REDIS_DIR/redis-data
     mkdir -p $REDIS_DIR/redis-config
     cp tests/utils/redis.conf $REDIS_DIR/redis-config
 }
@@ -53,10 +50,6 @@ cleanup_redis_dir() {
     fi
 }
 
-gen_sgx_key() {
-    python3 tests/gen_sgx.py
-}
-
 wait_for_hnode() {
     local retries=60
     local rpc_url="http://127.0.0.1:8545"
@@ -76,13 +69,6 @@ wait_for_hnode() {
     done
 }
 
-deploy_test_contract() {
-    cd tests/tester-contract/
-    yarn install
-    npx hardhat run --network localhost scripts/deploy.ts
-    cd -
-}
-
 shutdown_containers
 cleanup_skale_dir
 cleanup_redis_dir
@@ -91,12 +77,6 @@ create_redis_dir
 copy_settings_files
 build tm
 
-if [ -z ${SGX_URL} ]; then
-    run_containers tm redis hnode
-else
-    run_containers sgx tm redis hnode
-    gen_sgx_key
-fi
+run_containers tm redis hnode
 
 wait_for_hnode
-deploy_test_contract

@@ -1,8 +1,8 @@
 import time
 
 import pytest
+from skale.utils.account_tools import send_eth
 
-from tests.utils.account import send_eth
 from tests.utils.timing import in_time
 from transaction_manager.eth import MAX_WAITING_TIME, BlockTimeoutError, Eth, ReceiptTimeoutError
 from transaction_manager.structures import Tx, TxStatus
@@ -22,10 +22,6 @@ def test_eth_chain_id(eth):
     assert eth.chain_id == 31337
 
 
-def test_eth_avg_gas_price(eth):
-    assert 10**9 < eth.avg_gas_price < 31 * 10**9
-
-
 def test_eth_blocks(w3, eth):
     assert 8000000 <= eth.block_gas_limit <= 100000000
     with in_time(seconds=MAX_WAITING_TIME):
@@ -39,7 +35,7 @@ def test_eth_tx(w3wallet, w3, eth):
     acc = w3.eth.account.create()
     addr, pk = acc.address, acc.key.hex()
     assert eth.get_balance(addr) == 0
-    send_eth(w3, w3wallet, addr, amount=10**18)
+    send_eth(w3, w3wallet, addr, 1)
     assert eth.get_balance(addr) == 10**18
     assert eth.get_nonce(addr) == 0
 
@@ -69,7 +65,7 @@ def test_eth_tx(w3wallet, w3, eth):
         eth.wait_for_receipt(h, max_time=0)
 
     time.sleep(1)
-    eth_tx_a['gasPrice'] = 2 * eth.avg_gas_price
+    eth_tx_a['gasPrice'] = 3 * w3.eth.gas_price
     second_nonce = w3.eth.get_transaction_count(addr)
     eth_tx_a['nonce'] = second_nonce
     signed = w3.eth.account.sign_transaction(eth_tx_a, private_key=pk)

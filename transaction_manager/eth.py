@@ -22,13 +22,13 @@ import time
 from functools import cached_property
 from typing import Dict, Optional, cast
 
+from eth_account.datastructures import SignedTransaction
 from eth_typing.evm import HexStr
 from web3 import Web3
-from web3.exceptions import ContractLogicError, TransactionNotFound
+from web3.exceptions import ContractLogicError, TransactionNotFound, Web3RPCError
 from web3.types import FeeHistory, TxParams
 
 from .config import (
-    AVG_GAS_PRICE_INC_PERCENT,
     CONFIRMATION_BLOCKS,
     DEFAULT_GAS_LIMIT,
     DISABLE_GAS_ESTIMATION,
@@ -55,23 +55,12 @@ class EstimateGasRevertError(Exception):
     pass
 
 
-REVERT_CODES = [
-    # https://github.com/ethereum/EIPs/blob/master/EIPS/eip-1474.md#error-codes
-    -32601,  # Method not found
-    -32603,  # Invalid params
-]
-
-
 def is_replacement_underpriced(err: Exception) -> bool:
     return (
-        isinstance(err, ValueError)
-        and isinstance(err.args[0], dict)
-        and err.args[0].get('message') == 'replacement transaction underpriced'
+        isinstance(err, Web3RPCError)
+        and err.rpc_response is not None
+        and err.rpc_response['error']['message'] == 'replacement transaction underpriced'
     )
-
-
-def is_nonce_too_low(err: Exception) -> bool:
-    return isinstance(err, ValueError) and 'nonce' in err.args[0]['message']
 
 
 class Eth:
@@ -118,7 +107,7 @@ class Eth:
         return history['reward'][0][-1]
 
     @classmethod
-    def convert_tx(cls, tx: Tx) -> Dict:
+    def convert_tx(cls, tx: Tx) -> TxParams:
         raw_tx = tx.raw_tx
         etx = {attr: raw_tx[attr] for attr in cls.TX_ATTRS}
         if etx.get('maxPriorityFeePerGas') is not None or etx.get('maxFeePerGas') is not None:
@@ -133,11 +122,7 @@ class Eth:
             etx.pop('gas')
         if etx.get('data') is None:
             etx.pop('data')
-        return etx
-
-    @property
-    def avg_gas_price(self) -> int:
-        return self.w3.eth.gas_price * (100 + AVG_GAS_PRICE_INC_PERCENT) // 100
+        return cast(TxParams, etx)
 
     def calculate_gas(self, tx: Tx) -> int:
         etx = self.convert_tx(tx)
@@ -149,20 +134,10 @@ class Eth:
         logger.info('Estimating gas for %s', etx)
 
         try:
-            estimated = self.w3.eth.estimate_gas(cast(TxParams, etx), block_identifier='latest')
+            estimated = self.w3.eth.estimate_gas(etx, block_identifier='latest')
         except ContractLogicError as e:
             logger.exception('Estimate gas reverted with ContractLogicError')
             raise EstimateGasRevertError(e)
-        except ValueError as e:
-            logger.exception('Estimate gas reverted with ValueError')
-            if (
-                len(e.args) > 0
-                and isinstance(e.args[0], dict)
-                and e.args[0].get('code') in REVERT_CODES
-            ):
-                raise EstimateGasRevertError(e)
-            else:
-                raise
 
         logger.info('eth_estimateGas returned: %s of gas', estimated)
         gas = int(estimated * multiplier)
@@ -175,9 +150,8 @@ class Eth:
         logger.info('Estimation result %s of gas', gas)
         return gas
 
-    def send_tx(self, signed_tx: Dict) -> str:
-        tx_hash = self.w3.eth.send_raw_transaction(signed_tx['raw_transaction']).hex()
-        return tx_hash
+    def send_tx(self, signed_tx: SignedTransaction) -> str:
+        return self.w3.eth.send_raw_transaction(signed_tx.raw_transaction).hex()
 
     def get_nonce(self, address: str) -> int:
         checksum_address = self.w3.to_checksum_address(address)
@@ -216,7 +190,6 @@ class Eth:
         return rstatus
 
     def get_receipt(self, tx_hash: str) -> Optional[Dict]:
-        casted_hash = cast(HexStr, tx_hash)
         receipt = None
         try:
             casted_hash = cast(HexStr, tx_hash)

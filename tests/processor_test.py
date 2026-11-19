@@ -1,8 +1,8 @@
 from unittest import mock
 
 import pytest
+from web3.exceptions import Web3RPCError
 
-from tests.utils.contracts import get_tester_abi
 from tests.utils.timing import in_time
 from transaction_manager.config import MAX_RESUBMIT_AMOUNT
 from transaction_manager.eth import EstimateGasRevertError
@@ -17,29 +17,22 @@ def proc(tpool, eth, trs, attempt_manager, wallet):
     return Processor(eth, tpool, attempt_manager, wallet)
 
 
-@pytest.fixture
-def proc_v1(tpool, eth, trs, attempt_manager_v1, wallet):
-    return Processor(eth, tpool, attempt_manager_v1, wallet)
-
-
-def make_tx(w3, wallet, failed=False):
-    tester_abi = get_tester_abi()
-    tester = w3.eth.contract(abi=tester_abi['abi'], address=tester_abi['address'])
+def make_tx(tester, wallet, failed=False):
     number = 3 if failed else 4
     return tester.functions.setOnlyEven(number).build_transaction(
-        {'gasPrice': w3.eth.gas_price, 'gas': DEFAULT_GAS, 'from': wallet.address}
+        {'gasPrice': tester.w3.eth.gas_price, 'gas': DEFAULT_GAS, 'from': wallet.address}
     )
 
 
-def push_tx(w3, rdp, tpool, wallet, failed=False):
-    tx = make_tx(w3, wallet, failed=failed)
+def push_tx(tester, rdp, tpool, wallet, failed=False):
+    tx = make_tx(tester, wallet, failed=failed)
     tx_id = rdp.sign_and_send(tx)
     raw_id = tx_id.encode('utf-8')
     return tpool.get(raw_id)
 
 
-def push_ima_tx(w3, rdp, tpool, wallet, failed=False):
-    tx = push_tx(w3, rdp, tpool, wallet, failed=failed)
+def push_ima_tx(tester, rdp, tpool, wallet, failed=False):
+    tx = push_tx(tester, rdp, tpool, wallet, failed=failed)
     tx.tx_id = tx.tx_id + 'js'
     return tx
 
@@ -53,8 +46,8 @@ class ProcTestError(Exception):
     pass
 
 
-def test_processor_acquire_tx(proc, tpool, eth, trs, w3, wallet, rdp):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_processor_acquire_tx(proc, tpool, eth, trs, tester, wallet, rdp):
+    tx = push_tx(tester, rdp, tpool, wallet)
     with proc.acquire_tx(tx):
         tx.status = TxStatus.SUCCESS
     assert get_from_pool(tx.tx_id, tpool).status == TxStatus.SUCCESS
@@ -80,8 +73,8 @@ def test_processor_acquire_tx(proc, tpool, eth, trs, w3, wallet, rdp):
     assert tx.status == TxStatus.SUCCESS
 
 
-def test_get_exec_data(proc, w3, rdp, eth, tpool, wallet):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_get_exec_data(proc, tester, rdp, eth, tpool, wallet):
+    tx = push_tx(tester, rdp, tpool, wallet)
     tx.hashes = ['0x1234', '0x1235', '0x12346']
     tx.attempts = 3
     eth.get_status = mock.Mock(return_value=-1)
@@ -93,8 +86,8 @@ def test_get_exec_data(proc, w3, rdp, eth, tpool, wallet):
     assert r == 1 and h == '0x12346'
 
 
-def test_send(proc, w3, rdp, eth, tpool, wallet):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_send(proc, tester, rdp, eth, tpool, wallet):
+    tx = push_tx(tester, rdp, tpool, wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -107,8 +100,9 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     assert tx.tx_hash is None
     assert tx.hashes == []
 
+    error = {'code': -32000, 'message': 'replacement transaction underpriced'}
     proc.eth.send_tx = mock.Mock(
-        side_effect=ValueError({'code': -32000, 'message': 'replacement transaction underpriced'})
+        side_effect=Web3RPCError(repr(error), rpc_response={'error': error})
     )
     with pytest.raises(SendingError):
         proc.send(tx)
@@ -130,22 +124,22 @@ def test_send(proc, w3, rdp, eth, tpool, wallet):
     assert tx.hashes == ['0x12323213213321321', '0x213812903813123']
 
 
-def test_process_tx(proc, w3, tpool, eth, trs, wallet, rdp):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_process_tx(proc, tester, tpool, eth, trs, wallet, rdp):
+    tx = push_tx(tester, rdp, tpool, wallet)
     proc.process(tx)
     assert tx.tx_hash is not None
     assert tx.hashes == [tx.tx_hash]
     assert tx.status == TxStatus.SUCCESS
 
-    tx = push_tx(w3, rdp, tpool, wallet)
+    tx = push_tx(tester, rdp, tpool, wallet)
     tx.to = 'bad-address'
     with pytest.raises(Exception):
         proc.process(tx)
 
 
 @pytest.mark.skip('Geth only test')
-def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool, wallet):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_send_replacement_underpriced(proc, tester, rdp, eth, tpool, wallet):
+    tx = push_tx(tester, rdp, tpool, wallet)
     tx.chain_id = eth.chain_id
     tx.nonce = 0
     proc.attempt_manager.make(tx)
@@ -158,8 +152,8 @@ def test_send_replacement_underpriced(proc, w3, rdp, eth, tpool, wallet):
     assert r
 
 
-def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
-    tx = push_tx(w3, rdp, tpool, wallet, failed=True)
+def test_aquire_estimate_gas_revert(proc, tester, rdp, tpool, wallet):
+    tx = push_tx(tester, rdp, tpool, wallet, failed=True)
     with pytest.raises(EstimateGasRevertError):
         with proc.acquire_tx(tx):
             proc.process(tx)
@@ -167,7 +161,7 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
     assert tx.status == TxStatus.SEEN
     assert tx.tx_id.encode('utf-8') in tpool.to_list()
 
-    tx = push_ima_tx(w3, rdp, tpool, wallet, failed=True)
+    tx = push_ima_tx(tester, rdp, tpool, wallet, failed=True)
 
     with pytest.raises(EstimateGasRevertError):
         with proc.acquire_tx(tx):
@@ -178,8 +172,8 @@ def test_aquire_estimate_gas_revert(proc, w3, rdp, tpool, wallet):
     assert tx.tx_id.encode('utf-8') not in tpool.to_list()
 
 
-def test_confirm(proc, w3, rdp, tpool, wallet):
-    tx = push_tx(w3, rdp, tpool, wallet)
+def test_confirm(proc, tester, rdp, tpool, wallet):
+    tx = push_tx(tester, rdp, tpool, wallet)
     proc.attempt_manager.make(tx)
     proc.send(tx)
     proc.wait(tx, max_time=proc.attempt_manager.current.wait_time)
@@ -191,8 +185,8 @@ def test_confirm(proc, w3, rdp, tpool, wallet):
         proc.confirm(tx)
 
 
-def test_processor_eth_update(proc, tpool, eth, trs, w3, wallet, rdp):
-    push_tx(w3, rdp, tpool, wallet)
+def test_processor_eth_update(proc, tpool, eth, trs, tester, wallet, rdp):
+    push_tx(tester, rdp, tpool, wallet)
     eth_before = proc.eth
     proc.process_next()
     eth_after = proc.eth
